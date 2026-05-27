@@ -303,6 +303,29 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
     }
 
+
+    .game-frame-wrap {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #0d120a;
+      box-shadow: 0 18px 48px rgba(23, 32, 51, 0.22);
+    }
+
+    .game-frame {
+      display: block;
+      width: 100%;
+      height: min(82vh, 920px);
+      min-height: 680px;
+      border: 0;
+      background: #0d120a;
+    }
+
+    .game-note {
+      margin: 0 0 18px;
+      color: var(--muted);
+    }
+
     @media (max-width: 760px) {
       .page-shell { width: min(100% - 20px, 1120px); padding-top: 10px; }
       header { grid-template-columns: 1fr; }
@@ -310,6 +333,7 @@
       .section-grid { grid-template-columns: 1fr; }
       nav ul { gap: 8px; }
       nav a { padding: 10px 12px; font-size: 0.93rem; }
+      .game-frame { min-height: 620px; height: 78vh; }
     }
   </style>
 </head>
@@ -322,12 +346,13 @@
           <h1>en av verdens internettsider</h1>
           <p>tull, tøys og testing.</p>
         </div>
-        <a class="game-link" href="tower_defense">supergame 3000</a>
+        <a class="game-link" href="#game" data-tab="game">supergame 3000</a>
       </header>
 
       <nav aria-label="Hovedmeny">
         <ul>
           <li><a href="#home" class="tab-link active-tab" data-tab="home">Hjem</a></li>
+          <li><a href="#game" class="tab-link" data-tab="game">supergame 3000</a></li>
           <li><a href="#trening" class="tab-link" data-tab="trening">Trening</a></li>
           <li><a href="#forskning" class="tab-link" data-tab="forskning">Forskning</a></li>
           <li><a href="#musikk" class="tab-link" data-tab="musikk">Musikk</a></li>
@@ -342,13 +367,19 @@
           <div>
             <h2>Om meg</h2>
             <p>Hei, jeg er en PhD-student basert i Norge. Jeg forsker på delte autonome kjøretøy (SAVs) og offentlig aksept av dem. Mitt forskningsfelt er sosialpsykologi, og jeg jobber ved Transportøkonomisk institutt (TØI).</p>
-            <div class="note-card">
-              <p><strong>Bilde:</strong> Legg <code>meg.jpg</code> i samme GitHub-mappe som <code>index.html</code>. Da vil bildet lastes riktig på nettsiden.</p>
-            </div>
           </div>
           <img src="meg.jpg" width="230" height="345" alt="Bilde av Ole Aasvik" class="profile-img" />
         </div>
       </section>
+
+      <section id="game" class="container">
+        <h2>supergame 3000</h2>
+        <p class="game-note">Spillet lastes inn fra <code>tower_defense.html</code>. Legg den filen i samme GitHub-mappe som <code>index.html</code>.</p>
+        <div class="game-frame-wrap">
+          <iframe class="game-frame" src="tower_defense.html" title="supergame 3000" loading="lazy" allow="fullscreen; autoplay"></iframe>
+        </div>
+      </section>
+
 
       <section id="trening" class="container">
         <h2>Ukentlig treningsplan</h2>
@@ -463,7 +494,7 @@
   </div>
 
   <script>
-    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabLinks = document.querySelectorAll('.tab-link, .game-link[data-tab]');
     const sections = document.querySelectorAll('.container');
 
     function showTab(tabId) {
