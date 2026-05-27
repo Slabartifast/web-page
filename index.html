@@ -54,10 +54,6 @@
     header {
       color: white;
       padding: 34px clamp(22px, 5vw, 56px) 24px;
-      display: grid;
-      gap: 18px;
-      grid-template-columns: 1fr auto;
-      align-items: center;
     }
 
     .eyebrow {
@@ -82,27 +78,6 @@
       color: rgba(255, 255, 255, 0.78);
       font-size: 1.05rem;
       line-height: 1.65;
-    }
-
-    .game-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      min-width: 190px;
-      padding: 14px 18px;
-      border-radius: 999px;
-      text-decoration: none;
-      color: #111827;
-      background: linear-gradient(135deg, #ffd166, var(--orange));
-      font-weight: 850;
-      box-shadow: 0 16px 38px rgba(255, 159, 67, 0.28);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .game-link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 20px 44px rgba(255, 159, 67, 0.36);
     }
 
     nav {
@@ -134,6 +109,21 @@
     nav a.active-tab {
       color: white;
       background: rgba(32, 184, 173, 0.42);
+      transform: translateY(-1px);
+    }
+
+    nav a.game-nav-link {
+      color: #111827;
+      border-color: rgba(255, 209, 102, 0.65);
+      background: linear-gradient(135deg, #ffd166, var(--orange));
+      box-shadow: 0 12px 30px rgba(255, 159, 67, 0.26);
+    }
+
+    nav a.game-nav-link:hover,
+    nav a.game-nav-link.active-tab {
+      color: #111827;
+      background: linear-gradient(135deg, #ffd166, var(--orange));
+      box-shadow: 0 16px 38px rgba(255, 159, 67, 0.36);
       transform: translateY(-1px);
     }
 
@@ -260,6 +250,39 @@
 
     audio { width: 100%; }
 
+    .soundcloud-stack {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .soundcloud-card {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.62);
+    }
+
+    .soundcloud-card h3 {
+      margin-bottom: 12px;
+    }
+
+    .soundcloud-credit {
+      margin-top: 8px;
+      color: #7b8496;
+      font-size: 10px;
+      line-break: anywhere;
+      word-break: normal;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .soundcloud-credit a {
+      color: #7b8496;
+      text-decoration: none;
+    }
+
     form {
       display: grid;
       gap: 12px;
@@ -329,7 +352,6 @@
     @media (max-width: 760px) {
       .page-shell { width: min(100% - 20px, 1120px); padding-top: 10px; }
       header { grid-template-columns: 1fr; }
-      .game-link { width: fit-content; }
       .section-grid { grid-template-columns: 1fr; }
       nav ul { gap: 8px; }
       nav a { padding: 10px 12px; font-size: 0.93rem; }
@@ -346,13 +368,12 @@
           <h1>en av verdens internettsider</h1>
           <p>tull, tøys og testing.</p>
         </div>
-        <a class="game-link" href="#game" data-tab="game">supergame 3000</a>
       </header>
 
       <nav aria-label="Hovedmeny">
         <ul>
           <li><a href="#home" class="tab-link active-tab" data-tab="home">Hjem</a></li>
-          <li><a href="#game" class="tab-link" data-tab="game">supergame 3000</a></li>
+          <li><a href="#game" class="tab-link game-nav-link" data-tab="game">supergame 3000</a></li>
           <li><a href="#trening" class="tab-link" data-tab="trening">Trening</a></li>
           <li><a href="#forskning" class="tab-link" data-tab="forskning">Forskning</a></li>
           <li><a href="#musikk" class="tab-link" data-tab="musikk">Musikk</a></li>
@@ -374,7 +395,7 @@
 
       <section id="game" class="container">
         <h2>supergame 3000</h2>
-        <p class="game-note">Spillet lastes inn fra <code>tower_defense.html</code>. Legg den filen i samme GitHub-mappe som <code>index.html</code>.</p>
+        <p class="game-note">Bygg en by og forsvar den mot nattens skapninger. Om å gjøre å overleve lengst. Fortell meg hva du klarte, da vel!</p>
         <div class="game-frame-wrap">
           <iframe class="game-frame" src="tower_defense.html" title="supergame 3000" loading="lazy" allow="fullscreen; autoplay"></iframe>
         </div>
@@ -456,15 +477,32 @@
       <section id="musikk" class="container">
         <h2>Musikk</h2>
         <p>Jeg lager musikk på hobbynivå. Her er noe fra SoundCloud.</p>
-        <iframe width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/1614770347&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
-        <div style="font-size: 10px; color: #7b8496; line-break: anywhere; word-break: normal; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 8px;">
-          <a href="https://soundcloud.com/ole-aasvik" title="Ole Aasvik" target="_blank" rel="noopener" style="color: #7b8496; text-decoration: none;">Ole Aasvik</a> ·
-          <a href="https://soundcloud.com/ole-aasvik/sets/human-attrition-1" title="Human Attrition" target="_blank" rel="noopener" style="color: #7b8496; text-decoration: none;">Human Attrition</a>
+
+        <div class="soundcloud-stack">
+          <div class="soundcloud-card">
+            <h3>Human Attrition</h3>
+            <iframe width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay; encrypted-media" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/1614770347&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
+            <div class="soundcloud-credit">
+              <a href="https://soundcloud.com/ole-aasvik" title="Ole Aasvik" target="_blank" rel="noopener">Ole Aasvik</a> ·
+              <a href="https://soundcloud.com/ole-aasvik/sets/human-attrition-1" title="Human Attrition" target="_blank" rel="noopener">Human Attrition</a>
+            </div>
+          </div>
+
+          <div class="soundcloud-card">
+            <h3>Panacea</h3>
+            <iframe width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay; encrypted-media" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/soundcloud%253Aplaylists%253A2174349668&color=%2330342e&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
+            <div class="soundcloud-credit">
+              <a href="https://soundcloud.com/ole-aasvik" title="Ole Aasvik" target="_blank" rel="noopener">Ole Aasvik</a> ·
+              <a href="https://soundcloud.com/ole-aasvik/sets/a3c1a047-6e37-4691-985b-aa094892aef0" title="Panacea" target="_blank" rel="noopener">Panacea</a>
+            </div>
+          </div>
         </div>
+
         <div class="note-card">
-          <p><strong>Lokal lydfil:</strong> Legg lydfilen i samme mappe som nettsiden og endre filnavnet under ved behov.</p>
-          <audio controls>
-            <source src="what-was-made.mp3" type="audio/mpeg" />
+          <h3>Standiga master</h3>
+          <audio controls preload="metadata">
+            <source src="./standiga%20master.flac" type="audio/flac" />
+            <source src="./standiga master.flac" type="audio/x-flac" />
             Din nettleser støtter ikke lydavspilling.
           </audio>
         </div>
@@ -494,7 +532,7 @@
   </div>
 
   <script>
-    const tabLinks = document.querySelectorAll('.tab-link, .game-link[data-tab]');
+    const tabLinks = document.querySelectorAll('.tab-link');
     const sections = document.querySelectorAll('.container');
 
     function showTab(tabId) {
