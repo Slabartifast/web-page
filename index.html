@@ -1,286 +1,519 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>velkommen til internett</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ole Aasvik | verdens beste side</title>
+  <style>
+    :root {
+      --bg: #101827;
+      --bg-soft: #172033;
+      --card: rgba(255, 255, 255, 0.92);
+      --card-muted: rgba(255, 255, 255, 0.78);
+      --text: #172033;
+      --muted: #5b6475;
+      --accent: #20b8ad;
+      --accent-dark: #147b75;
+      --orange: #ff9f43;
+      --line: rgba(23, 32, 51, 0.12);
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
 
-        header {
-            background-color: #229891;
-            color: white;
-            padding: 1em 0;
-            text-align: center;
-        }
+    * { box-sizing: border-box; }
 
-        nav {
-            background-color: #a06216;
-        }
+    html { scroll-behavior: smooth; }
 
-            nav ul {
-                list-style-type: none;
-                margin: 0;
-                padding: 0;
-                overflow: hidden;
-            }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(32, 184, 173, 0.32), transparent 34%),
+        radial-gradient(circle at top right, rgba(255, 159, 67, 0.26), transparent 30%),
+        linear-gradient(135deg, #0c1220 0%, #172033 55%, #0f1727 100%);
+    }
 
-                nav ul li {
-                    float: left;
-                }
+    a { color: inherit; }
 
-                    nav ul li a {
-                        display: block;
-                        color: white;
-                        text-align: center;
-                        padding: 14px 16px;
-                        text-decoration: none;
-                    }
+    .page-shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
 
-                        nav ul li a:hover {
-                            background-color: #229891;
-                        }
+    .hero {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 28px;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
 
-        .container {
-            display: none;
-            padding: 2em;
-            background: white;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
+    header {
+      color: white;
+      padding: 34px clamp(22px, 5vw, 56px) 24px;
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+    }
 
-        .active {
-            display: block;
-        }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.82rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
+    h1 {
+      margin: 0;
+      font-size: clamp(2.15rem, 6vw, 4.8rem);
+      line-height: 0.95;
+      letter-spacing: -0.07em;
+    }
 
-        table, th, td {
-            border: 1px solid #ddd;
-        }
+    .hero p {
+      max-width: 650px;
+      margin: 16px 0 0;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
 
-        th, td {
-            padding: 12px;
-            text-align: left;
-        }
+    .game-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-width: 190px;
+      padding: 14px 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      color: #111827;
+      background: linear-gradient(135deg, #ffd166, var(--orange));
+      font-weight: 850;
+      box-shadow: 0 16px 38px rgba(255, 159, 67, 0.28);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
 
-        th {
-            background-color: #4CAF50;
-            color: white;
-        }
+    .game-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 44px rgba(255, 159, 67, 0.36);
+    }
 
-        footer {
-            background-color: #229891;
-            color: white;
-            text-align: center;
-            padding: 1em 0;
-            position: fixed;
-            width: 100%;
-            bottom: 0;
-        }
-    </style>
+    nav {
+      padding: 0 clamp(16px, 4vw, 42px) 26px;
+    }
+
+    nav ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav a {
+      display: block;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      padding: 11px 15px;
+      color: rgba(255, 255, 255, 0.82);
+      background: rgba(255, 255, 255, 0.08);
+      text-decoration: none;
+      font-weight: 700;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    nav a:hover,
+    nav a.active-tab {
+      color: white;
+      background: rgba(32, 184, 173, 0.42);
+      transform: translateY(-1px);
+    }
+
+    main {
+      margin-top: 22px;
+    }
+
+    .container {
+      display: none;
+      padding: clamp(20px, 4vw, 38px);
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      border-radius: 24px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+    }
+
+    .container.active { display: block; }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.65fr);
+      gap: 28px;
+      align-items: center;
+    }
+
+    h2, h3 {
+      margin-top: 0;
+      letter-spacing: -0.03em;
+    }
+
+    h2 {
+      font-size: clamp(1.7rem, 4vw, 2.55rem);
+      margin-bottom: 12px;
+    }
+
+    h3 { margin-bottom: 8px; }
+
+    p {
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .profile-img {
+      width: min(230px, 100%);
+      height: auto;
+      aspect-ratio: 2 / 3;
+      object-fit: cover;
+      border-radius: 26px;
+      border: 8px solid white;
+      box-shadow: 0 20px 42px rgba(23, 32, 51, 0.22);
+      background: #e7edf5;
+    }
+
+    .note-card {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(32, 184, 173, 0.09);
+      border: 1px solid rgba(32, 184, 173, 0.18);
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      min-width: 800px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px 15px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: white;
+      background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .link-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 11px 14px;
+      border-radius: 14px;
+      background: var(--bg-soft);
+      color: white;
+      text-decoration: none;
+      font-weight: 750;
+    }
+
+    #publications {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    #publications p {
+      margin: 0;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    iframe, audio {
+      border-radius: 18px;
+      max-width: 100%;
+    }
+
+    audio { width: 100%; }
+
+    form {
+      display: grid;
+      gap: 12px;
+      max-width: 560px;
+    }
+
+    label {
+      font-weight: 750;
+      color: var(--text);
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font: inherit;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    textarea { min-height: 140px; resize: vertical; }
+
+    button {
+      justify-self: start;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: white;
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    footer {
+      margin-top: 22px;
+      padding: 18px 22px;
+      border-radius: 20px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.74);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    @media (max-width: 760px) {
+      .page-shell { width: min(100% - 20px, 1120px); padding-top: 10px; }
+      header { grid-template-columns: 1fr; }
+      .game-link { width: fit-content; }
+      .section-grid { grid-template-columns: 1fr; }
+      nav ul { gap: 8px; }
+      nav a { padding: 10px 12px; font-size: 0.93rem; }
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>verdens beste side</h1>
-    </header>
-    <nav>
-        <ul>
-            <li><a href="#" class="tab-link" onclick="showTab('home')">Hjem</a></li>
-            <li><a href="#" class="tab-link" onclick="showTab('trening')">Trening</a></li>
-            <li><a href="#" class="tab-link" onclick="showTab('forskning')">Forskning</a></li>
-            <li><a href="#" class="tab-link" onclick="showTab('musikk')">Musikk</a></li>
-            <li><a href="#" class="tab-link" onclick="showTab('kontakt')">Kontakt</a></li>
-        </ul>
-    </nav>
-
-    <div id="home" class="container active">
-        <h2>Om Meg</h2>
-        <p>Hei, jeg er en PhD-student basert i Norge. Jeg forsker på delte autonome kjøretøy (SAVs) og offentlig aksept av dem. Mitt forskningsfelt er sosialpsykologi, og jeg jobber ved Transportøkonomisk institutt (TØI).</p>
-        <img src="C:\Users\ojj\OneDrive - Transportøkonomisk institutt\Desktop\nettside\meg.jpg" width="120" height="181" alt="Bilde av meg" class="profile-img">
-    </div>
-
-    <div id="trening" class="container">
-        <h2>Ukentlig Treningsplan</h2>
-        <p>Nedenfor er en ukentlig treningsplan strukturert som en tabell, med variasjoner for hver dag for å tilpasse forskjellige treningsøkter.</p>
-        <table>
-            <tr>
-                <th>Dag</th>
-                <th>Hovedtreningsøkt</th>
-                <th>Variasjon 1</th>
-                <th>Variasjon 2</th>
-            </tr>
-            <tr>
-                <td>Mandag</td>
-                <td>Hvile eller aktiv restitusjon (kryss-trening)</td>
-                <td>Lett jogg (5-6 km i samtale-tempo)</td>
-                <td>Hvile eller yoga/stretching</td>
-            </tr>
-            <tr>
-                <td>Tirsdag</td>
-                <td>6x800m intervaller @ 5k tempo med 2 min hvile + oppvarming/nedjogg (totalt 8-10 km)</td>
-                <td>8x400m intervaller @ raskere enn 5k tempo med 90s hvile + oppvarming/nedjogg</td>
-                <td>Bakketrening (8x200m oppoverbakke) med jogg ned som restitusjon</td>
-            </tr>
-            <tr>
-                <td>Onsdag</td>
-                <td>Lengre lett jogg (12 km)</td>
-                <td>Lett jogg (8-10 km)</td>
-                <td>Fartlek jogg (10 km med varierte hastigheter)</td>
-            </tr>
-            <tr>
-                <td>Torsdag</td>
-                <td>3x3k @ 4:20-4:30/km med 2-3 min hvile + oppvarming/nedjogg (totalt 12-14 km)</td>
-                <td>Tempoløp (8-10 km @ 4:20-4:30/km tempo) + oppvarming/nedjogg</td>
-                <td>4x2k @ 4:15-4:25/km med 2 min hvile + oppvarming/nedjogg</td>
-            </tr>
-            <tr>
-                <td>Fredag</td>
-                <td>Hvile eller kort restitusjonsjogg (5-6 km)</td>
-                <td>Aktiv restitusjon (svømming, sykling)</td>
-                <td>Hvile eller lett jogg (4-5 km)</td>
-            </tr>
-            <tr>
-                <td>Lørdag</td>
-                <td>Langtur (18 km i lett tempo)</td>
-                <td>Progresjonsløp (start lett, avslutt siste 5k @ HM tempo)</td>
-                <td>Langtur (15-16 km med de siste 3 km @ maraton tempo)</td>
-            </tr>
-            <tr>
-                <td>Søndag</td>
-                <td>Valgfri lett jogg (8 km) eller hvile</td>
-                <td>Hvile eller kryss-trening</td>
-                <td>Lett jogg (6-8 km i veldig avslappet tempo)</td>
-            </tr>
-        </table>
-        <h3>Forklaring:</h3>
-        <p>
-            Denne planen er allsidig og hjelper deg med å forberede deg til distanser fra 5k til halvmaraton, samtidig som den tilpasser seg dine preferanser for lengre, men færre, lette joggeturer for å sikre balansert trening.
-        </p>
-        </section>
-    </div>
-
-
-    <div id="forskning" class="container">
-        <h1>Forskning</h1>
-        <p>Jeg forsker på delte selvkjørende kjøretøy og hva som skal til for at folk vil bruke dem.</p>
-        <a id="cy-effective-orcid-url"
-           class="underline"
-           href="https://orcid.org/0000-0002-0999-7885"
-           target="orcid.widget"
-           rel="me noopener noreferrer"
-           style="vertical-align: top">
-            <img src="https://orcid.org/sites/default/files/images/orcid_16x16.png"
-                 style="width: 1em; margin-inline-start: 0.5em"
-                 alt="ORCID iD icon" />
-            https://orcid.org/0000-0002-0999-7885
-        </a>
-            <h2>My Research Publications from OrcID</h2>
-            <div id="publications"></div>
+  <div class="page-shell">
+    <div class="hero">
+      <header>
+        <div>
+          <p class="eyebrow">Velkommen til internett</p>
+          <h1>verdens beste side</h1>
+          <p>Forskning, løping, musikk og litt spillkaos samlet på ett sted.</p>
         </div>
-    <script>
-        // Fetch publications from ORCID public API
-        fetch('https://pub.orcid.org/v3.0/0000-0002-0999-7885/works', {
-            headers: {
-                'Accept': 'application/json'
-            }
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);  // This will log the entire response object
+        <a class="game-link" href="tower_defense.html">supergame 3000</a>
+      </header>
 
-                const publicationsDiv = document.getElementById('publications');
-
-                // Check if works are available
-                if (data.group && data.group.length > 0) {
-                    const publications = data.group.map(item => {
-                        const workSummary = item['work-summary'][0];
-                        const title = workSummary.title.title.value;
-                        const url = workSummary['url'] ? workSummary['url'].value : '';
-                        const publicationDate = workSummary['publication-date'] ?
-                            `${workSummary['publication-date'].year.value}-${workSummary['publication-date'].month ? workSummary['publication-date'].month.value.padStart(2, '0') : '01'}` :
-                            'Date not available';
-                        const type = workSummary['work-type'] ? workSummary['work-type'].value : 'Type not available';
-                        const journalName = workSummary['journal-title'] ? workSummary['journal-title'].value : 'Journal name not available';
-                        const publisher = workSummary['publisher'] ? workSummary['publisher'].value : 'Publisher not available';
-                        const abstract = workSummary['abstract'] ? workSummary['abstract'].value : 'Abstract not available';
-                        const contributors = workSummary['contributors'] && workSummary['contributors'].contributor ?
-                            workSummary['contributors'].contributor.map(contributor => contributor['credit-name'].value).join(', ') : 'Contributors not available';
-                        const identifier = workSummary['external-ids'] && workSummary['external-ids']['external-id'] ?
-                            workSummary['external-ids']['external-id'].find(id => id['external-id-type'].value === 'doi')?.value || 'DOI not available' :
-                            'DOI not available';
-
-                        const citation = `<p><a href="${url}" target="_blank">${title}</a><br>Type: ${type}<br>Date: ${publicationDate}<br>Journal: ${journalName}<br>Publisher: ${publisher}<br>DOI: ${identifier}<br>Contributors: ${contributors}<br>Abstract: ${abstract}</p>`;
-                        return citation;
-                    }).join('');
-
-                    publicationsDiv.innerHTML = publications;
-                } else {
-                    publicationsDiv.innerHTML = '<p>No publications found.</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching ORCID data:', error);
-                document.getElementById('publications').innerHTML = '<p>Error loading publications.</p>';
-            });
-    </script>
-
-
-
-
-                <div id="musikk" class="container">
-                    <h2>Musikk</h2>
-                    <p>Jeg lager musikk på hobbynivå. Her er noe fra SoundCloud. </p>
-                    <iframe width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/1614770347&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe><div style="font-size: 10px; color: #cccccc;line-break: anywhere;word-break: normal;overflow: hidden;white-space: nowrap;text-overflow: ellipsis; font-family: Interstate,Lucida Grande,Lucida Sans Unicode,Lucida Sans,Garuda,Verdana,Tahoma,sans-serif;font-weight: 100;"><a href="https://soundcloud.com/ole-aasvik" title="Ole Aasvik" target="_blank" style="color: #cccccc; text-decoration: none;">Ole Aasvik</a> · <a href="https://soundcloud.com/ole-aasvik/sets/human-attrition-1" title="Human Attrition" target="_blank" style="color: #cccccc; text-decoration: none;">Human Attrition</a></div>
-                    <p> <br /> Her er noe fra en fil. </p>
-                    <audio controls>
-                        <source src="C:\Users\ojj\OneDrive - Transportøkonomisk institutt\Desktop\nettside\what was made_ny.mp3" type="audio/mpeg">
-                        Din nettleser støtter ikke lydavspilling.
-                    </audio>
-                </div>
-
-                <div id="kontakt" class="container">
-                    <h2>Kontaktinformasjon</h2>
-                    <p>Du kan kontakte meg via e-post på <a href="mailto:ole.aasvik@toi.no">ole.aasvik@toi.no</a>.</p>
-                    <h2>Contact Me</h2>
-                    <form>
-                        <label for="name">Name:</label>
-                        <input type="text" id="name" name="name" required>
-
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" required>
-
-                        <label for="message">Message:</label>
-                        <textarea id="message" name="message" required></textarea>
-
-                        <button type="submit">Send</button>
-                    </form>
-                </div>
+      <nav aria-label="Hovedmeny">
+        <ul>
+          <li><a href="#home" class="tab-link active-tab" data-tab="home">Hjem</a></li>
+          <li><a href="#trening" class="tab-link" data-tab="trening">Trening</a></li>
+          <li><a href="#forskning" class="tab-link" data-tab="forskning">Forskning</a></li>
+          <li><a href="#musikk" class="tab-link" data-tab="musikk">Musikk</a></li>
+          <li><a href="#kontakt" class="tab-link" data-tab="kontakt">Kontakt</a></li>
+        </ul>
+      </nav>
     </div>
 
+    <main>
+      <section id="home" class="container active">
+        <div class="section-grid">
+          <div>
+            <h2>Om meg</h2>
+            <p>Hei, jeg er en PhD-student basert i Norge. Jeg forsker på delte autonome kjøretøy (SAVs) og offentlig aksept av dem. Mitt forskningsfelt er sosialpsykologi, og jeg jobber ved Transportøkonomisk institutt (TØI).</p>
+            <div class="note-card">
+              <p><strong>Bilde:</strong> Legg <code>meg.jpg</code> i samme GitHub-mappe som <code>index.html</code>. Da vil bildet lastes riktig på nettsiden.</p>
+            </div>
+          </div>
+          <img src="meg.jpg" width="230" height="345" alt="Bilde av Ole Aasvik" class="profile-img" />
+        </div>
+      </section>
 
+      <section id="trening" class="container">
+        <h2>Ukentlig treningsplan</h2>
+        <p>Nedenfor er en ukentlig treningsplan strukturert som en tabell, med variasjoner for hver dag for å tilpasse forskjellige treningsøkter.</p>
+        <div class="table-wrap">
+          <table>
+            <tr>
+              <th>Dag</th>
+              <th>Hovedtreningsøkt</th>
+              <th>Variasjon 1</th>
+              <th>Variasjon 2</th>
+            </tr>
+            <tr>
+              <td>Mandag</td>
+              <td>Hvile eller aktiv restitusjon (kryss-trening)</td>
+              <td>Lett jogg (5-6 km i samtale-tempo)</td>
+              <td>Hvile eller yoga/stretching</td>
+            </tr>
+            <tr>
+              <td>Tirsdag</td>
+              <td>6x800m intervaller @ 5k tempo med 2 min hvile + oppvarming/nedjogg (totalt 8-10 km)</td>
+              <td>8x400m intervaller @ raskere enn 5k tempo med 90s hvile + oppvarming/nedjogg</td>
+              <td>Bakketrening (8x200m oppoverbakke) med jogg ned som restitusjon</td>
+            </tr>
+            <tr>
+              <td>Onsdag</td>
+              <td>Lengre lett jogg (12 km)</td>
+              <td>Lett jogg (8-10 km)</td>
+              <td>Fartlek jogg (10 km med varierte hastigheter)</td>
+            </tr>
+            <tr>
+              <td>Torsdag</td>
+              <td>3x3k @ 4:20-4:30/km med 2-3 min hvile + oppvarming/nedjogg (totalt 12-14 km)</td>
+              <td>Tempoløp (8-10 km @ 4:20-4:30/km tempo) + oppvarming/nedjogg</td>
+              <td>4x2k @ 4:15-4:25/km med 2 min hvile + oppvarming/nedjogg</td>
+            </tr>
+            <tr>
+              <td>Fredag</td>
+              <td>Hvile eller kort restitusjonsjogg (5-6 km)</td>
+              <td>Aktiv restitusjon (svømming, sykling)</td>
+              <td>Hvile eller lett jogg (4-5 km)</td>
+            </tr>
+            <tr>
+              <td>Lørdag</td>
+              <td>Langtur (18 km i lett tempo)</td>
+              <td>Progresjonsløp (start lett, avslutt siste 5k @ HM tempo)</td>
+              <td>Langtur (15-16 km med de siste 3 km @ maraton tempo)</td>
+            </tr>
+            <tr>
+              <td>Søndag</td>
+              <td>Valgfri lett jogg (8 km) eller hvile</td>
+              <td>Hvile eller kryss-trening</td>
+              <td>Lett jogg (6-8 km i veldig avslappet tempo)</td>
+            </tr>
+          </table>
+        </div>
+        <div class="note-card">
+          <h3>Forklaring</h3>
+          <p>Denne planen er allsidig og hjelper deg med å forberede deg til distanser fra 5k til halvmaraton, samtidig som den tilpasser seg dine preferanser for lengre, men færre, lette joggeturer for å sikre balansert trening.</p>
+        </div>
+      </section>
 
+      <section id="forskning" class="container">
+        <h2>Forskning</h2>
+        <p>Jeg forsker på delte selvkjørende kjøretøy og hva som skal til for at folk vil bruke dem.</p>
+        <a class="link-button" id="cy-effective-orcid-url" href="https://orcid.org/0000-0002-0999-7885" target="orcid.widget" rel="me noopener noreferrer">
+          <img src="https://orcid.org/sites/default/files/images/orcid_16x16.png" style="width: 1em;" alt="ORCID iD icon" />
+          ORCID-profil
+        </a>
+        <h3 style="margin-top: 28px;">Publikasjoner fra ORCID</h3>
+        <div id="publications"><p>Laster publikasjoner...</p></div>
+      </section>
 
-    <footer style="background-color: #229891; padding: 10px; text-align: center;">
-        &copy; 2024 Ole Aasvik - Contact: ole.aasvik@toi.no to be ignored for 2-4 months
+      <section id="musikk" class="container">
+        <h2>Musikk</h2>
+        <p>Jeg lager musikk på hobbynivå. Her er noe fra SoundCloud.</p>
+        <iframe width="100%" height="300" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/1614770347&color=%23ff5500&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true&visual=true"></iframe>
+        <div style="font-size: 10px; color: #7b8496; line-break: anywhere; word-break: normal; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 8px;">
+          <a href="https://soundcloud.com/ole-aasvik" title="Ole Aasvik" target="_blank" rel="noopener" style="color: #7b8496; text-decoration: none;">Ole Aasvik</a> ·
+          <a href="https://soundcloud.com/ole-aasvik/sets/human-attrition-1" title="Human Attrition" target="_blank" rel="noopener" style="color: #7b8496; text-decoration: none;">Human Attrition</a>
+        </div>
+        <div class="note-card">
+          <p><strong>Lokal lydfil:</strong> Legg lydfilen i samme mappe som nettsiden og endre filnavnet under ved behov.</p>
+          <audio controls>
+            <source src="what-was-made.mp3" type="audio/mpeg" />
+            Din nettleser støtter ikke lydavspilling.
+          </audio>
+        </div>
+      </section>
+
+      <section id="kontakt" class="container">
+        <h2>Kontaktinformasjon</h2>
+        <p>Du kan kontakte meg via e-post på <a href="mailto:ole.aasvik@toi.no">ole.aasvik@toi.no</a>.</p>
+        <form action="mailto:ole.aasvik@toi.no" method="post" enctype="text/plain">
+          <label for="name">Navn</label>
+          <input type="text" id="name" name="name" required />
+
+          <label for="email">E-post</label>
+          <input type="email" id="email" name="email" required />
+
+          <label for="message">Melding</label>
+          <textarea id="message" name="message" required></textarea>
+
+          <button type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <footer>
+      &copy; 2026 Ole Aasvik · Kontakt: <a href="mailto:ole.aasvik@toi.no">ole.aasvik@toi.no</a>
     </footer>
+  </div>
 
-    <script>
-        function showTab(tabId) {
-            var containers = document.getElementsByClassName('container');
-            for (var i = 0; i < containers.length; i++) {
-                containers[i].classList.remove('active');
-            }
-            document.getElementById(tabId).classList.add('active');
+  <script>
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const sections = document.querySelectorAll('.container');
+
+    function showTab(tabId) {
+      sections.forEach(section => section.classList.toggle('active', section.id === tabId));
+      tabLinks.forEach(link => link.classList.toggle('active-tab', link.dataset.tab === tabId));
+      history.replaceState(null, '', '#' + tabId);
+    }
+
+    tabLinks.forEach(link => {
+      link.addEventListener('click', event => {
+        event.preventDefault();
+        showTab(link.dataset.tab);
+      });
+    });
+
+    const initialTab = window.location.hash.replace('#', '');
+    if (initialTab && document.getElementById(initialTab)) {
+      showTab(initialTab);
+    }
+
+    fetch('https://pub.orcid.org/v3.0/0000-0002-0999-7885/works', {
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(response => response.json())
+      .then(data => {
+        const publicationsDiv = document.getElementById('publications');
+        if (!data.group || data.group.length === 0) {
+          publicationsDiv.innerHTML = '<p>Ingen publikasjoner funnet.</p>';
+          return;
         }
-    </script>
+
+        const publications = data.group.map(item => {
+          const workSummary = item['work-summary'][0];
+          const title = workSummary.title?.title?.value || 'Untitled';
+          const url = workSummary.url?.value || 'https://orcid.org/0000-0002-0999-7885';
+          const year = workSummary['publication-date']?.year?.value || 'Dato ikke tilgjengelig';
+          const month = workSummary['publication-date']?.month?.value;
+          const publicationDate = month ? `${year}-${String(month).padStart(2, '0')}` : year;
+          const type = workSummary['work-type'] || 'Type ikke tilgjengelig';
+          const journalName = workSummary['journal-title']?.value || 'Tidsskrift ikke tilgjengelig';
+          const doi = workSummary['external-ids']?.['external-id']?.find(id => id['external-id-type'] === 'doi')?.['external-id-value'] || 'DOI ikke tilgjengelig';
+
+          return `<p><a href="${url}" target="_blank" rel="noopener"><strong>${title}</strong></a><br>Type: ${type}<br>Dato: ${publicationDate}<br>Tidsskrift: ${journalName}<br>DOI: ${doi}</p>`;
+        }).join('');
+
+        publicationsDiv.innerHTML = publications;
+      })
+      .catch(() => {
+        document.getElementById('publications').innerHTML = '<p>Kunne ikke laste publikasjoner akkurat nå.</p>';
+      });
+  </script>
 </body>
 </html>
