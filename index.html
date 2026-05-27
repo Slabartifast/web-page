@@ -357,6 +357,34 @@
       nav a { padding: 10px 12px; font-size: 0.93rem; }
       .game-frame { min-height: 620px; height: 78vh; }
     }
+    .media-card {
+  margin-top: 22px;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line);
+}
+
+.media-card h3 {
+  margin-bottom: 14px;
+}
+
+.video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #111827;
+}
+
+.video-wrap iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
   </style>
 </head>
 <body>
@@ -477,7 +505,7 @@
       <section id="musikk" class="container">
         <h2>Musikk</h2>
         <p>Jeg kan lage musikk noen ganger. Her er noe fra SoundCloud.</p>
-        
+
 <div class="media-card">
   <h3>Spotify</h3>
   <iframe
