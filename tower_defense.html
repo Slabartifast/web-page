@@ -1235,7 +1235,7 @@ const ENEMY_ART_BANK = createArtBank(Object.fromEntries(
           },
           player: {
             x: activeMap.base.x,
-            y: activeMap.base.y + 150,
+            y: activeMap.base.y,
             radius: 18,
             hp: 150,
             maxHp: 150,
@@ -2776,7 +2776,7 @@ function attemptTowerUpgrade(towerId, key) {
             player.alive = true;
             player.hp = Math.ceil(player.maxHp * 0.68);
             player.x = state.base.x;
-            player.y = state.base.y + 150;
+            player.y = state.base.y;
             player.vx = 0;
             player.vy = 0;
             player.visualAngle = -Math.PI / 2;
@@ -5131,7 +5131,7 @@ function createProceduralMap() {
             },
             player: {
               x: proceduralMap.base.x,
-              y: proceduralMap.base.y + 150,
+              y: proceduralMap.base.y,
               radius: 18,
               hp: 150,
               maxHp: 150,
@@ -6667,7 +6667,7 @@ drawEnemy = function drawEnemyV7(enemy) {
               player.alive = true;
               player.hp = Math.ceil(player.maxHp * 0.68);
               player.x = state.base.x;
-              player.y = state.base.y + 150;
+              player.y = state.base.y;
               player.vx = 0;
               player.vy = 0;
               player.visualAngle = -Math.PI / 2;
@@ -7874,7 +7874,7 @@ function handleTownClick(screenX, screenY) {
               player.alive = true;
               player.hp = Math.ceil(player.maxHp * 0.68);
               player.x = state.base.x;
-              player.y = state.base.y + 150;
+              player.y = state.base.y;
               player.vx = 0;
               player.vy = 0;
               player.visualAngle = -Math.PI / 2;
@@ -9089,7 +9089,7 @@ function handleTownClick(screenX, screenY) {
           const boxX = 16;
           const boxW = 368;
           const boxH = 18 + items.length * 16;
-          const boxY = HEIGHT - 116;
+          const boxY = HEIGHT - 94;
           ctx.save();
           ctx.fillStyle = 'rgba(10, 13, 9, 0.52)';
           ctx.fillRect(boxX, boxY, boxW, boxH);
@@ -9108,25 +9108,7 @@ function handleTownClick(screenX, screenY) {
         }
 
         function drawBottomPhaseStripV10() {
-          if (state.phase === 'start' || state.phase === 'mapselect') return;
-          const y = HEIGHT - 34;
-          ctx.save();
-          ctx.fillStyle = 'rgba(10, 13, 9, 0.76)';
-          ctx.fillRect(12, y, WIDTH - 24, 22);
-          ctx.strokeStyle = 'rgba(131, 153, 110, 0.20)';
-          ctx.strokeRect(12.5, y + 0.5, WIDTH - 25, 21);
-          ctx.fillStyle = '#edf2dd';
-          ctx.font = '700 12px Inter, sans-serif';
-          ctx.textAlign = 'left';
-          let text = '';
-          if (state.phase === 'summary') text = `Dawn summary · click or press Space to continue into the build phase before wave ${Math.min(state.nextWave + 1, waves.length)}`;
-          else if (state.phase === 'build') text = `Day phase before wave ${Math.min(state.nextWave + 1, waves.length)} · click village for town screen · click ground / knight / towers for radial menus`;
-          else if (state.phase === 'briefing') text = `Wave ${state.nextWave + 1} briefing · press Space or click to begin the raid`;
-          else if (state.phase === 'wave') text = `Night raid ${state.activeWave ? state.activeWave.waveNumber : state.nextWave} · ride out for far kills · camps and chokepoints shape the route`;
-          else if (state.phase === 'victory') text = 'Victory · your final score is displayed';
-          else if (state.phase === 'defeat') text = 'Defeat · the village was overrun';
-          ctx.fillText(text, 22, y + 15);
-          ctx.restore();
+          return;
         }
 
         drawHudPanels = function drawHudPanelsV10() {
@@ -11110,7 +11092,7 @@ function handleTownClick(screenX, screenY) {
             state.map.scenery = (state.map.scenery || []).filter((item) => distance(item.x, item.y, check.x, check.y) > state.base.noBuildRadius + 42);
           }
           state.player.x = check.x;
-          state.player.y = clamp(check.y + state.base.noBuildRadius + 34, state.player.radius, WORLD_HEIGHT - state.player.radius);
+          state.player.y = check.y;
           state.player.vx = 0;
           state.player.vy = 0;
           state.player._lastValidX = state.player.x;
@@ -15077,9 +15059,16 @@ function handleTownClick(screenX, screenY) {
           return distance(pointer.screenX, pointer.screenY, menu.centerX, menu.centerY) <= CENTER_CLOSE_RADIUS_V48;
         }
 
-        function closeAndConsumeV48(event) {
-          closeMenu();
-          uiDirty = true;
+        function closeAndConsumeV48(event, consumeOnly = false) {
+          if (!consumeOnly) {
+            const activeMenu = state && state.menu;
+            if (activeMenu && activeMenu.kind === 'build' && activeMenu.buildLayer) {
+              state.menu = makeBuildMenu(activeMenu.anchorX, activeMenu.anchorY, null);
+            } else {
+              closeMenu();
+            }
+            uiDirty = true;
+          }
           suppressClickUntilV48 = performance.now() + 450;
           suppressPointerIdV48 = event && typeof event.pointerId !== 'undefined' ? event.pointerId : suppressPointerIdV48;
           if (event) {
@@ -15117,7 +15106,7 @@ function handleTownClick(screenX, screenY) {
         document.addEventListener('pointerup', (event) => {
           if (!isCanvasEventV48(event)) return;
           if (suppressPointerIdV48 !== null && event.pointerId === suppressPointerIdV48 && performance.now() <= suppressClickUntilV48) {
-            closeAndConsumeV48(event);
+            closeAndConsumeV48(event, true);
             centerPointerDownV48 = null;
             return;
           }
@@ -15798,6 +15787,2886 @@ function handleTownClick(screenX, screenY) {
           note: 'Joystick is visible in fullscreen and world clicks open radial menus without reintroducing duplicate action taps.'
         };
       })();
+
+
+      // === v64: requested balance, information, research, minimap, repair, and input fixes ===
+      (function applyRequestedChangesV64() {
+        if (window.__mountedVillageDefenseV64 && window.__mountedVillageDefenseV64.applied) return;
+
+        const V64 = {
+          duplicateMs: 520,
+          postTransitionClickGuardMs: 700,
+          horseBaseSpeed: 178,
+          horseTrainingSpeedGain: 96,
+          horseTrainingChargeGain: 18,
+          cavalryResearchSpeedGain: 42,
+          towerLanternCost: 6,
+          research: {
+            fletching: {
+              key: 'fletching', label: 'Fletching', cost: 4, icon: 'research', repeatable: false,
+              short: 'Tower damage, reload, and range improve.',
+              detail: 'Adds one workshop level. Current effect per level is about +12% tower damage, +8% tower fire rate, and +8 tower range.'
+            },
+            cavalry: {
+              key: 'cavalry', label: 'Cavalry tack', cost: 5, icon: 'horse', repeatable: false,
+              short: 'Knight speed and charge power improve.',
+              detail: 'Adds a permanent speed bonus and extra charge impact. This stacks with Horse training.'
+            },
+            torchlight: {
+              key: 'torchlight', label: 'Knight torch', cost: 4, icon: 'torch', repeatable: false,
+              short: 'The knight carries a night light.',
+              detail: 'During waves the knight reveals a small area around himself, making night movement and kiting safer.'
+            },
+            masonry: {
+              key: 'masonry', label: 'Masonry', cost: 5, icon: 'stone', repeatable: false,
+              short: 'More base health and stronger palisade.',
+              detail: 'Adds +120 maximum base HP, repairs 120 base HP, and adds one visual wall level to the village.'
+            },
+            logistics: {
+              key: 'logistics', label: 'Logistics', cost: 5, icon: 'wood', repeatable: true,
+              short: '+100 wood, +100 stone, +100 food.',
+              detail: 'Repeatable. Each purchase immediately grants 100 wood, 100 stone, and 100 food.'
+            },
+            cartography: {
+              key: 'cartography', label: 'Cartography', cost: 5, icon: 'map', repeatable: false,
+              short: 'Unlocks the minimap.',
+              detail: 'Shows the minimap, enemy positions, towers, torches, the town, the knight, and the current camera view.'
+            },
+            towerLanterns: {
+              key: 'towerLanterns', label: 'Tower lanterns', cost: 6, icon: 'torch', repeatable: false,
+              short: 'Towers shine during night waves.',
+              detail: 'Every living tower becomes a light source at night, similar to the Knight torch but fixed in place.'
+            },
+            deconstruction: {
+              key: 'deconstruction', label: 'Deconstruction', cost: 8, icon: 'wood', repeatable: false,
+              short: 'Removing buildables refunds 90%.',
+              detail: 'Removing towers, walls, and gates refunds 90% of their original wood and stone build cost instead of the older 50% salvage.'
+            }
+          },
+          futureResearchIdeas: [
+            'Granaries', 'Patrol routes', 'Signal horns', 'Sapper training', 'Veterinary care',
+            'Iron arrowheads', 'Deep quarrying', 'Militia drills', 'Watchtowers', 'Paved roads'
+          ]
+        };
+
+        let suppressCanvasBuildClickUntilV64 = 0;
+        let lastCostlyActionV64 = { key: '', time: 0 };
+        let previousPhaseV64 = state ? state.phase : 'start';
+        let previousPlayerAliveV64 = state && state.player ? !!state.player.alive : true;
+
+        function nowV64() {
+          return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        }
+
+        function pointInRectV64(px, py, rect) {
+          return !!rect && px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
+        }
+
+        function roundRectPathV64(x, y, w, h, r) {
+          const radius = Math.max(0, Math.min(r || 0, Math.min(w, h) / 2));
+          ctx.beginPath();
+          ctx.moveTo(x + radius, y);
+          ctx.lineTo(x + w - radius, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+          ctx.lineTo(x + w, y + h - radius);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+          ctx.lineTo(x + radius, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+          ctx.lineTo(x, y + radius);
+          ctx.quadraticCurveTo(x, y, x + radius, y);
+          ctx.closePath();
+        }
+
+        function fillWrappedTextV64(text, x, y, maxW, lineH, maxLines) {
+          const words = String(text || '').split(/\s+/).filter(Boolean);
+          let line = '';
+          let lines = 0;
+          for (let i = 0; i < words.length; i += 1) {
+            const test = line ? line + ' ' + words[i] : words[i];
+            if (ctx.measureText(test).width > maxW && line) {
+              ctx.fillText(line, x, y + lines * lineH);
+              lines += 1;
+              line = words[i];
+              if (maxLines && lines >= maxLines) return lines;
+            } else {
+              line = test;
+            }
+          }
+          if (line && (!maxLines || lines < maxLines)) {
+            ctx.fillText(line, x, y + lines * lineH);
+            lines += 1;
+          }
+          return lines;
+        }
+
+        function drawInfoIconV64(rect, active) {
+          ctx.save();
+          ctx.globalAlpha = active ? 1 : 0.92;
+          ctx.fillStyle = active ? 'rgba(240,205,115,0.96)' : 'rgba(22,31,24,0.96)';
+          ctx.strokeStyle = active ? 'rgba(255,255,255,0.28)' : 'rgba(240,205,115,0.42)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(rect.x + rect.w / 2, rect.y + rect.h / 2, Math.min(rect.w, rect.h) / 2, 0, TAU);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = active ? '#10160d' : '#f0cd73';
+          ctx.font = '900 13px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('i', rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5);
+          ctx.restore();
+        }
+
+        function drawBubbleV64(x, y, w, title, text, opts = {}) {
+          const h = opts.h || 88;
+          ctx.save();
+          roundRectPathV64(x, y, w, h, 13);
+          ctx.fillStyle = opts.fill || 'rgba(9, 13, 8, 0.96)';
+          ctx.fill();
+          ctx.strokeStyle = opts.stroke || 'rgba(240,205,115,0.30)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 14px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(title, x + 14, y + 22);
+          ctx.fillStyle = '#b8c3a3';
+          ctx.font = '12px Inter, sans-serif';
+          fillWrappedTextV64(text, x + 14, y + 43, w - 28, 15, opts.lines || 3);
+          ctx.restore();
+        }
+
+        function sanitizeHighScoreNameV64(value) {
+          return String(value || 'PLAYER').toUpperCase().replace(/[^A-Z0-9 _-]/g, '').slice(0, 10) || 'PLAYER';
+        }
+
+        function loadHighScoresV64() {
+          try {
+            if (window.__mountedVillageDefenseV41 && typeof window.__mountedVillageDefenseV41.loadHighScores === 'function') {
+              return window.__mountedVillageDefenseV41.loadHighScores() || [];
+            }
+          } catch (err) {}
+          try {
+            const raw = localStorage.getItem('mountedVillageDefenseSurvivalHighScoresV41');
+            const parsed = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(parsed)) return [];
+            return parsed.map((entry) => ({
+              name: sanitizeHighScoreNameV64(entry.name),
+              wave: Math.max(0, Math.round(Number(entry.wave) || 0)),
+              difficulty: DIFFICULTIES[entry.difficulty] ? entry.difficulty : 'normal',
+              date: Number(entry.date) || 0
+            })).filter((entry) => entry.wave > 0).sort((a, b) => (b.wave - a.wave) || (b.date - a.date)).slice(0, 10);
+          } catch (err) {
+            return [];
+          }
+        }
+
+        function difficultyLabelV64(key) {
+          return DIFFICULTIES[key] ? DIFFICULTIES[key].label : 'Normal';
+        }
+
+        function drawHighScoreBoardV64(x, y, w, h, title) {
+          const scores = loadHighScoresV64();
+          ctx.save();
+          roundRectPathV64(x, y, w, h, 14);
+          ctx.fillStyle = 'rgba(10, 14, 9, 0.88)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(240,205,115,0.32)';
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 17px Inter, sans-serif';
+          ctx.fillText(title || 'High score board', x + 18, y + 28);
+          ctx.fillStyle = '#b8c3a3';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.fillText('Saved locally in this browser', x + 18, y + 47);
+          if (!scores.length) {
+            ctx.fillStyle = '#b8c3a3';
+            ctx.font = '14px Inter, sans-serif';
+            ctx.fillText('No scores saved yet.', x + 18, y + 80);
+            ctx.restore();
+            return;
+          }
+          const rowTop = y + 74;
+          const visible = Math.min(scores.length, 10);
+          const rowH = Math.max(18, Math.min(24, (h - 88) / Math.max(1, visible)));
+          ctx.font = '13px Inter, sans-serif';
+          scores.slice(0, 10).forEach((entry, index) => {
+            const ry = rowTop + index * rowH;
+            if (ry > y + h - 12) return;
+            ctx.fillStyle = index % 2 === 0 ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)';
+            ctx.fillRect(x + 12, ry - 14, w - 24, rowH - 2);
+            ctx.fillStyle = index === 0 ? '#f0cd73' : '#edf2dd';
+            ctx.textAlign = 'left';
+            ctx.fillText(String(index + 1) + '.', x + 18, ry);
+            ctx.fillText(entry.name, x + 46, ry);
+            ctx.textAlign = 'right';
+            ctx.fillText('Wave ' + entry.wave, x + w - 92, ry);
+            ctx.fillStyle = '#b8c3a3';
+            ctx.fillText(difficultyLabelV64(entry.difficulty), x + w - 18, ry);
+          });
+          ctx.restore();
+        }
+
+        function ensureV64State() {
+          if (!state) return;
+          if (!state.v64) state.v64 = {};
+          if (!state.v64.info) state.v64.info = { village: null, research: null, food: false };
+          if (!state.v64.researchRepeat) state.v64.researchRepeat = { logistics: 0 };
+          if (!state.research || typeof state.research !== 'object') state.research = {};
+          ['cartography', 'towerLanterns', 'deconstruction'].forEach((key) => {
+            if (typeof state.research[key] !== 'boolean') state.research[key] = false;
+          });
+          if (typeof state.v64.researchRepeat.logistics !== 'number') state.v64.researchRepeat.logistics = 0;
+          state.researchCatalogV64 = V64.research;
+          state.researchCatalog = { ...(state.researchCatalog || {}), ...V64.research };
+          if (state.research && !state.research.cartography) state.minimapCollapsed = false;
+        }
+
+        function updateHorseTrainingDefinitionV64() {
+          const speedDef = PLAYER_UPGRADES.find((item) => item.key === 'speed');
+          if (speedDef && !speedDef._v64Updated) {
+            speedDef.description = '+96 effective top speed and much stronger charge impacts.';
+            speedDef.apply = (s) => {
+              s.upgrades.player.speed += 1;
+              s.player.maxSpeed += V64.horseTrainingSpeedGain;
+              s.player.chargeBase = (s.player.chargeBase || 30) + V64.horseTrainingChargeGain;
+              s.player.chargeThreshold = Math.max(116, (s.player.chargeThreshold || 150) + 14);
+              logMessage('Horse training now gives a much larger speed and charge boost.', 'good');
+            };
+            speedDef._v64Updated = true;
+          }
+        }
+
+        function targetKnightMaxSpeedV64() {
+          const speedLevel = Math.max(0, state.upgrades && state.upgrades.player ? (state.upgrades.player.speed || 0) : 0);
+          const cavalry = state.research && state.research.cavalry ? V64.cavalryResearchSpeedGain : 0;
+          return V64.horseBaseSpeed + speedLevel * V64.horseTrainingSpeedGain + cavalry;
+        }
+
+        function capKnightSpeedV64() {
+          if (!state || !state.player) return;
+          const p = state.player;
+          const target = targetKnightMaxSpeedV64();
+          p.maxSpeed = target;
+          p.chargeThreshold = Math.max(116, 0.72 * target);
+          p.accel = 760 + ((state.upgrades.player && state.upgrades.player.speed) || 0) * 110 + ((state.research && state.research.cavalry) ? 55 : 0);
+          p.chargeBase = 30 + (state.research && state.research.cavalry ? 12 : 0) + (state.upgrades.player.speed || 0) * V64.horseTrainingChargeGain;
+          const speed = Math.hypot(p.vx || 0, p.vy || 0);
+          if (speed > target) {
+            const scale = target / Math.max(1, speed);
+            p.vx *= scale;
+            p.vy *= scale;
+          }
+        }
+
+        function shouldBlockDuplicateActionV64(key) {
+          const t = nowV64();
+          if (lastCostlyActionV64.key === key && t - lastCostlyActionV64.time < V64.duplicateMs) return true;
+          lastCostlyActionV64 = { key, time: t };
+          return false;
+        }
+
+        function markBuildClickGuardV64() {
+          suppressCanvasBuildClickUntilV64 = Math.max(suppressCanvasBuildClickUntilV64, nowV64() + V64.postTransitionClickGuardMs);
+        }
+
+        function townLayoutV64() {
+          const margin = 6;
+          const panelW = Math.min(1108, WIDTH - margin * 2);
+          const panelH = Math.min(492, HEIGHT - margin * 2);
+          const panelX = WIDTH / 2 - panelW / 2;
+          const panelY = HEIGHT / 2 - panelH / 2;
+          const innerX = panelX + 22;
+          const innerW = panelW - 44;
+          const topY = panelY + 76;
+          const close = { x: panelX + panelW - 106, y: panelY + 18, w: 82, h: 34 };
+          const projection = { x: innerX, y: topY, w: innerW, h: 74 };
+          const columnsY = topY + 90;
+          const columnsH = panelY + panelH - columnsY - 58;
+          const gap = 14;
+          const colW = Math.floor((innerW - gap * 2) / 3);
+          const jobs = { x: innerX, y: columnsY, w: colW, h: columnsH };
+          const followers = { x: innerX + colW + gap, y: columnsY, w: colW, h: columnsH };
+          const upgrades = { x: innerX + (colW + gap) * 2, y: columnsY, w: innerW - (colW + gap) * 2, h: columnsH };
+          const hireButtons = [
+            { key: 'archer', label: 'Archer', cost: 92, rect: { x: followers.x + 14, y: followers.y + 52, w: followers.w - 28, h: 56 } },
+            { key: 'swordsman', label: 'Swordsman', cost: 84, rect: { x: followers.x + 14, y: followers.y + 118, w: followers.w - 28, h: 56 } }
+          ];
+          const upgradeButtons = VILLAGE_UPGRADES.map((upgrade, index) => ({
+            key: upgrade.key,
+            label: upgrade.label,
+            rect: { x: upgrades.x + 14, y: upgrades.y + 52 + index * 42, w: upgrades.w - 28, h: 36 },
+            info: { x: upgrades.x + 26 + Math.min(upgrades.w - 124, Math.max(88, Math.round((upgrade.label || '').length * 7.4))), y: upgrades.y + 60 + index * 42, w: 20, h: 20 }
+          }));
+          return { panelX, panelY, panelW, panelH, jobs, followers, upgrades, hireButtons, upgradeButtons, projection, close };
+        }
+
+        function supportCountsV64() {
+          const counts = { archer: 0, swordsman: 0 };
+          (state.supportUnits || []).forEach((unit) => {
+            if (unit && counts[unit.type] !== undefined) counts[unit.type] += 1;
+          });
+          return counts;
+        }
+
+        function drawTownInfoOverlayV64() {
+          if (!state || !state.townOpen || state.v33ResearchOpen || state.phase !== 'build') return;
+          ensureV64State();
+          const layout = townLayoutV64();
+          const counts = supportCountsV64();
+          ctx.save();
+          layout.hireButtons.forEach((button) => {
+            const count = counts[button.key] || 0;
+            const rect = { x: button.rect.x + button.rect.w - 58, y: button.rect.y + 8, w: 46, h: 22 };
+            roundRectPathV64(rect.x, rect.y, rect.w, rect.h, 10);
+            ctx.fillStyle = 'rgba(8, 12, 7, 0.72)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(240,205,115,0.24)';
+            ctx.stroke();
+            ctx.fillStyle = '#f0cd73';
+            ctx.font = '900 12px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('x' + count, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5);
+          });
+          layout.upgradeButtons.forEach((button) => {
+            const upgrade = VILLAGE_UPGRADES.find((entry) => entry.key === button.key);
+            const level = button.key === 'repair' ? 0 : ((state.upgrades.village && state.upgrades.village[button.key]) || 0);
+            drawInfoIconV64(button.info, state.v64.info.village === button.key);
+            if (button.key !== 'repair') {
+              const pill = { x: button.rect.x + button.rect.w - 58, y: button.rect.y + 7, w: 46, h: 22 };
+              roundRectPathV64(pill.x, pill.y, pill.w, pill.h, 10);
+              ctx.fillStyle = 'rgba(8, 12, 7, 0.72)';
+              ctx.fill();
+              ctx.strokeStyle = 'rgba(240,205,115,0.24)';
+              ctx.stroke();
+              ctx.fillStyle = '#f0cd73';
+              ctx.font = '900 11px Inter, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('Lv ' + level, pill.x + pill.w / 2, pill.y + pill.h / 2 + 0.5);
+            }
+            if (state.v64.info.village === button.key && upgrade) {
+              const text = (button.key === 'archers')
+                ? 'Each level adds one town arrow per village volley. Current level ' + level + ' means up to ' + level + ' simultaneous town arrows.'
+                : upgrade.description + (button.key !== 'repair' ? ' Current level ' + level + '.' : '');
+              drawBubbleV64(layout.upgrades.x - 18, Math.max(layout.upgrades.y + 4, button.rect.y - 92), Math.min(360, layout.upgrades.w + 18), upgrade.label, text, { h: 82, lines: 3 });
+            }
+          });
+          ctx.restore();
+        }
+
+        function topFoodInfoRectV64() {
+          if (!state || !state.townOpen || state.v33ResearchOpen) return { x: -1000, y: -1000, w: 20, h: 20 };
+          const layout = townLayoutV64();
+          const chipW = Math.floor((layout.projection.w - 28) / 7);
+          return { x: layout.projection.x + 14 + chipW * 3 + 88, y: layout.projection.y + 21, w: 20, h: 20 };
+        }
+
+        function drawFoodInfoV64() {
+          if (!state || !state.townOpen || state.v33ResearchOpen || state.phase !== 'build') return;
+          ensureV64State();
+          const rect = topFoodInfoRectV64();
+          ctx.save();
+          drawInfoIconV64(rect, !!state.v64.info.food);
+          if (state.v64.info.food) {
+            const food = Math.max(0, Math.floor(state.food || 0));
+            const births = Math.floor(food / 60);
+            const text = 'Villagers are born automatically at dawn from stored food. Every full 60 food can produce one villager: 60, 120, 180, and so on. Current stored food could support ' + births + ' birth' + (births === 1 ? '' : 's') + ' if it remains after upkeep.';
+            const layout = townLayoutV64();
+            drawBubbleV64(Math.min(WIDTH - 446, layout.projection.x + 360), layout.projection.y + 72, 420, 'Food and births', text, { h: 92, lines: 4 });
+          }
+          ctx.restore();
+        }
+
+        function researchEntriesV64() {
+          return ['fletching', 'cavalry', 'torchlight', 'masonry', 'logistics', 'cartography', 'towerLanterns', 'deconstruction'].map((key) => V64.research[key]);
+        }
+
+        function isResearchUnlockedV64(key) {
+          if (key === 'logistics') return false;
+          return !!(state.research && state.research[key]);
+        }
+
+        function researchCountLabelV64(key) {
+          if (key === 'logistics') return 'Used x' + ((state.v64 && state.v64.researchRepeat && state.v64.researchRepeat.logistics) || 0);
+          return isResearchUnlockedV64(key) ? 'Active' : 'Locked';
+        }
+
+        function applyResearchV64(key) {
+          ensureV64State();
+          const def = V64.research[key];
+          if (!def) return false;
+          if (!def.repeatable && isResearchUnlockedV64(key)) {
+            logMessage(def.label + ' is already researched.', 'bad');
+            return false;
+          }
+          if ((state.researchResource || 0) < def.cost) {
+            logMessage('Need ' + def.cost + ' research for ' + def.label + '.', 'bad');
+            return false;
+          }
+          state.researchResource -= def.cost;
+          if (key === 'fletching') {
+            state.research.fletching = true;
+            state.base.workshopLevel = Math.max(state.base.workshopLevel || 0, (state.base.workshopLevel || 0) + 1);
+          } else if (key === 'cavalry') {
+            state.research.cavalry = true;
+            state.player.maxSpeed += V64.cavalryResearchSpeedGain;
+            state.player.chargeBase = (state.player.chargeBase || 30) + 12;
+          } else if (key === 'torchlight') {
+            state.research.torchlight = true;
+          } else if (key === 'masonry') {
+            state.research.masonry = true;
+            state.base.maxHp += 120;
+            state.base.hp = Math.min(state.base.maxHp, state.base.hp + 120);
+            state.base.wallLevel = Math.max(state.base.wallLevel || 0, (state.base.wallLevel || 0) + 1);
+          } else if (key === 'logistics') {
+            state.wood = (state.wood || 0) + 100;
+            state.stone = (state.stone || 0) + 100;
+            state.food = (state.food || 0) + 100;
+            state.v64.researchRepeat.logistics += 1;
+          } else if (key === 'cartography') {
+            state.research.cartography = true;
+            state.minimapCollapsed = false;
+          } else if (key === 'towerLanterns') {
+            state.research.towerLanterns = true;
+          } else if (key === 'deconstruction') {
+            state.research.deconstruction = true;
+          }
+          capKnightSpeedV64();
+          createBanner(def.label + ' researched', 'rgba(121, 201, 140, 0.55)');
+          logMessage(def.label + ' researched.', 'good');
+          uiDirty = true;
+          return true;
+        }
+
+        function researchLayoutV64() {
+          const w = Math.min(900, WIDTH - 44);
+          const h = Math.min(560, HEIGHT - 44);
+          const x = WIDTH / 2 - w / 2;
+          const y = HEIGHT / 2 - h / 2;
+          const close = { x: x + w - 96, y: y + h - 48, w: 72, h: 32, key: 'close' };
+          const cardGap = 10;
+          const colGap = 16;
+          const top = y + 76;
+          const cardW = (w - 56 - colGap) / 2;
+          const cardH = Math.min(76, (h - 146 - cardGap * 3) / 4);
+          const cards = researchEntriesV64().map((def, index) => {
+            const col = index % 2;
+            const row = Math.floor(index / 2);
+            const rect = { x: x + 24 + col * (cardW + colGap), y: top + row * (cardH + cardGap), w: cardW, h: cardH, key: def.key };
+            rect.info = { x: rect.x + rect.w - 28, y: rect.y + 10, w: 20, h: 20, key: def.key };
+            return { def, rect };
+          });
+          return { x, y, w, h, close, cards };
+        }
+
+        function drawResearchOverlayV64() {
+          if (!state || !state.v33ResearchOpen) return;
+          ensureV64State();
+          const layout = researchLayoutV64();
+          if (state.v33 && state.v33.ui) state.v33.ui.researchButtons = [];
+          state.v64.researchButtons = layout.cards.map((entry) => ({ key: entry.def.key, rect: entry.rect, info: entry.rect.info })).concat([{ key: 'close', rect: layout.close }]);
+          ctx.save();
+          ctx.fillStyle = 'rgba(4, 7, 8, 0.86)';
+          ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          roundRectPathV64(layout.x, layout.y, layout.w, layout.h, 18);
+          ctx.fillStyle = 'rgba(16, 24, 18, 0.995)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(147, 201, 255, 0.34)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 25px Inter, sans-serif';
+          ctx.fillText('Research tree', layout.x + 26, layout.y + 36);
+          ctx.fillStyle = '#9fd1ff';
+          ctx.font = '900 18px Inter, sans-serif';
+          ctx.fillText(Math.round(state.researchResource || 0) + ' research available', layout.x + layout.w - 260, layout.y + 36);
+          ctx.fillStyle = '#b8c3a3';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.fillText('Tap a card to research. Tap an info marker for exact effects.', layout.x + 26, layout.y + 58);
+
+          layout.cards.forEach(({ def, rect }) => {
+            const unlocked = isResearchUnlockedV64(def.key);
+            const affordable = (state.researchResource || 0) >= def.cost;
+            const repeatCount = def.key === 'logistics' ? ((state.v64.researchRepeat && state.v64.researchRepeat.logistics) || 0) : 0;
+            ctx.save();
+            roundRectPathV64(rect.x, rect.y, rect.w, rect.h, 13);
+            ctx.fillStyle = unlocked ? 'rgba(36, 73, 38, 0.93)' : affordable ? 'rgba(25, 39, 28, 0.96)' : 'rgba(18, 24, 18, 0.72)';
+            ctx.fill();
+            ctx.strokeStyle = unlocked ? 'rgba(121, 201, 140, 0.42)' : affordable ? 'rgba(147, 201, 255, 0.34)' : 'rgba(131,153,110,0.14)';
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+            ctx.fillStyle = unlocked ? '#d5efd8' : affordable ? '#edf2dd' : '#87917f';
+            ctx.font = '900 14px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(def.label + (repeatCount ? ' x' + repeatCount : ''), rect.x + 14, rect.y + 23);
+            ctx.font = '800 12px Inter, sans-serif';
+            ctx.fillStyle = unlocked ? '#9edcab' : '#9fd1ff';
+            ctx.fillText((def.repeatable ? def.cost + ' research, repeatable' : (unlocked ? 'Active' : def.cost + ' research')), rect.x + 14, rect.y + 42);
+            ctx.font = '11px Inter, sans-serif';
+            ctx.fillStyle = '#b8c3a3';
+            fillWrappedTextV64(def.short, rect.x + 14, rect.y + 60, rect.w - 46, 13, 1);
+            drawInfoIconV64(rect.info, state.v64.info.research === def.key);
+            ctx.restore();
+          });
+
+          if (state.v64.info.research && V64.research[state.v64.info.research]) {
+            const def = V64.research[state.v64.info.research];
+            drawBubbleV64(layout.x + 24, layout.y + layout.h - 92, layout.w - 126, def.label, def.detail, { h: 72, lines: 2, stroke: 'rgba(147,201,255,0.36)' });
+          } else {
+            ctx.fillStyle = '#b8c3a3';
+            ctx.font = '12px Inter, sans-serif';
+            ctx.fillText('Logistics can be researched repeatedly. Cartography unlocks the minimap.', layout.x + 26, layout.y + layout.h - 28);
+          }
+
+          roundRectPathV64(layout.close.x, layout.close.y, layout.close.w, layout.close.h, 10);
+          ctx.fillStyle = 'rgba(24,33,20,0.94)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(131,153,110,0.30)';
+          ctx.stroke();
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 13px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Close', layout.close.x + layout.close.w / 2, layout.close.y + layout.close.h / 2 + 1);
+          ctx.restore();
+        }
+
+        function minimapExpandedRectV64() {
+          const w = 214;
+          const h = 146;
+          return { x: WIDTH - w - 14, y: 90, w, h };
+        }
+
+        function drawLockedMinimapV64() {
+          if (!state || state.phase === 'start' || state.phase === 'mapselect' || state.townOpen || state.v33ResearchOpen) return;
+          ensureV64State();
+          if (state.research && state.research.cartography) return;
+          state.minimapCollapsed = true;
+          const box = { x: WIDTH - 162, y: 90, w: 148, h: 42 };
+          ctx.save();
+          roundRectPathV64(box.x, box.y, box.w, box.h, 10);
+          ctx.fillStyle = 'rgba(5, 8, 6, 0.88)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(240,205,115,0.30)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#f0cd73';
+          ctx.font = '900 12px Inter, sans-serif';
+          ctx.fillText('Map locked', box.x + 12, box.y + 17);
+          ctx.fillStyle = '#b8c3a3';
+          ctx.font = '11px Inter, sans-serif';
+          ctx.fillText('Cartography: 5 research', box.x + 12, box.y + 31);
+          ctx.restore();
+        }
+
+        function drawTowerLanternGlowV64() {
+          if (!state || state.phase !== 'wave' || !(state.research && state.research.towerLanterns)) return;
+          const towers = (state.towers || []).filter((tower) => tower && (tower.hp === undefined || tower.hp > 0));
+          if (!towers.length) return;
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          towers.forEach((tower, index) => {
+            const s = worldToScreen(tower.x, tower.y);
+            const r = tower.type === 'sniper' ? 104 : tower.type === 'ballista' ? 94 : 84;
+            if (s.x < -r || s.x > WIDTH + r || s.y < -r || s.y > HEIGHT + r) return;
+            const pulse = 1 + Math.sin(performance.now() * 0.012 + index * 1.8) * 0.05;
+            const grad = ctx.createRadialGradient(s.x, s.y, 4, s.x, s.y, r * pulse);
+            grad.addColorStop(0, 'rgba(255, 226, 144, 0.12)');
+            grad.addColorStop(0.34, 'rgba(255, 164, 70, 0.035)');
+            grad.addColorStop(1, 'rgba(255, 164, 70, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, r * pulse, 0, TAU);
+            ctx.fill();
+          });
+          ctx.restore();
+        }
+
+        function coverBuildPhaseFooterTextV64() {
+          return;
+        }
+
+        function liveRepairablesV64() {
+          const items = [];
+          (state.barriers || []).forEach((b) => {
+            if (b && b.hp > 0 && Number.isFinite(b.maxHp) && b.hp < b.maxHp) items.push(b);
+          });
+          (state.towers || []).forEach((t) => {
+            if (!t) return;
+            const defHp = t.type === 'ballista' ? 205 : t.type === 'sniper' ? 125 : 145;
+            if (!Number.isFinite(t.maxHp) || t.maxHp <= 0) t.maxHp = defHp;
+            if (!Number.isFinite(t.hp)) t.hp = t.maxHp;
+            if (t.hp > 0 && t.hp < t.maxHp) items.push(t);
+          });
+          (state.torches || []).forEach((torch) => {
+            if (torch && torch.hp > 0 && Number.isFinite(torch.maxHp) && torch.hp < torch.maxHp) items.push(torch);
+          });
+          const uni = state.university;
+          if (uni && uni.hp > 0 && Number.isFinite(uni.maxHp) && uni.hp < uni.maxHp) items.push(uni);
+          return items;
+        }
+
+        function distributeRepairEvenlyV64(pool) {
+          let remaining = Math.max(0, pool || 0);
+          let items = liveRepairablesV64();
+          let repaired = 0;
+          while (remaining > 0.01 && items.length) {
+            const share = remaining / items.length;
+            const next = [];
+            let spent = 0;
+            items.forEach((item) => {
+              const need = Math.max(0, item.maxHp - item.hp);
+              const amount = Math.min(need, share);
+              item.hp += amount;
+              spent += amount;
+              repaired += amount;
+              if (item.hp < item.maxHp - 0.01) next.push(item);
+            });
+            if (spent <= 0.01) break;
+            remaining -= spent;
+            items = next;
+          }
+          const rounded = Math.round(repaired);
+          if (rounded > 0) {
+            logMessage('Repairers split ' + rounded + ' HP across damaged buildables.', 'good');
+            uiDirty = true;
+          }
+          return rounded;
+        }
+
+        function refundBuildCostV64(cost) {
+          const rate = state.research && state.research.deconstruction ? 0.9 : 0.5;
+          return {
+            wood: Math.max(0, Math.ceil((cost.wood || 0) * rate)),
+            stone: Math.max(0, Math.ceil((cost.stone || 0) * rate))
+          };
+        }
+
+        function demolishBarrierWithV64(barrier) {
+          if (!barrier || barrier.hp <= 0) return false;
+          const buildCost = BUILD_COSTS.barrier[barrier.kind] || { wood: 0, stone: 0 };
+          const refund = refundBuildCostV64(buildCost);
+          state.barriers = (state.barriers || []).filter((entry) => entry !== barrier && entry.id !== barrier.id);
+          state.wood = (state.wood || 0) + refund.wood;
+          state.stone = (state.stone || 0) + refund.stone;
+          createRing(barrier.x, barrier.y, 'rgba(214, 190, 142, 0.48)', 8, 34, 0.24, 3);
+          createFloater('+' + refund.wood + 'w +' + refund.stone + 's', barrier.x, barrier.y - 24, '#f3e2b2', 13);
+          closeMenu();
+          if (typeof rebuildRuntimeMap === 'function') rebuildRuntimeMap(true);
+          logMessage((barrier.kind === 'gate' ? 'Gate' : 'Wall') + ' removed and salvaged at ' + (state.research.deconstruction ? '90%' : '50%') + '.', 'good');
+          uiDirty = true;
+          return true;
+        }
+
+        function getBuildOptionsForLayerV64(x, y, layer) {
+          const all = getBuildMenuOptionsBaseV64(x, y) || [];
+          const towerKeys = new Set(['archer', 'ballista', 'sniper']);
+          const supportKeys = new Set(['wall', 'gate', 'torch', 'university']);
+          if (layer === 'towers') return all.filter((option) => towerKeys.has(option.key));
+          if (layer === 'support') return all.filter((option) => supportKeys.has(option.key));
+          return all;
+        }
+
+        const getBuildMenuOptionsBaseV64 = getBuildMenuOptions;
+        getBuildMenuOptions = function getBuildMenuOptionsLayeredV64(x, y) {
+          if (state && state.menu && state.menu.kind === 'build' && state.menu.buildLayer) {
+            return getBuildOptionsForLayerV64(x, y, state.menu.buildLayer);
+          }
+          return getBuildMenuOptionsBaseV64(x, y);
+        };
+
+        const makeBuildMenuBaseV64 = makeBuildMenu;
+        makeBuildMenu = function makeBuildMenuLayeredV64(x, y, layer) {
+          if (!layer) {
+            return {
+              kind: 'build',
+              title: 'Build',
+              subtitle: 'Choose a category.',
+              buildLayer: null,
+              anchorX: x,
+              anchorY: y,
+              options: [
+                { key: 'cat_towers', label: 'Towers', cost: '', detail: 'Archer, Ballista, and Sniper towers.', disabled: false, accent: '#dce8bf', tag: 'tower' },
+                { key: 'cat_support', label: 'Support', cost: '', detail: 'Walls, gates, torches, and the University.', disabled: false, accent: '#ffb04a', tag: 'support' }
+              ]
+            };
+          }
+          const options = getBuildOptionsForLayerV64(x, y, layer);
+          options.push({ key: 'cat_back', label: 'Back', cost: '', detail: 'Return to build categories.', disabled: false, accent: '#b8c3a3', tag: 'back' });
+          return {
+            kind: 'build',
+            title: layer === 'towers' ? 'Towers' : 'Support',
+            subtitle: layer === 'towers' ? 'Choose a tower for this spot.' : 'Choose a support buildable.',
+            buildLayer: layer,
+            anchorX: x,
+            anchorY: y,
+            options
+          };
+        };
+
+        const rebuildMenuBaseV64 = rebuildMenu;
+        rebuildMenu = function rebuildMenuV64(menu) {
+          if (menu && menu.kind === 'build') return makeBuildMenu(menu.anchorX, menu.anchorY, menu.buildLayer || null);
+          return rebuildMenuBaseV64(menu);
+        };
+
+        const handleMenuSelectionBaseV64 = handleMenuSelection;
+        handleMenuSelection = function handleMenuSelectionV64(option) {
+          if (!state || !state.menu || !option) return handleMenuSelectionBaseV64(option);
+          const menu = state.menu;
+          if (menu.kind === 'build' && option.key === 'cat_towers') {
+            state.menu = makeBuildMenu(menu.anchorX, menu.anchorY, 'towers');
+            uiDirty = true;
+            return;
+          }
+          if (menu.kind === 'build' && option.key === 'cat_support') {
+            state.menu = makeBuildMenu(menu.anchorX, menu.anchorY, 'support');
+            uiDirty = true;
+            return;
+          }
+          if (menu.kind === 'build' && option.key === 'cat_back') {
+            state.menu = makeBuildMenu(menu.anchorX, menu.anchorY, null);
+            uiDirty = true;
+            return;
+          }
+          const actionKey = menu.kind + ':' + (menu.targetId || '') + ':' + option.key + ':' + Math.round(menu.anchorX || 0) + ':' + Math.round(menu.anchorY || 0);
+          if (['build', 'player', 'tower', 'village', 'barrier'].includes(menu.kind) && shouldBlockDuplicateActionV64(actionKey)) {
+            logMessage('Ignored duplicate tap.', 'bad');
+            return;
+          }
+          if (menu.kind === 'barrier' && option.key === 'demolish' && state.research && state.research.deconstruction) {
+            const barrier = (state.barriers || []).find((entry) => entry.id === menu.targetId && entry.hp > 0);
+            if (demolishBarrierWithV64(barrier)) return;
+          }
+          markBuildClickGuardV64();
+          return handleMenuSelectionBaseV64(option);
+        };
+
+        const attemptTowerUpgradeBaseV64 = attemptTowerUpgrade;
+        attemptTowerUpgrade = function attemptTowerUpgradeV64(towerId, key) {
+          if (key === 'demolish' && state.research && state.research.deconstruction) {
+            const tower = getCurrentTower(towerId);
+            if (!tower) return;
+            const buildCost = BUILD_COSTS.tower[tower.type] || { wood: 0, stone: 0 };
+            const refund = refundBuildCostV64(buildCost);
+            state.towers = (state.towers || []).filter((entry) => entry.id !== tower.id);
+            state.wood = (state.wood || 0) + refund.wood;
+            state.stone = (state.stone || 0) + refund.stone;
+            createRing(tower.x, tower.y, 'rgba(214, 190, 142, 0.46)', 8, 36, 0.28, 3);
+            createFloater('+' + refund.wood + 'w +' + refund.stone + 's', tower.x, tower.y - 28, '#f3e2b2', 13);
+            playSfx('build');
+            if (typeof rebuildRuntimeMap === 'function') rebuildRuntimeMap(true);
+            logMessage((TOWER_TYPES[tower.type] ? TOWER_TYPES[tower.type].label : 'Tower') + ' removed and salvaged at 90%.', 'good');
+            closeMenu();
+            uiDirty = true;
+            return;
+          }
+          return attemptTowerUpgradeBaseV64(towerId, key);
+        };
+
+        const finishWaveBaseV64 = finishWave;
+        finishWave = function finishWaveRepairSplitV64() {
+          ensureV64State();
+          const builders = state.jobs ? Math.max(0, state.jobs.builders || 0) : 0;
+          if (state.jobs) state.jobs.builders = 0;
+          const result = finishWaveBaseV64.apply(this, arguments);
+          if (state.jobs) state.jobs.builders = builders;
+          if (builders > 0) {
+            const totalRepair = builders * 24;
+            const baseBefore = state.base.hp;
+            const baseNeed = Math.max(0, state.base.maxHp - state.base.hp);
+            const baseHealAmount = Math.min(totalRepair, baseNeed);
+            state.base.hp = Math.min(state.base.maxHp, state.base.hp + baseHealAmount);
+            const baseHeal = Math.round(state.base.hp - baseBefore);
+            const defenseRepair = distributeRepairEvenlyV64(Math.max(0, totalRepair - baseHeal));
+            if (state.lastTownProductionReport) {
+              state.lastTownProductionReport.baseHeal = (state.lastTownProductionReport.baseHeal || 0) + baseHeal;
+              state.lastTownProductionReport.defenseRepair = (state.lastTownProductionReport.defenseRepair || 0) + defenseRepair;
+            }
+            if (state.raidSummary) {
+              state.raidSummary.baseHeal = (state.raidSummary.baseHeal || 0) + baseHeal;
+              state.raidSummary.defenseRepair = (state.raidSummary.defenseRepair || 0) + defenseRepair;
+            }
+            if (baseHeal > 0 || defenseRepair > 0) {
+              logMessage('Repairers spent ' + Math.round(totalRepair) + ' HP: town first, then damaged buildables.', 'good');
+            }
+          }
+          markBuildClickGuardV64();
+          return result;
+        };
+
+        const updatePlayerBaseV64 = updatePlayer;
+        updatePlayer = function updatePlayerV64(dt) {
+          const wasAlive = !!(state && state.player && state.player.alive);
+          updatePlayerBaseV64(dt);
+          ensureV64State();
+          capKnightSpeedV64();
+          const p = state.player;
+          if (!wasAlive && p.alive) {
+            p.x = state.base.x;
+            p.y = state.base.y;
+            p.vx = 0;
+            p.vy = 0;
+            p._lastValidX = p.x;
+            p._lastValidY = p.y;
+            updateCamera(0);
+            logMessage('The knight respawned at the town center.', 'good');
+          }
+          previousPlayerAliveV64 = !!p.alive;
+        };
+
+        const updateBaseV64 = update;
+        update = function updateV64(dt) {
+          ensureV64State();
+          updateHorseTrainingDefinitionV64();
+          const beforePhase = state ? state.phase : previousPhaseV64;
+          updateBaseV64(dt);
+          ensureV64State();
+          if (state && beforePhase === 'townPlacement' && state.phase === 'build' && state._v20TownPlaced && !state.v64.townCenterSpawnFixed) {
+            state.player.x = state.base.x;
+            state.player.y = state.base.y;
+            state.player.vx = 0;
+            state.player.vy = 0;
+            state.player._lastValidX = state.player.x;
+            state.player._lastValidY = state.player.y;
+            state.v64.townCenterSpawnFixed = true;
+            updateCamera(0);
+          }
+          if (state && beforePhase === 'summary' && state.phase === 'build') markBuildClickGuardV64();
+          previousPhaseV64 = state ? state.phase : beforePhase;
+          capKnightSpeedV64();
+        };
+
+        const resetGameBaseV64 = resetGame;
+        resetGame = function resetGameV64() {
+          resetGameBaseV64();
+          ensureV64State();
+          updateHorseTrainingDefinitionV64();
+          capKnightSpeedV64();
+          previousPhaseV64 = state.phase;
+          previousPlayerAliveV64 = !!state.player.alive;
+          uiDirty = true;
+        };
+
+        const beginRunFromStartScreenBaseV64 = beginRunFromStartScreen;
+        beginRunFromStartScreen = function beginRunFromStartScreenV64() {
+          const result = beginRunFromStartScreenBaseV64.apply(this, arguments);
+          ensureV64State();
+          updateHorseTrainingDefinitionV64();
+          capKnightSpeedV64();
+          if (state && state.player) {
+            state.player.x = state.base.x;
+            state.player.y = state.base.y;
+            state.player.vx = 0;
+            state.player.vy = 0;
+            state.player._lastValidX = state.player.x;
+            state.player._lastValidY = state.player.y;
+          }
+          uiDirty = true;
+          return result;
+        };
+
+        if (typeof dismissRaidSummary === 'function') {
+          const dismissRaidSummaryBaseV64 = dismissRaidSummary;
+          dismissRaidSummary = function dismissRaidSummaryV64() {
+            const result = dismissRaidSummaryBaseV64.apply(this, arguments);
+            markBuildClickGuardV64();
+            return result;
+          };
+        }
+
+        const openMenuForContextBaseV64 = openMenuForContext;
+        openMenuForContext = function openMenuForContextV64(x, y) {
+          if (state && state.phase === 'build' && nowV64() < suppressCanvasBuildClickUntilV64) return;
+          return openMenuForContextBaseV64(x, y);
+        };
+
+        const moveEnemyByDirectionBaseV64 = moveEnemyByDirection;
+        moveEnemyByDirection = function moveEnemyByDirectionV64(enemy, direction, dt, speedFactor = 1) {
+          if (!enemy || !direction) return false;
+          const bx = enemy.x;
+          const by = enemy.y;
+          const moved = moveEnemyByDirectionBaseV64(enemy, direction, dt, speedFactor);
+          const movedDist = Math.hypot(enemy.x - bx, enemy.y - by);
+          const big = (enemy.radius || 0) >= 18 || enemy.boss || enemy.type === 'brute' || enemy.type === 'siegeking';
+          if (!big) return moved;
+          const expected = Math.max(1, (enemy.speed || 40) * Math.max(0, dt || 0) * Math.max(0.2, speedFactor || 1));
+          if (movedDist >= expected * 0.22) {
+            enemy._v64Stuck = 0;
+            return moved;
+          }
+          enemy._v64Stuck = (enemy._v64Stuck || 0) + Math.max(0, dt || 0);
+          enemy.routeTimer = 0;
+          enemy.routeCells = [];
+          if (enemy._v64Stuck < 0.12) return moved;
+          const flow = getFlowDirection(enemy.x, enemy.y);
+          const baseDir = normalize(state.base.x - enemy.x, state.base.y - enemy.y);
+          const probes = [
+            { x: -direction.y, y: direction.x },
+            { x: direction.y, y: -direction.x },
+            { x: -flow.y, y: flow.x },
+            { x: flow.y, y: -flow.x },
+            flow,
+            baseDir
+          ];
+          for (const probe of probes) {
+            const p = normalize(probe.x, probe.y);
+            const sx = enemy.x;
+            const sy = enemy.y;
+            moveEnemyByDirectionBaseV64(enemy, p, dt, Math.max(0.42, speedFactor * 0.72));
+            if (Math.hypot(enemy.x - sx, enemy.y - sy) > 0.75) {
+              enemy._v64Stuck = 0;
+              return true;
+            }
+          }
+          if (typeof resolveEntityAgainstWalls === 'function') resolveEntityAgainstWalls(enemy, 0, { padding: -2 });
+          enemy.x = clamp(enemy.x, enemy.radius, WORLD_WIDTH - enemy.radius);
+          enemy.y = clamp(enemy.y, enemy.radius, WORLD_HEIGHT - enemy.radius);
+          return moved;
+        };
+
+        const updateEnemyBehaviorBaseV64 = updateEnemyBehavior;
+        updateEnemyBehavior = function updateEnemyBehaviorV64(enemy, dt) {
+          const bx = enemy ? enemy.x : 0;
+          const by = enemy ? enemy.y : 0;
+          const result = updateEnemyBehaviorBaseV64(enemy, dt);
+          if (enemy && ((enemy.radius || 0) >= 18 || enemy.boss) && state.phase === 'wave') {
+            const moved = Math.hypot(enemy.x - bx, enemy.y - by);
+            if (moved < 0.35) enemy._v64TotalStuck = (enemy._v64TotalStuck || 0) + Math.max(0, dt || 0);
+            else enemy._v64TotalStuck = 0;
+            if (enemy._v64TotalStuck > 1.15) {
+              const flow = getFlowDirection(enemy.x, enemy.y);
+              const sidestep = ((Math.floor((enemy.id || 0) + enemy._v64TotalStuck * 10) % 2) ? 1 : -1);
+              moveEnemyByDirectionBaseV64(enemy, { x: -flow.y * sidestep, y: flow.x * sidestep }, Math.min(0.08, Math.max(0, dt || 0) * 2), 1.1);
+              enemy.routeTimer = 0;
+              enemy._v64TotalStuck = 0.35;
+            }
+          }
+          return result;
+        };
+
+        const drawRadialMenuBaseV64 = drawRadialMenu;
+        drawRadialMenu = function drawRadialMenuV64() {
+          drawRadialMenuBaseV64();
+          if (!state || !state.menu || state.phase !== 'build') return;
+          const menu = buildRadialMenu(state.menu);
+          if (!menu) return;
+          const hovered = getHoveredMenuOption(state.menu);
+          const option = hovered || (state.menu.kind === 'player' ? null : hovered);
+          ctx.save();
+          if (state.menu.kind === 'player') {
+            const boxW = 360;
+            const boxH = 154;
+            const x = clamp(menu.centerX + 78, 18, WIDTH - boxW - 18);
+            const y = clamp(menu.centerY - 90, 82, HEIGHT - boxH - 42);
+            roundRectPathV64(x, y, boxW, boxH, 13);
+            ctx.fillStyle = 'rgba(9,13,8,0.94)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(208,225,240,0.28)';
+            ctx.stroke();
+            ctx.fillStyle = '#edf2dd';
+            ctx.font = '900 14px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Knight upgrade details', x + 14, y + 23);
+            ctx.font = '11px Inter, sans-serif';
+            let yy = y + 44;
+            (state.menu.options || []).slice(0, 5).forEach((opt) => {
+              ctx.fillStyle = hovered && hovered.key === opt.key ? '#f0cd73' : '#b8c3a3';
+              const level = opt.level || 0;
+              const detail = String(opt.detail || '').replace(/ Current level .*/, '');
+              ctx.fillText(opt.label + ' L' + level + ': ' + detail.slice(0, 48), x + 14, yy);
+              yy += 20;
+            });
+          } else if (option && option.detail) {
+            const boxW = 330;
+            const x = clamp(menu.centerX - boxW / 2, 18, WIDTH - boxW - 18);
+            const y = clamp(menu.centerY + menu.orbitRadius + 54, 82, HEIGHT - 112);
+            drawBubbleV64(x, y, boxW, option.label || state.menu.title || 'Info', option.detail, { h: 82, lines: 3 });
+          }
+          ctx.restore();
+        };
+
+        const drawStartScreenOverlayBaseV64 = drawStartScreenOverlay;
+        drawStartScreenOverlay = function drawStartScreenOverlayV64() {
+          drawStartScreenOverlayBaseV64();
+          if (!state || state.phase !== 'start') return;
+          const layout = getStartScreenLayout();
+          if (layout && Number.isFinite(layout.boardX)) {
+            drawHighScoreBoardV64(layout.boardX, layout.boardY, layout.boardW, layout.boardH, 'High score board');
+          }
+        };
+
+        const drawBaseV64 = draw;
+        draw = function drawV64() {
+          drawBaseV64();
+          ensureV64State();
+          drawTowerLanternGlowV64();
+          coverBuildPhaseFooterTextV64();
+          drawLockedMinimapV64();
+          drawTownInfoOverlayV64();
+          drawFoodInfoV64();
+          drawResearchOverlayV64();
+        };
+
+        function handlePointerDownV64(event) {
+          if (!event || event.target !== canvas) return;
+          updatePointerFromEvent(event);
+          ensureV64State();
+          const sx = pointer.screenX;
+          const sy = pointer.screenY;
+
+          if (state.v33ResearchOpen) {
+            const layout = researchLayoutV64();
+            if (pointInRectV64(sx, sy, layout.close)) {
+              state.v33ResearchOpen = false;
+              uiDirty = true;
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              return;
+            }
+            for (const { def, rect } of layout.cards) {
+              if (pointInRectV64(sx, sy, rect.info)) {
+                state.v64.info.research = state.v64.info.research === def.key ? null : def.key;
+                uiDirty = true;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return;
+              }
+              if (pointInRectV64(sx, sy, rect)) {
+                applyResearchV64(def.key);
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return;
+              }
+            }
+            return;
+          }
+
+          if (state.townOpen && state.phase === 'build') {
+            const layout = townLayoutV64();
+            for (const button of layout.upgradeButtons) {
+              if (pointInRectV64(sx, sy, button.info)) {
+                state.v64.info.village = state.v64.info.village === button.key ? null : button.key;
+                uiDirty = true;
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return;
+              }
+            }
+          }
+
+          const foodRect = topFoodInfoRectV64();
+          if (pointInRectV64(sx, sy, foodRect) && state.phase !== 'start' && state.phase !== 'mapselect') {
+            state.v64.info.food = !state.v64.info.food;
+            uiDirty = true;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return;
+          }
+
+          if (!(state.research && state.research.cartography) && state.phase !== 'start' && state.phase !== 'mapselect') {
+            const box = minimapExpandedRectV64();
+            if (pointInRectV64(sx, sy, box)) {
+              logMessage('Research Cartography for 5 research to unlock the minimap.', 'bad');
+              event.preventDefault();
+              event.stopImmediatePropagation();
+            }
+          }
+        }
+
+        canvas.addEventListener('pointerdown', handlePointerDownV64, { capture: true, passive: false });
+
+        canvas.addEventListener('click', (event) => {
+          if (!event || event.target !== canvas) return;
+          if (state && state.phase === 'build' && nowV64() < suppressCanvasBuildClickUntilV64 && !state.townOpen && !state.menu) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+        }, true);
+
+        ensureV64State();
+        updateHorseTrainingDefinitionV64();
+        capKnightSpeedV64();
+
+        window.__mountedVillageDefenseV64 = {
+          applied: true,
+          note: 'Requested v64 changes applied: front high-score board, layered build menu, research expansion, cartography lock, repair split, deconstruction, tower lanterns, info icons, input debouncing, and safer town-center knight spawn.',
+          applyResearch: applyResearchV64,
+          loadHighScores: loadHighScoresV64,
+          futureResearchIdeas: V64.futureResearchIdeas
+        };
+      })();
+
+
+      // === v65: follow-up fixes, university, priority targeting, research scroll, and reporting ===
+      (function applyRequestedChangesV65() {
+        if (window.__mountedVillageDefenseV65 && window.__mountedVillageDefenseV65.applied) return;
+
+        const V65 = {
+          inputBlockMs: 820,
+          duplicateMs: 620,
+          knightBaseSpeed: 178,
+          knightSpeedGain: 96,
+          knightCavalryGain: 42,
+          universityCost: { wood: 85, stone: 55, research: 3 },
+          universityHp: 420,
+          universityW: GRID_SIZE * 2,
+          universityH: GRID_SIZE * 3,
+          gatherCostByLevel: [3, 5, 10],
+          gatherDefs: {
+            food: { key: 'food', label: 'Crop rotation', short: 'Farmers gather more food.', detail: 'Repeatable up to level 3. Each level increases food gathered by farmers by 20%.', icon: 'food' },
+            wood: { key: 'wood', label: 'Foresters axes', short: 'Woodcutters gather more wood.', detail: 'Repeatable up to level 3. Each level increases wood gathered by woodcutters by 20%.', icon: 'wood' },
+            stone: { key: 'stone', label: 'Stonecutters guild', short: 'Quarry crews gather more stone.', detail: 'Repeatable up to level 3. Each level increases stone gathered by quarry crews by 20%.', icon: 'stone' },
+            repair: { key: 'repair', label: 'Triage crews', short: 'Repairers restore more HP.', detail: 'Repeatable up to level 3. Each level increases the repair pool by 20%. Repairs still go to the town first.', icon: 'hammer' },
+            research: { key: 'research', label: 'Scribe training', short: 'Researchers produce more research.', detail: 'Repeatable up to level 3. Each level adds +1 research per researcher at dawn.', icon: 'research' }
+          },
+          extraResearch: {
+            bookkeeping: { key: 'bookkeeping', label: 'Bookkeeping', cost: 3, short: 'Adds a compact end-of-wave damage report.', detail: 'After each cleared wave, the dawn summary shows damage dealt by the knight, towers, followers, and town arrows.', icon: 'research' }
+          },
+          baseRates: null,
+          priorities: [
+            { key: 'closest', label: 'Closest' },
+            { key: 'strongest', label: 'Strongest' },
+            { key: 'boss', label: 'Boss' },
+            { key: 'lowest', label: 'Lowest HP' }
+          ]
+        };
+
+        let blockCanvasInputUntilV65 = 0;
+        let lastActionV65 = { key: '', t: 0 };
+
+        function nowV65() {
+          return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        }
+
+        function blockCanvasInputV65(ms) {
+          blockCanvasInputUntilV65 = Math.max(blockCanvasInputUntilV65, nowV65() + (ms || V65.inputBlockMs));
+        }
+
+        function pointInRectV65(px, py, rect) {
+          return !!rect && px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
+        }
+
+        function roundRectPathV65(x, y, w, h, r) {
+          const rr = Math.max(0, Math.min(r || 0, Math.min(w, h) / 2));
+          ctx.beginPath();
+          ctx.moveTo(x + rr, y);
+          ctx.lineTo(x + w - rr, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+          ctx.lineTo(x + w, y + h - rr);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+          ctx.lineTo(x + rr, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+          ctx.lineTo(x, y + rr);
+          ctx.quadraticCurveTo(x, y, x + rr, y);
+          ctx.closePath();
+        }
+
+        function fillWrappedTextV65(text, x, y, maxW, lineH, maxLines) {
+          const words = String(text || '').split(/\s+/).filter(Boolean);
+          let line = '';
+          let lines = 0;
+          for (let i = 0; i < words.length; i += 1) {
+            const test = line ? line + ' ' + words[i] : words[i];
+            if (ctx.measureText(test).width > maxW && line) {
+              ctx.fillText(line, x, y + lines * lineH);
+              lines += 1;
+              line = words[i];
+              if (maxLines && lines >= maxLines) return lines;
+            } else {
+              line = test;
+            }
+          }
+          if (line && (!maxLines || lines < maxLines)) {
+            ctx.fillText(line, x, y + lines * lineH);
+            lines += 1;
+          }
+          return lines;
+        }
+
+        function canvasPointV65(event) {
+          const rect = canvas.getBoundingClientRect();
+          return {
+            x: (event.clientX - rect.left) * (canvas.width / Math.max(1, rect.width)),
+            y: (event.clientY - rect.top) * (canvas.height / Math.max(1, rect.height))
+          };
+        }
+
+        function consumeEventV65(event, ms) {
+          blockCanvasInputV65(ms);
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+          }
+        }
+
+        function duplicateActionV65(key) {
+          const t = nowV65();
+          if (lastActionV65.key === key && t - lastActionV65.t < V65.duplicateMs) return true;
+          lastActionV65 = { key, t };
+          return false;
+        }
+
+        function ensureV65State() {
+          if (!state) return;
+          if (!state.v65) state.v65 = {};
+          if (!state.v65.researchLevels) state.v65.researchLevels = { food: 0, wood: 0, stone: 0, repair: 0, research: 0 };
+          Object.keys(V65.gatherDefs).forEach((key) => {
+            const value = Math.max(0, Math.min(3, Math.floor(Number(state.v65.researchLevels[key]) || 0)));
+            state.v65.researchLevels[key] = value;
+          });
+          if (!state.v65.info) state.v65.info = { research: null };
+          if (!Number.isFinite(state.v65.researchScroll)) state.v65.researchScroll = 0;
+          if (!state.v65.damageCurrent) state.v65.damageCurrent = makeDamageReportV65();
+          if (!state.v65.damageLast) state.v65.damageLast = makeDamageReportV65();
+          if (!state.research || typeof state.research !== 'object') state.research = {};
+          if (typeof state.research.bookkeeping !== 'boolean') state.research.bookkeeping = false;
+          if (state.university && !Number.isFinite(state.university.maxHp)) state.university.maxHp = V65.universityHp;
+          if (state.university && !Number.isFinite(state.university.hp)) state.university.hp = state.university.maxHp;
+          if (!(state.research && state.research.cartography)) state.minimapCollapsed = true;
+          applyGatherRatesV65();
+          tuneKnightSpeedV65();
+        }
+
+        function makeDamageReportV65() {
+          return { knight: 0, towers: 0, followers: 0, town: 0 };
+        }
+
+        function liveUniversityV65() {
+          return state && state.university && state.university.hp > 0 ? state.university : null;
+        }
+
+        function hasResearchAccessV65() {
+          return !!liveUniversityV65();
+        }
+
+        function costTextV65(costs) {
+          const parts = [];
+          if (costs.gold) parts.push(costs.gold + 'g');
+          if (costs.wood) parts.push(costs.wood + 'w');
+          if (costs.stone) parts.push(costs.stone + 's');
+          if (costs.food) parts.push(costs.food + 'f');
+          if (costs.research) parts.push(costs.research + ' research');
+          return parts.join(' + ') || 'free';
+        }
+
+        function canAffordV65(costs) {
+          return (!costs.gold || (state.gold || 0) >= costs.gold)
+            && (!costs.wood || (state.wood || 0) >= costs.wood)
+            && (!costs.stone || (state.stone || 0) >= costs.stone)
+            && (!costs.food || (state.food || 0) >= costs.food)
+            && (!costs.research || (state.researchResource || 0) >= costs.research);
+        }
+
+        function spendV65(costs) {
+          if (!canAffordV65(costs)) return false;
+          if (costs.gold) state.gold -= costs.gold;
+          if (costs.wood) state.wood -= costs.wood;
+          if (costs.stone) state.stone -= costs.stone;
+          if (costs.food) state.food -= costs.food;
+          if (costs.research) state.researchResource -= costs.research;
+          return true;
+        }
+
+        function tuneKnightSpeedV65() {
+          if (!state || !state.player) return;
+          const level = Math.max(0, (state.upgrades && state.upgrades.player && state.upgrades.player.speed) || 0);
+          const cavalry = state.research && state.research.cavalry ? V65.knightCavalryGain : 0;
+          const target = V65.knightBaseSpeed + level * V65.knightSpeedGain + cavalry;
+          state.player.maxSpeed = target;
+          state.player.accel = 760 + level * 110 + (cavalry ? 55 : 0);
+          state.player.chargeThreshold = Math.max(116, target * 0.72);
+          state.player.chargeBase = 30 + level * 18 + (cavalry ? 14 : 0);
+          const speed = Math.hypot(state.player.vx || 0, state.player.vy || 0);
+          if (speed > target) {
+            const scale = target / Math.max(1, speed);
+            state.player.vx *= scale;
+            state.player.vy *= scale;
+          }
+        }
+
+        function updateHorseTrainingApplyV65() {
+          const def = PLAYER_UPGRADES.find((item) => item.key === 'speed');
+          if (!def || def._v65Updated) return;
+          def.description = '+96 effective top speed and much stronger charge impacts.';
+          def.apply = (s) => {
+            s.upgrades.player.speed += 1;
+            s.player.maxSpeed += V65.knightSpeedGain;
+            s.player.chargeBase = (s.player.chargeBase || 30) + 18;
+            s.player.chargeThreshold = Math.max(116, (s.player.chargeThreshold || 140) + 14);
+            logMessage('Horse training gives a large speed and charge boost.', 'good');
+          };
+          def._v65Updated = true;
+        }
+
+        function applyGatherRatesV65() {
+          if (typeof ECONOMY_TUNING === 'undefined' || !ECONOMY_TUNING) return;
+          if (!V65.baseRates) {
+            V65.baseRates = {
+              food: ECONOMY_TUNING.foodPerFarmer || 15,
+              wood: ECONOMY_TUNING.woodPerLumberjack || 13,
+              stone: ECONOMY_TUNING.stonePerQuarryer || 11,
+              repair: 24
+            };
+          }
+          const levels = state && state.v65 && state.v65.researchLevels ? state.v65.researchLevels : {};
+          ECONOMY_TUNING.foodPerFarmer = Math.round(V65.baseRates.food * (1 + 0.20 * (levels.food || 0)));
+          ECONOMY_TUNING.woodPerLumberjack = Math.round(V65.baseRates.wood * (1 + 0.20 * (levels.wood || 0)));
+          ECONOMY_TUNING.stonePerQuarryer = Math.round(V65.baseRates.stone * (1 + 0.20 * (levels.stone || 0)));
+          ECONOMY_TUNING.barrierRepairPerBuilder = Math.round(V65.baseRates.repair * (1 + 0.20 * (levels.repair || 0)));
+          ECONOMY_TUNING.baseRepairPerBuilder = 0;
+        }
+
+        function universityRectV65(u) {
+          const uni = u || liveUniversityV65();
+          if (!uni) return null;
+          return { x: uni.x - V65.universityW / 2, y: uni.y - V65.universityH / 2, w: V65.universityW, h: V65.universityH };
+        }
+
+        function pointInUniversityV65(x, y) {
+          const u = liveUniversityV65();
+          const r = universityRectV65(u);
+          return !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h ? u : null;
+        }
+
+        function canPlaceUniversityAtV65(x, y) {
+          const snapped = snapWorldToGrid(x, y);
+          const grid = state.map && state.map.gridMeta;
+          if (!grid) return { ok: false, snapped, reason: 'No map grid.' };
+          if (liveUniversityV65()) return { ok: false, snapped, reason: 'Only one University can stand at a time.' };
+          const rect = { x: snapped.x - V65.universityW / 2, y: snapped.y - V65.universityH / 2, w: V65.universityW, h: V65.universityH };
+          if (rect.x < 0 || rect.y < 0 || rect.x + rect.w > WORLD_WIDTH || rect.y + rect.h > WORLD_HEIGHT) return { ok: false, snapped, reason: 'Map edge.' };
+          const c0 = Math.max(0, Math.floor(rect.x / GRID_SIZE));
+          const c1 = Math.min(grid.cols - 1, Math.floor((rect.x + rect.w - 1) / GRID_SIZE));
+          const r0 = Math.max(0, Math.floor(rect.y / GRID_SIZE));
+          const r1 = Math.min(grid.rows - 1, Math.floor((rect.y + rect.h - 1) / GRID_SIZE));
+          for (let row = r0; row <= r1; row += 1) {
+            for (let col = c0; col <= c1; col += 1) {
+              if (grid.noBuild[row][col]) return { ok: false, snapped, reason: 'Blocked footprint.' };
+              if (getTowerAtCell(col, row) || getBarrierAtCell(col, row)) return { ok: false, snapped, reason: 'Buildable already here.' };
+              if ((state.torches || []).some((t) => t.hp > 0 && t.gridCol === col && t.gridRow === row)) return { ok: false, snapped, reason: 'Torch already here.' };
+            }
+          }
+          const corners = [
+            [rect.x, rect.y], [rect.x + rect.w, rect.y], [rect.x, rect.y + rect.h], [rect.x + rect.w, rect.y + rect.h], [snapped.x, snapped.y]
+          ];
+          if (corners.some(([cx, cy]) => pointInAnyWall(cx, cy, 18))) return { ok: false, snapped, reason: 'Natural wall.' };
+          if ((state.camps || []).some((camp) => !camp.destroyed && distance(snapped.x, snapped.y, camp.x, camp.y) < camp.radius + 86)) return { ok: false, snapped, reason: 'Enemy camp.' };
+          if (distance(snapped.x, snapped.y, state.player.x, state.player.y) < 48) return { ok: false, snapped, reason: 'Too close to the knight.' };
+          return { ok: true, snapped, reason: '' };
+        }
+
+        function universityBuildOptionV65(x, y) {
+          const check = canPlaceUniversityAtV65(x, y);
+          const affordable = canAffordV65(V65.universityCost);
+          return {
+            key: 'university',
+            label: 'University',
+            cost: costTextV65(V65.universityCost),
+            detail: 'Unlocks the research tree while standing. Enemies can destroy it. Footprint: 2x3 tiles.',
+            disabled: !check.ok || !affordable,
+            disabledReason: !affordable ? ('Need ' + costTextV65(V65.universityCost) + '.') : check.reason,
+            accent: '#9fd1ff',
+            tag: 'research',
+            buildCategory: 'support'
+          };
+        }
+
+        function buildUniversityAtV65(x, y) {
+          ensureV65State();
+          if (state.phase !== 'build') return;
+          if (duplicateActionV65('build:university:' + Math.round(x) + ':' + Math.round(y))) return;
+          const check = canPlaceUniversityAtV65(x, y);
+          if (!canAffordV65(V65.universityCost)) {
+            logMessage('Need ' + costTextV65(V65.universityCost) + ' to build a University.', 'bad');
+            return;
+          }
+          if (!check.ok) {
+            logMessage('Cannot build University: ' + check.reason, 'bad');
+            return;
+          }
+          spendV65(V65.universityCost);
+          recordPurchase();
+          state.university = {
+            id: 'university-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+            x: check.snapped.x,
+            y: check.snapped.y,
+            gridCol: check.snapped.col,
+            gridRow: check.snapped.row,
+            radius: 44,
+            maxHp: V65.universityHp,
+            hp: V65.universityHp,
+            w: V65.universityW,
+            h: V65.universityH,
+            kind: 'university'
+          };
+          closeMenu();
+          createRing(check.snapped.x, check.snapped.y, 'rgba(159, 209, 255, 0.70)', 18, 78, 0.42, 3);
+          createFloater('University', check.snapped.x, check.snapped.y - 72, '#dbe9ff', 14);
+          playSfx('build');
+          logMessage('University built. Research can now be performed while it stands.', 'good');
+          uiDirty = true;
+        }
+
+        if (typeof BUILDABLES !== 'undefined' && BUILDABLES && !BUILDABLES.university) {
+          BUILDABLES.university = { key: 'university', category: 'support', label: 'University', costs: { ...V65.universityCost }, accent: '#9fd1ff', tag: 'research' };
+        }
+
+        const getBuildMenuOptionsPreV65 = getBuildMenuOptions;
+        function allBuildOptionsV65(x, y) {
+          const previousMenu = state.menu;
+          let options = [];
+          try {
+            state.menu = null;
+            options = (getBuildMenuOptionsPreV65(x, y) || []).filter((opt) => opt && !String(opt.key || '').startsWith('cat_') && opt.key !== 'university');
+          } finally {
+            state.menu = previousMenu;
+          }
+          options.push(universityBuildOptionV65(x, y));
+          return options;
+        }
+
+        getBuildMenuOptions = function getBuildMenuOptionsV65(x, y) {
+          return allBuildOptionsV65(x, y);
+        };
+
+        makeBuildMenu = function makeBuildMenuV65(x, y, layer) {
+          if (!layer) {
+            return {
+              kind: 'build',
+              title: 'Build',
+              subtitle: 'Choose a category.',
+              buildLayer: null,
+              anchorX: x,
+              anchorY: y,
+              options: [
+                { key: 'cat_towers', label: 'Towers', cost: '', detail: 'Archer, Ballista, and Sniper towers.', disabled: false, accent: '#dce8bf', tag: 'tower' },
+                { key: 'cat_support', label: 'Support', cost: '', detail: 'Walls, gates, torches, and the University.', disabled: false, accent: '#ffb04a', tag: 'support' }
+              ]
+            };
+          }
+          const towerKeys = new Set(['archer', 'ballista', 'sniper']);
+          const supportKeys = new Set(['wall', 'gate', 'torch', 'university']);
+          let options = allBuildOptionsV65(x, y).filter((opt) => layer === 'towers' ? towerKeys.has(opt.key) : supportKeys.has(opt.key));
+          options = options.concat([{ key: 'cat_back', label: 'Back', cost: '', detail: 'Return to build categories.', disabled: false, accent: '#b8c3a3', tag: 'back' }]);
+          return {
+            kind: 'build',
+            title: layer === 'towers' ? 'Towers' : 'Support',
+            subtitle: layer === 'towers' ? 'Choose a tower for this spot.' : 'Choose a support buildable.',
+            buildLayer: layer,
+            anchorX: x,
+            anchorY: y,
+            options
+          };
+        };
+
+        const rebuildMenuPreV65 = rebuildMenu;
+        rebuildMenu = function rebuildMenuV65(menu) {
+          if (menu && menu.kind === 'build') return makeBuildMenu(menu.anchorX, menu.anchorY, menu.buildLayer || null);
+          return rebuildMenuPreV65(menu);
+        };
+
+        const handleMenuSelectionPreV65 = handleMenuSelection;
+        handleMenuSelection = function handleMenuSelectionV65(option) {
+          if (!option || !state.menu) return handleMenuSelectionPreV65(option);
+          if (state.menu.kind === 'build' && option.key === 'university') {
+            if (option.disabled) {
+              logMessage(option.disabledReason || 'Cannot build University here.', 'bad');
+              return;
+            }
+            buildUniversityAtV65(state.menu.anchorX, state.menu.anchorY);
+            blockCanvasInputV65(700);
+            return;
+          }
+          return handleMenuSelectionPreV65(option);
+        };
+
+        const openMenuForContextPreV65 = openMenuForContext;
+        openMenuForContext = function openMenuForContextV65(x, y) {
+          ensureV65State();
+          const uni = pointInUniversityV65(x, y);
+          if (uni && state.phase === 'build') {
+            state.v33ResearchOpen = true;
+            state.townOpen = false;
+            closeMenu();
+            uiDirty = true;
+            return;
+          }
+          return openMenuForContextPreV65(x, y);
+        };
+
+        const placeTownAtPreV65 = (typeof placeTownAt === 'function') ? placeTownAt : null;
+        if (placeTownAtPreV65) {
+          placeTownAt = function placeTownAtV65(x, y) {
+            const result = placeTownAtPreV65.apply(this, arguments);
+            if (result && state && state.player) centerKnightOnTownV65();
+            return result;
+          };
+        }
+
+        function centerKnightOnTownV65() {
+          if (!state || !state.player || !state.base) return;
+          state.player.x = state.base.x;
+          state.player.y = state.base.y;
+          state.player.vx = 0;
+          state.player.vy = 0;
+          state.player._lastValidX = state.player.x;
+          state.player._lastValidY = state.player.y;
+          if (typeof updateCamera === 'function') updateCamera(0);
+        }
+
+        function drawUniversityWorldV65() {
+          const u = state && state.university;
+          if (!u || u.hp <= 0) return;
+          const rect = universityRectV65(u);
+          ctx.save();
+          ctx.fillStyle = 'rgba(0,0,0,0.18)';
+          ctx.beginPath();
+          ctx.ellipse(u.x, u.y + 38, V65.universityW * 0.55, 26, 0, 0, TAU);
+          ctx.fill();
+          roundRectPathV65(rect.x, rect.y, rect.w, rect.h, 8);
+          ctx.fillStyle = '#5e644d';
+          ctx.fill();
+          ctx.strokeStyle = '#2a3027';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.fillStyle = '#9ea681';
+          ctx.fillRect(u.x - 30, u.y - 44, 60, 42);
+          ctx.fillStyle = '#765334';
+          ctx.beginPath();
+          ctx.moveTo(u.x - 40, u.y - 44);
+          ctx.lineTo(u.x, u.y - 74);
+          ctx.lineTo(u.x + 40, u.y - 44);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = '#c9d8e9';
+          ctx.fillRect(u.x - 22, u.y - 32, 14, 14);
+          ctx.fillRect(u.x + 8, u.y - 32, 14, 14);
+          ctx.fillStyle = '#3f2b1d';
+          ctx.fillRect(u.x - 9, u.y - 2, 18, 34);
+          ctx.fillStyle = '#9fd1ff';
+          ctx.font = '900 15px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('U', u.x, u.y + 50);
+          if (u.hp < u.maxHp) drawHealthBar(u.x - 48, u.y + 72, 96, 8, u.hp, u.maxHp, '#9fd1ff', '#314555');
+          ctx.restore();
+        }
+
+        const drawBasePreV65 = drawBase;
+        drawBase = function drawBaseV65() {
+          drawBasePreV65();
+          drawUniversityWorldV65();
+        };
+
+        function damageUniversityV65(amount) {
+          const u = liveUniversityV65();
+          if (!u || state.phase !== 'wave') return;
+          u.hp -= Math.max(0, amount || 0);
+          u.flash = 1;
+          createFloater('-' + Math.round(amount || 0), u.x, u.y - 72, '#ffbcac', 12);
+          createRing(u.x, u.y, 'rgba(159, 209, 255, 0.34)', 12, 70, 0.24, 2);
+          if (u.hp <= 0) {
+            u.hp = 0;
+            createSplat(u.x, u.y, 'rgba(80, 110, 130, 0.22)', 64);
+            logMessage('The University was destroyed. Research is locked until it is rebuilt.', 'bad');
+            if (state.v33ResearchOpen) state.v33ResearchOpen = false;
+          }
+          uiDirty = true;
+        }
+
+        const updateEnemyBehaviorPreV65 = updateEnemyBehavior;
+        updateEnemyBehavior = function updateEnemyBehaviorV65(enemy, dt) {
+          ensureV65State();
+          const u = liveUniversityV65();
+          if (state.phase === 'wave' && enemy && enemy.hp > 0 && u) {
+            const d = distance(enemy.x, enemy.y, u.x, u.y);
+            const attackRadius = (enemy.radius || 12) + 54;
+            const sees = d < 190 && hasLineOfSight(enemy.x, enemy.y, u.x, u.y, (enemy.radius || 12) * 0.2);
+            if (sees) {
+              enemy.attackCooldown = Math.max(0, (enemy.attackCooldown || 0) - dt);
+              if (d > attackRadius + 2) {
+                const dir = normalize(u.x - enemy.x, u.y - enemy.y);
+                enemy.facing = Math.atan2(dir.y, dir.x);
+                moveEnemyByDirection(enemy, dir, dt, enemy.type === 'brute' ? 0.95 : 1);
+              } else if (enemy.attackCooldown <= 0) {
+                const type = ENEMY_TYPES[enemy.type] || {};
+                enemy.attackCooldown = enemy.attackRate || type.attackRate || 1;
+                enemy.telegraph = 1;
+                damageUniversityV65(enemy.damage || (type.damage || 10));
+              }
+              return;
+            }
+          }
+          return updateEnemyBehaviorPreV65(enemy, dt);
+        };
+
+        function researchDefsV65() {
+          const gather = Object.values(V65.gatherDefs).map((def) => ({ ...def, kind: 'gather', repeatable: true }));
+          const extra = [{ ...V65.extraResearch.bookkeeping, kind: 'extra', repeatable: false }];
+          const existing = [
+            { key: 'fletching', label: 'Fletching', cost: 4, short: 'Tower damage, reload, and range improve.', detail: 'Adds about +12% tower damage, +8% fire rate, and +8 range via workshop improvements.', icon: 'research' },
+            { key: 'cavalry', label: 'Cavalry tack', cost: 5, short: 'Knight speed and charge power improve.', detail: 'Adds a permanent top-speed bonus and extra charge impact. Stacks with Horse training.', icon: 'horse' },
+            { key: 'torchlight', label: 'Knight torch', cost: 4, short: 'The knight carries a night light.', detail: 'During waves, the knight reveals a small area around himself.', icon: 'torch' },
+            { key: 'masonry', label: 'Masonry', cost: 5, short: 'More base health and stronger palisade.', detail: 'Adds +120 max base HP, repairs 120 HP, and adds a village wall level.', icon: 'stone' },
+            { key: 'logistics', label: 'Logistics', cost: 5, short: '+100 wood, +100 stone, +100 food.', detail: 'Repeatable. Each purchase immediately grants 100 wood, 100 stone, and 100 food.', icon: 'wood', repeatable: true },
+            { key: 'cartography', label: 'Cartography', cost: 5, short: 'Unlocks the minimap.', detail: 'Shows the minimap with enemies, towers, torches, town, knight, and camera view.', icon: 'map' },
+            { key: 'towerLanterns', label: 'Tower lanterns', cost: 6, short: 'Towers shine during night waves.', detail: 'Every living tower becomes a small fixed light source at night.', icon: 'torch' },
+            { key: 'deconstruction', label: 'Deconstruction', cost: 8, short: 'Removing buildables refunds 90%.', detail: 'Removing towers, walls, and gates returns 90% of their wood and stone build cost.', icon: 'wood' }
+          ].map((def) => ({ ...def, kind: 'existing' }));
+          return gather.concat(extra, existing);
+        }
+
+        function researchLevelV65(key) {
+          ensureV65State();
+          return Math.max(0, Math.min(3, state.v65.researchLevels[key] || 0));
+        }
+
+        function researchCostV65(def) {
+          if (def.kind === 'gather') {
+            const level = researchLevelV65(def.key);
+            return level >= 3 ? null : V65.gatherCostByLevel[level];
+          }
+          return def.cost;
+        }
+
+        function researchUnlockedV65(def) {
+          if (def.kind === 'gather') return researchLevelV65(def.key) >= 3;
+          if (def.key === 'logistics') return false;
+          return !!(state.research && state.research[def.key]);
+        }
+
+        function applyResearchV65(key) {
+          ensureV65State();
+          if (!hasResearchAccessV65()) {
+            logMessage('Build a University before spending research.', 'bad');
+            return false;
+          }
+          const def = researchDefsV65().find((entry) => entry.key === key);
+          if (!def) return false;
+          if (def.kind === 'gather') {
+            const level = researchLevelV65(key);
+            if (level >= 3) {
+              logMessage(def.label + ' is already level 3.', 'bad');
+              return false;
+            }
+            const cost = V65.gatherCostByLevel[level];
+            if ((state.researchResource || 0) < cost) {
+              logMessage('Need ' + cost + ' research for ' + def.label + '.', 'bad');
+              return false;
+            }
+            state.researchResource -= cost;
+            state.v65.researchLevels[key] = level + 1;
+            applyGatherRatesV65();
+            createBanner(def.label + ' level ' + (level + 1), 'rgba(121, 201, 140, 0.55)');
+            logMessage(def.label + ' improved to level ' + (level + 1) + '.', 'good');
+            uiDirty = true;
+            return true;
+          }
+          if (def.key === 'bookkeeping') {
+            if (state.research.bookkeeping) {
+              logMessage('Bookkeeping is already researched.', 'bad');
+              return false;
+            }
+            if ((state.researchResource || 0) < def.cost) {
+              logMessage('Need ' + def.cost + ' research for Bookkeeping.', 'bad');
+              return false;
+            }
+            state.researchResource -= def.cost;
+            state.research.bookkeeping = true;
+            createBanner('Bookkeeping researched', 'rgba(121, 201, 140, 0.55)');
+            logMessage('Bookkeeping researched. Dawn summaries now include a damage report.', 'good');
+            uiDirty = true;
+            return true;
+          }
+          if (window.__mountedVillageDefenseV64 && typeof window.__mountedVillageDefenseV64.applyResearch === 'function') {
+            const before = state.researchResource || 0;
+            const ok = window.__mountedVillageDefenseV64.applyResearch(key);
+            if (ok && key === 'cartography') state.minimapCollapsed = false;
+            if (!ok && (state.researchResource || 0) !== before) uiDirty = true;
+            return ok;
+          }
+          return false;
+        }
+
+        function researchLayoutV65() {
+          const panelW = Math.min(980, WIDTH - 36);
+          const panelH = Math.min(HEIGHT - 24, 620);
+          const x = WIDTH / 2 - panelW / 2;
+          const y = HEIGHT / 2 - panelH / 2;
+          const close = { x: x + panelW - 108, y: y + 18, w: 82, h: 34, key: 'close' };
+          const viewport = { x: x + 24, y: y + 78, w: panelW - 48, h: panelH - 152 };
+          const cardGap = 10;
+          const colGap = 14;
+          const cardW = (viewport.w - colGap - 14) / 2;
+          const cardH = 68;
+          const defs = researchDefsV65();
+          const rows = Math.ceil(defs.length / 2);
+          const contentH = rows * (cardH + cardGap) - cardGap;
+          const maxScroll = Math.max(0, contentH - viewport.h);
+          state.v65.researchScroll = clamp(state.v65.researchScroll || 0, 0, maxScroll);
+          const cards = defs.map((def, index) => {
+            const col = index % 2;
+            const row = Math.floor(index / 2);
+            const rect = { x: viewport.x + col * (cardW + colGap), y: viewport.y + row * (cardH + cardGap) - state.v65.researchScroll, w: cardW, h: cardH, key: def.key };
+            rect.info = { x: rect.x + rect.w - 28, y: rect.y + 8, w: 20, h: 20, key: def.key };
+            return { def, rect };
+          });
+          return { x, y, w: panelW, h: panelH, close, viewport, cards, contentH, maxScroll };
+        }
+
+        function drawInfoIconV65(rect, active) {
+          ctx.save();
+          ctx.fillStyle = active ? 'rgba(240,205,115,0.96)' : 'rgba(22,31,24,0.96)';
+          ctx.strokeStyle = active ? 'rgba(255,255,255,0.28)' : 'rgba(240,205,115,0.42)';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.arc(rect.x + rect.w / 2, rect.y + rect.h / 2, Math.min(rect.w, rect.h) / 2, 0, TAU);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = active ? '#10160d' : '#f0cd73';
+          ctx.font = '900 12px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('i', rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5);
+          ctx.restore();
+        }
+
+        function drawResearchOverlayV65() {
+          if (!state || !state.v33ResearchOpen) return;
+          ensureV65State();
+          const layout = researchLayoutV65();
+          ctx.save();
+          ctx.fillStyle = 'rgba(4, 7, 8, 0.90)';
+          ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          roundRectPathV65(layout.x, layout.y, layout.w, layout.h, 18);
+          ctx.fillStyle = 'rgba(16, 24, 18, 0.997)';
+          ctx.fill();
+          ctx.strokeStyle = hasResearchAccessV65() ? 'rgba(147, 201, 255, 0.38)' : 'rgba(221,114,96,0.42)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 25px Inter, sans-serif';
+          ctx.fillText('Research tree', layout.x + 26, layout.y + 38);
+          ctx.fillStyle = '#9fd1ff';
+          ctx.font = '900 18px Inter, sans-serif';
+          ctx.fillText(Math.round(state.researchResource || 0) + ' research available', layout.x + layout.w - 318, layout.y + 38);
+          ctx.fillStyle = '#b8c3a3';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.fillText(hasResearchAccessV65() ? 'Tap a card to research. Tap an info marker for exact effects.' : 'Build a University from Support to spend research.', layout.x + 26, layout.y + 60);
+
+          roundRectPathV65(layout.close.x, layout.close.y, layout.close.w, layout.close.h, 10);
+          ctx.fillStyle = 'rgba(24,33,20,0.94)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(131,153,110,0.30)';
+          ctx.stroke();
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 13px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Close', layout.close.x + layout.close.w / 2, layout.close.y + layout.close.h / 2 + 1);
+
+          if (!hasResearchAccessV65()) {
+            const bx = layout.x + 42;
+            const by = layout.y + 118;
+            const bw = layout.w - 84;
+            const bh = 150;
+            roundRectPathV65(bx, by, bw, bh, 14);
+            ctx.fillStyle = 'rgba(52, 24, 18, 0.40)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(221,114,96,0.34)';
+            ctx.stroke();
+            ctx.fillStyle = '#edf2dd';
+            ctx.font = '900 20px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText('Research locked', bx + bw / 2, by + 46);
+            ctx.fillStyle = '#b8c3a3';
+            ctx.font = '14px Inter, sans-serif';
+            ctx.fillText('Build a University to unlock research spending.', bx + bw / 2, by + 78);
+            ctx.fillText('Support menu cost: ' + costTextV65(V65.universityCost) + '.', bx + bw / 2, by + 104);
+            ctx.restore();
+            return;
+          }
+
+          ctx.save();
+          roundRectPathV65(layout.viewport.x - 6, layout.viewport.y - 6, layout.viewport.w + 12, layout.viewport.h + 12, 12);
+          ctx.clip();
+          layout.cards.forEach(({ def, rect }) => {
+            if (rect.y + rect.h < layout.viewport.y - 8 || rect.y > layout.viewport.y + layout.viewport.h + 8) return;
+            const cost = researchCostV65(def);
+            const maxed = def.kind === 'gather' && researchLevelV65(def.key) >= 3;
+            const unlocked = researchUnlockedV65(def);
+            const affordable = cost !== null && (state.researchResource || 0) >= cost && !unlocked;
+            const level = def.kind === 'gather' ? researchLevelV65(def.key) : (def.key === 'logistics' ? ((state.v64 && state.v64.researchRepeat && state.v64.researchRepeat.logistics) || 0) : 0);
+            ctx.save();
+            roundRectPathV65(rect.x, rect.y, rect.w, rect.h, 13);
+            ctx.fillStyle = unlocked ? 'rgba(36, 73, 38, 0.93)' : affordable ? 'rgba(25, 39, 28, 0.96)' : 'rgba(18, 24, 18, 0.76)';
+            ctx.fill();
+            ctx.strokeStyle = unlocked ? 'rgba(121, 201, 140, 0.42)' : affordable ? 'rgba(147, 201, 255, 0.34)' : 'rgba(131,153,110,0.14)';
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+            ctx.fillStyle = unlocked ? '#d5efd8' : affordable ? '#edf2dd' : '#87917f';
+            ctx.font = '900 13px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            let label = def.label;
+            if (def.kind === 'gather') label += '  Lv ' + level + '/3';
+            if (def.key === 'logistics' && level) label += '  x' + level;
+            ctx.fillText(label, rect.x + 14, rect.y + 22);
+            ctx.font = '800 11px Inter, sans-serif';
+            ctx.fillStyle = unlocked ? '#9edcab' : '#9fd1ff';
+            const costLine = def.kind === 'gather'
+              ? (maxed ? 'Max level' : cost + ' research, repeatable')
+              : (def.key === 'logistics' ? def.cost + ' research, repeatable' : (unlocked ? 'Active' : def.cost + ' research'));
+            ctx.fillText(costLine, rect.x + 14, rect.y + 40);
+            ctx.font = '10.5px Inter, sans-serif';
+            ctx.fillStyle = '#b8c3a3';
+            fillWrappedTextV65(def.short, rect.x + 14, rect.y + 57, rect.w - 48, 12, 1);
+            drawInfoIconV65(rect.info, state.v65.info.research === def.key);
+            ctx.restore();
+          });
+          ctx.restore();
+
+          if (layout.maxScroll > 0) {
+            const track = { x: layout.viewport.x + layout.viewport.w + 2, y: layout.viewport.y, w: 8, h: layout.viewport.h };
+            const thumbH = Math.max(34, track.h * (layout.viewport.h / Math.max(layout.viewport.h, layout.contentH)));
+            const thumbY = track.y + (track.h - thumbH) * ((state.v65.researchScroll || 0) / Math.max(1, layout.maxScroll));
+            roundRectPathV65(track.x, track.y, track.w, track.h, 5);
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            ctx.fill();
+            roundRectPathV65(track.x, thumbY, track.w, thumbH, 5);
+            ctx.fillStyle = 'rgba(159,209,255,0.55)';
+            ctx.fill();
+          }
+
+          const infoKey = state.v65.info.research;
+          const infoDef = researchDefsV65().find((entry) => entry.key === infoKey);
+          if (infoDef) {
+            const ix = layout.x + 26;
+            const iy = layout.y + layout.h - 62;
+            roundRectPathV65(ix, iy, layout.w - 52, 42, 10);
+            ctx.fillStyle = 'rgba(8, 13, 9, 0.94)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(147,201,255,0.28)';
+            ctx.stroke();
+            ctx.fillStyle = '#edf2dd';
+            ctx.font = '900 12px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(infoDef.label, ix + 12, iy + 17);
+            ctx.fillStyle = '#b8c3a3';
+            ctx.font = '11px Inter, sans-serif';
+            fillWrappedTextV65(infoDef.detail || infoDef.short, ix + 128, iy + 17, layout.w - 200, 13, 2);
+          }
+          ctx.restore();
+        }
+
+        function handleResearchPointerV65(event) {
+          if (!event || event.target !== canvas || !state || !state.v33ResearchOpen) return false;
+          ensureV65State();
+          const p = canvasPointV65(event);
+          const layout = researchLayoutV65();
+          if (pointInRectV65(p.x, p.y, layout.close)) {
+            state.v33ResearchOpen = false;
+            uiDirty = true;
+            consumeEventV65(event, 900);
+            return true;
+          }
+          if (!hasResearchAccessV65()) {
+            consumeEventV65(event, 900);
+            return true;
+          }
+          for (const { def, rect } of layout.cards) {
+            if (rect.y + rect.h < layout.viewport.y || rect.y > layout.viewport.y + layout.viewport.h) continue;
+            if (pointInRectV65(p.x, p.y, rect.info)) {
+              state.v65.info.research = state.v65.info.research === def.key ? null : def.key;
+              uiDirty = true;
+              consumeEventV65(event, 900);
+              return true;
+            }
+            if (pointInRectV65(p.x, p.y, rect)) {
+              if (!duplicateActionV65('research:' + def.key)) applyResearchV65(def.key);
+              consumeEventV65(event, 900);
+              return true;
+            }
+          }
+          consumeEventV65(event, 900);
+          return true;
+        }
+
+        function getPriorityRectsV65() {
+          if (!state || !state.menu || state.menu.kind !== 'tower' || state.phase !== 'build') return [];
+          const menu = buildRadialMenu(state.menu);
+          if (!menu) return [];
+          const w = 112;
+          const h = 28;
+          const x = clamp(menu.centerX + menu.orbitRadius + 54, 12, WIDTH - w - 12);
+          const startY = clamp(menu.centerY - 62, 84, HEIGHT - 4 * (h + 6) - 24);
+          return V65.priorities.map((priority, index) => ({ ...priority, rect: { x, y: startY + index * (h + 6), w, h } }));
+        }
+
+        function drawTowerPriorityPanelV65() {
+          const tower = state.menu && state.menu.kind === 'tower' ? getCurrentTower(state.menu.targetId) : null;
+          if (!tower) return;
+          if (!tower.priority) tower.priority = 'closest';
+          const rects = getPriorityRectsV65();
+          if (!rects.length) return;
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = '900 11px Inter, sans-serif';
+          rects.forEach((entry) => {
+            const active = tower.priority === entry.key;
+            const r = entry.rect;
+            roundRectPathV65(r.x, r.y, r.w, r.h, 9);
+            ctx.fillStyle = active ? 'rgba(137,184,108,0.95)' : 'rgba(9,13,8,0.92)';
+            ctx.fill();
+            ctx.strokeStyle = active ? 'rgba(240,205,115,0.58)' : 'rgba(131,153,110,0.24)';
+            ctx.lineWidth = active ? 1.6 : 1;
+            ctx.stroke();
+            ctx.fillStyle = active ? '#10200c' : '#edf2dd';
+            ctx.fillText(entry.label, r.x + r.w / 2, r.y + r.h / 2 + 0.5);
+          });
+          ctx.restore();
+        }
+
+        function handlePriorityPointerV65(event) {
+          if (!event || event.target !== canvas || !state || !state.menu || state.menu.kind !== 'tower') return false;
+          const p = canvasPointV65(event);
+          const tower = getCurrentTower(state.menu.targetId);
+          if (!tower) return false;
+          for (const entry of getPriorityRectsV65()) {
+            if (pointInRectV65(p.x, p.y, entry.rect)) {
+              tower.priority = entry.key;
+              logMessage('Tower targeting set to ' + entry.label + '.', 'good');
+              uiDirty = true;
+              consumeEventV65(event, 700);
+              return true;
+            }
+          }
+          return false;
+        }
+
+        function chooseTowerTargetV65(tower, range) {
+          const rangeSq = range * range;
+          const visible = [];
+          for (const enemy of state.enemies || []) {
+            if (!enemy || enemy.hp <= 0) continue;
+            const dx = enemy.x - tower.x;
+            const dy = enemy.y - tower.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > rangeSq) continue;
+            if (!hasLineOfSight(tower.x, tower.y, enemy.x, enemy.y, enemy.radius * 0.18)) continue;
+            visible.push({ enemy, d2 });
+          }
+          const priority = tower.priority || 'closest';
+          visible.sort((a, b) => {
+            if (priority === 'boss') {
+              if (!!a.enemy.boss !== !!b.enemy.boss) return Number(!!b.enemy.boss) - Number(!!a.enemy.boss);
+              return a.d2 - b.d2;
+            }
+            if (priority === 'strongest') {
+              const ah = Math.max(a.enemy.hp || 0, a.enemy.maxHp || 0);
+              const bh = Math.max(b.enemy.hp || 0, b.enemy.maxHp || 0);
+              if (Math.abs(bh - ah) > 1) return bh - ah;
+              return a.d2 - b.d2;
+            }
+            if (priority === 'lowest') {
+              const ah = a.enemy.hp || 0;
+              const bh = b.enemy.hp || 0;
+              if (Math.abs(ah - bh) > 1) return ah - bh;
+              return a.d2 - b.d2;
+            }
+            return a.d2 - b.d2;
+          });
+          return (visible[0] || {}).enemy || null;
+        }
+
+        const updateTowersPreV65 = updateTowers;
+        updateTowers = function updateTowersV65(dt) {
+          if (state.phase !== 'wave') return;
+          ensureV65State();
+          for (const tower of state.towers || []) {
+            if (!tower || (tower.hp !== undefined && tower.hp <= 0)) continue;
+            if (!Number.isFinite(tower.cooldown)) tower.cooldown = 0;
+            tower.cooldown -= dt;
+            tower.flash = Math.max(0, (tower.flash || 0) - dt * 5);
+            if (!tower.priority) tower.priority = 'closest';
+            const def = getTowerStats(tower);
+            let target = chooseTowerTargetV65(tower, def.range);
+            let canHitCamps = false;
+            if (typeof safeGetNearestCampTarget === 'function') {
+              const campTarget = safeGetNearestCampTarget(tower.x, tower.y, def.range);
+              if (campTarget) {
+                const campDist = distance(tower.x, tower.y, campTarget.x, campTarget.y);
+                const enemyDist = target ? distance(tower.x, tower.y, target.x, target.y) : Number.POSITIVE_INFINITY;
+                if (!target || campDist <= enemyDist * 0.92) {
+                  target = campTarget;
+                  canHitCamps = true;
+                }
+              }
+            }
+            if (target && tower.cooldown <= 0) {
+              if (typeof fireTowerProjectileV13 === 'function') fireTowerProjectileV13(tower, target, def, canHitCamps);
+              else fireProjectile({
+                x: tower.x, y: tower.y, targetX: target.x, targetY: target.y,
+                spawnOffset: 16, speed: def.projectileSpeed, damage: def.damage,
+                radius: def.projectileRadius, color: def.color, team: 'friendly',
+                kind: tower.type === 'ballista' ? 'bolt' : tower.type === 'sniper' ? 'sniper' : 'arrow',
+                pierce: def.pierce || 0, life: 1.45, source: tower.type,
+                knockback: def.knockback, impactColor: def.color
+              });
+            }
+          }
+        };
+
+        function getRadialDetailV65(menu, option) {
+          if (!menu || !option || String(option.key || '').startsWith('cat_')) return null;
+          if (menu.kind === 'player') {
+            const p = state.player;
+            if (option.key === 'damage') return { title: 'Knight damage', lines: ['Current: ' + Math.round(p.damage) + ' arrow damage', 'Upgrade: +8 arrow damage'] };
+            if (option.key === 'rate') return { title: 'Knight fire rate', lines: ['Current: ' + (p.fireRate || 0).toFixed(2) + ' shots/s', 'Upgrade: +18% shots/s'] };
+            if (option.key === 'range') return { title: 'Knight range', lines: ['Current: ' + Math.round(p.range) + ' range', 'Upgrade: +26 range'] };
+            if (option.key === 'speed') return { title: 'Horse speed', lines: ['Current: ' + Math.round(p.maxSpeed) + ' top speed', 'Upgrade: +' + V65.knightSpeedGain + ' top speed, stronger charge'] };
+            if (option.key === 'armor') return { title: 'Knight armor', lines: ['Current: ' + Math.round(p.maxHp) + ' max HP', 'Upgrade: +28 max HP and full heal'] };
+          }
+          if (menu.kind === 'tower') {
+            const tower = getCurrentTower(menu.targetId);
+            if (!tower) return null;
+            const stats = getTowerStats(tower);
+            if (option.key === 'damage') return { title: 'Tower damage', lines: ['Current: ' + Math.round(stats.damage) + ' damage', 'Upgrade: about +' + Math.round(stats.damage * 0.22) + ' damage'] };
+            if (option.key === 'range') return { title: 'Tower range', lines: ['Current: ' + Math.round(stats.range) + ' range', 'Upgrade: +26 range'] };
+            if (option.key === 'rate') return { title: 'Tower fire rate', lines: ['Current: ' + (stats.fireRate || 0).toFixed(2) + ' shots/s', 'Upgrade: +18% shots/s'] };
+            if (option.key === 'demolish') return { title: 'Salvage', lines: ['Current: removes this tower', 'Refund shown on the button'] };
+          }
+          if (menu.kind === 'build') {
+            return { title: 'Build option', lines: [option.detail || '', option.cost ? ('Cost: ' + option.cost) : ''] };
+          }
+          if (menu.kind === 'barrier' && option.detail) return { title: 'Buildable', lines: [option.detail] };
+          return option.detail ? { title: 'Details', lines: [option.detail] } : null;
+        }
+
+        function drawRadialDetailBoxV65(menu, option, built) {
+          const detail = getRadialDetailV65(menu, option);
+          if (!detail) return;
+          const boxW = 254;
+          const lineCount = Math.max(2, detail.lines.length);
+          const boxH = 56 + lineCount * 18;
+          const x = 14;
+          const y = clamp((built ? built.centerY : HEIGHT / 2) - boxH / 2, 84, HEIGHT - boxH - 16);
+          ctx.save();
+          roundRectPathV65(x, y, boxW, boxH, 13);
+          ctx.fillStyle = 'rgba(7, 11, 7, 0.94)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(240,205,115,0.28)';
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+          ctx.fillStyle = '#f0cd73';
+          ctx.font = '900 12px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(detail.title, x + 12, y + 20);
+          ctx.font = '12px Inter, sans-serif';
+          detail.lines.filter(Boolean).slice(0, 4).forEach((line, index) => {
+            ctx.fillStyle = index === 0 ? '#edf2dd' : '#b8c3a3';
+            fillWrappedTextV65(line, x + 12, y + 42 + index * 18, boxW - 24, 14, 1);
+          });
+          ctx.restore();
+        }
+
+        drawRadialMenu = function drawRadialMenuV65() {
+          if (!state.menu || state.phase !== 'build') return;
+          const menu = buildRadialMenu(state.menu);
+          if (!menu) return;
+          const hovered = getHoveredMenuOption(menu);
+          ctx.save();
+          ctx.strokeStyle = 'rgba(240, 205, 115, 0.18)';
+          ctx.lineWidth = 8;
+          ctx.beginPath();
+          ctx.arc(menu.centerX, menu.centerY, menu.orbitRadius, 0, TAU);
+          ctx.stroke();
+          if (menu.kind === 'build') {
+            const anchor = worldToScreen(menu.anchorX, menu.anchorY);
+            ctx.strokeStyle = 'rgba(240, 205, 115, 0.22)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(menu.centerX, menu.centerY);
+            ctx.lineTo(anchor.x, anchor.y);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(240, 205, 115, 0.32)';
+            ctx.beginPath();
+            ctx.arc(anchor.x, anchor.y, 9, 0, TAU);
+            ctx.fill();
+          }
+          menu.options.forEach((option) => {
+            const active = hovered && hovered.key === option.key;
+            ctx.save();
+            ctx.globalAlpha = option.disabled ? 0.48 : 1;
+            ctx.fillStyle = active ? 'rgba(66, 83, 48, 0.96)' : 'rgba(26, 34, 21, 0.96)';
+            ctx.strokeStyle = active ? 'rgba(240, 205, 115, 0.88)' : 'rgba(131, 153, 110, 0.28)';
+            ctx.lineWidth = active ? 3 : 2;
+            ctx.beginPath();
+            ctx.arc(option.x, option.y, option.r, 0, TAU);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = option.accent || '#edf2dd';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.font = '700 12px Inter, sans-serif';
+            fillWrappedTextV65(option.label, option.x - option.r + 6, option.y - 10, option.r * 2 - 12, 12, 2);
+            ctx.font = '11px Inter, sans-serif';
+            ctx.fillStyle = option.disabled ? '#c39a8f' : '#f0cd73';
+            const lower = option.level !== undefined && option.level > 0 ? 'L' + option.level + ' - ' + option.cost : String(option.cost || '');
+            ctx.fillText(lower, option.x, option.y + 18);
+            ctx.restore();
+          });
+          ctx.fillStyle = 'rgba(17, 22, 13, 0.96)';
+          ctx.beginPath();
+          ctx.arc(menu.centerX, menu.centerY, 58, 0, TAU);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(240, 205, 115, 0.24)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.fillStyle = '#edf2dd';
+          ctx.textAlign = 'center';
+          ctx.font = '700 15px Inter, sans-serif';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(menu.title, menu.centerX, menu.centerY - 16);
+          ctx.font = '12px Inter, sans-serif';
+          ctx.fillStyle = '#b1bc9c';
+          const hint = (hovered && hovered.disabled && hovered.disabledReason) ? hovered.disabledReason : ((hovered && hovered.detail) || menu.subtitle || '');
+          fillWrappedTextV65(hint, menu.centerX - 46, menu.centerY + 2, 92, 14, 3);
+          drawRadialDetailBoxV65(state.menu, hovered, menu);
+          drawTowerPriorityPanelV65();
+          ctx.restore();
+        };
+
+        drawPlacementPreview = function drawPlacementPreviewV65() {
+          if (state.phase !== 'build' || !state.menu || state.menu.kind !== 'build') return;
+          const menu = buildRadialMenu(state.menu);
+          const hovered = getHoveredMenuOption(state.menu) || (menu ? menu.options[0] : null);
+          if (!hovered || String(hovered.key || '').startsWith('cat_')) return;
+          const snapped = snapWorldToGrid(state.menu.anchorX, state.menu.anchorY);
+          if (hovered.key === 'university') {
+            const check = canPlaceUniversityAtV65(state.menu.anchorX, state.menu.anchorY);
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+            ctx.fillStyle = check.ok ? 'rgba(159, 209, 255, 0.22)' : 'rgba(221, 114, 96, 0.20)';
+            ctx.strokeStyle = check.ok ? '#9fd1ff' : '#dd7260';
+            ctx.lineWidth = 2;
+            ctx.fillRect(snapped.x - V65.universityW / 2, snapped.y - V65.universityH / 2, V65.universityW, V65.universityH);
+            ctx.strokeRect(snapped.x - V65.universityW / 2, snapped.y - V65.universityH / 2, V65.universityW, V65.universityH);
+            ctx.restore();
+            return;
+          }
+          if (hovered.key === 'torch') {
+            ctx.save();
+            ctx.globalAlpha = 0.30;
+            ctx.fillStyle = hovered.disabled ? 'rgba(221, 114, 96, 0.20)' : 'rgba(255, 176, 74, 0.22)';
+            ctx.strokeStyle = hovered.disabled ? '#dd7260' : '#ffb04a';
+            ctx.lineWidth = 2;
+            ctx.fillRect(snapped.x - GRID_SIZE / 2 + 2, snapped.y - GRID_SIZE / 2 + 2, GRID_SIZE - 4, GRID_SIZE - 4);
+            ctx.strokeRect(snapped.x - GRID_SIZE / 2 + 1, snapped.y - GRID_SIZE / 2 + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+            ctx.beginPath();
+            ctx.arc(snapped.x, snapped.y, 205, 0, TAU);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            return;
+          }
+          if (['archer', 'ballista', 'sniper'].includes(hovered.key)) {
+            const tower = getTowerStats(hovered.key);
+            if (!tower) return;
+            const valid = canPlaceBuildable(snapped.x, snapped.y, hovered.key);
+            ctx.save();
+            ctx.globalAlpha = 0.34;
+            ctx.strokeStyle = valid ? '#89b86c' : '#dd7260';
+            ctx.fillStyle = valid ? 'rgba(137, 184, 108, 0.22)' : 'rgba(221, 114, 96, 0.18)';
+            ctx.lineWidth = 2;
+            ctx.fillRect(snapped.x - GRID_SIZE / 2 + 2, snapped.y - GRID_SIZE / 2 + 2, GRID_SIZE - 4, GRID_SIZE - 4);
+            ctx.strokeRect(snapped.x - GRID_SIZE / 2 + 1, snapped.y - GRID_SIZE / 2 + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+            ctx.beginPath();
+            ctx.arc(snapped.x, snapped.y, tower.range, 0, TAU);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            return;
+          }
+          if (['wall', 'gate'].includes(hovered.key)) {
+            const valid = canPlaceBuildable(snapped.x, snapped.y, hovered.key);
+            const size = (BARRIER_STATS[hovered.key] ? BARRIER_STATS[hovered.key].blockRadius : 16) + 4;
+            ctx.save();
+            ctx.globalAlpha = 0.34;
+            ctx.strokeStyle = valid ? '#89b86c' : '#dd7260';
+            ctx.fillStyle = valid ? 'rgba(137, 184, 108, 0.22)' : 'rgba(221, 114, 96, 0.18)';
+            ctx.lineWidth = 2;
+            ctx.fillRect(snapped.x - size, snapped.y - size, size * 2, size * 2);
+            ctx.strokeRect(snapped.x - size, snapped.y - size, size * 2, size * 2);
+            ctx.restore();
+          }
+        };
+
+        function classifyDamageSourceV65(source) {
+          const s = String(source || '').toLowerCase();
+          if (s === 'village' || s.includes('town')) return 'town';
+          if (s.includes('support')) return 'followers';
+          if (s === 'archer' || s === 'ballista' || s === 'sniper') return 'towers';
+          return 'knight';
+        }
+
+        const damageEnemyPreV65 = damageEnemy;
+        damageEnemy = function damageEnemyV65(enemy, amount, hitInfo = {}) {
+          ensureV65State();
+          const before = enemy && Number.isFinite(enemy.hp) ? enemy.hp : 0;
+          const result = damageEnemyPreV65(enemy, amount, hitInfo);
+          if (state.phase === 'wave' && before > 0 && state.v65 && state.v65.damageCurrent) {
+            const after = enemy && Number.isFinite(enemy.hp) ? Math.max(0, enemy.hp) : 0;
+            const actual = Math.max(0, before - after);
+            const bucket = classifyDamageSourceV65(hitInfo.source);
+            state.v65.damageCurrent[bucket] = (state.v65.damageCurrent[bucket] || 0) + actual;
+          }
+          return result;
+        };
+
+        const launchWavePreV65 = launchWave;
+        launchWave = function launchWaveV65(index) {
+          ensureV65State();
+          state.v65.damageCurrent = makeDamageReportV65();
+          return launchWavePreV65.apply(this, arguments);
+        };
+
+        const finishWavePreV65 = finishWave;
+        finishWave = function finishWaveV65() {
+          ensureV65State();
+          const result = finishWavePreV65.apply(this, arguments);
+          ensureV65State();
+          const current = state.v65.damageCurrent || makeDamageReportV65();
+          state.v65.damageLast = {
+            knight: Math.round(current.knight || 0),
+            towers: Math.round(current.towers || 0),
+            followers: Math.round(current.followers || 0),
+            town: Math.round(current.town || 0)
+          };
+          const researchBonusLevel = researchLevelV65('research');
+          if (researchBonusLevel > 0 && state.jobs && (state.jobs.researchers || 0) > 0) {
+            const extra = Math.round((state.jobs.researchers || 0) * researchBonusLevel);
+            state.researchResource = (state.researchResource || 0) + extra;
+            if (state.raidSummary) state.raidSummary.researchGain = (state.raidSummary.researchGain || 0) + extra;
+            logMessage('Scribe training produced +' + extra + ' extra research.', 'good');
+          }
+          if (state.raidSummary && state.research && state.research.bookkeeping) state.raidSummary.damageReport = { ...state.v65.damageLast };
+          return result;
+        };
+
+        function drawDamageReportV65() {
+          if (!state || state.phase !== 'summary' || !(state.research && state.research.bookkeeping)) return;
+          const report = (state.raidSummary && state.raidSummary.damageReport) || (state.v65 && state.v65.damageLast);
+          if (!report) return;
+          const w = Math.min(620, WIDTH - 70);
+          const h = 52;
+          const x = WIDTH / 2 - w / 2;
+          const y = HEIGHT / 2 + 98;
+          const items = [
+            ['Knight', report.knight || 0],
+            ['Towers', report.towers || 0],
+            ['Followers', report.followers || 0],
+            ['Town arrows', report.town || 0]
+          ];
+          ctx.save();
+          roundRectPathV65(x, y, w, h, 12);
+          ctx.fillStyle = 'rgba(7, 11, 7, 0.94)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(159,209,255,0.26)';
+          ctx.stroke();
+          ctx.fillStyle = '#9fd1ff';
+          ctx.font = '900 12px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText('Damage report', x + 14, y + 18);
+          items.forEach((item, index) => {
+            const ix = x + 130 + index * ((w - 150) / 4);
+            ctx.fillStyle = '#b8c3a3';
+            ctx.font = '11px Inter, sans-serif';
+            ctx.fillText(item[0], ix, y + 17);
+            ctx.fillStyle = '#edf2dd';
+            ctx.font = '900 14px Inter, sans-serif';
+            ctx.fillText(String(Math.round(item[1])), ix, y + 36);
+          });
+          ctx.restore();
+        }
+
+        function briefingBackRectV65() {
+          return { x: WIDTH - 274, y: HEIGHT - 48, w: 116, h: 34 };
+        }
+
+        function drawBriefingBackButtonV65() {
+          if (!state || state.phase !== 'briefing') return;
+          const r = briefingBackRectV65();
+          ctx.save();
+          roundRectPathV65(r.x, r.y, r.w, r.h, 12);
+          ctx.fillStyle = 'rgba(24, 33, 20, 0.96)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(131,153,110,0.32)';
+          ctx.stroke();
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 13px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Back', r.x + r.w / 2, r.y + r.h / 2 + 1);
+          ctx.restore();
+        }
+
+        function handleBriefingBackV65(event) {
+          if (!event || event.target !== canvas || !state || state.phase !== 'briefing') return false;
+          const p = canvasPointV65(event);
+          if (!pointInRectV65(p.x, p.y, briefingBackRectV65())) return false;
+          state.phase = 'build';
+          state.briefingWave = null;
+          closeMenu();
+          logMessage('Wave preview closed. Continue preparations.', 'good');
+          uiDirty = true;
+          consumeEventV65(event, 900);
+          return true;
+        }
+
+        function handleBlockingEventV65(event) {
+          if (!event || event.target !== canvas) return;
+          if (nowV65() < blockCanvasInputUntilV65) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+          }
+        }
+
+        window.addEventListener('pointerdown', (event) => {
+          if (!event || event.target !== canvas) return;
+          ensureV65State();
+          if (handleResearchPointerV65(event)) return;
+          if (handlePriorityPointerV65(event)) return;
+          if (handleBriefingBackV65(event)) return;
+        }, true);
+
+        window.addEventListener('click', handleBlockingEventV65, true);
+        window.addEventListener('pointerup', handleBlockingEventV65, true);
+        window.addEventListener('touchend', handleBlockingEventV65, true);
+
+        canvas.addEventListener('wheel', (event) => {
+          if (!state || !state.v33ResearchOpen) return;
+          ensureV65State();
+          const layout = researchLayoutV65();
+          state.v65.researchScroll = clamp((state.v65.researchScroll || 0) + event.deltaY, 0, layout.maxScroll);
+          uiDirty = true;
+          event.preventDefault();
+          event.stopPropagation();
+        }, { capture: true, passive: false });
+
+        const updatePreV65 = update;
+        update = function updateV65(dt) {
+          ensureV65State();
+          updateHorseTrainingApplyV65();
+          const wasAlive = !!(state && state.player && state.player.alive);
+          const result = updatePreV65(dt);
+          ensureV65State();
+          if (!wasAlive && state.player && state.player.alive) centerKnightOnTownV65();
+          return result;
+        };
+
+        const resetGamePreV65 = resetGame;
+        resetGame = function resetGameV65() {
+          const result = resetGamePreV65.apply(this, arguments);
+          ensureV65State();
+          updateHorseTrainingApplyV65();
+          centerKnightOnTownV65();
+          return result;
+        };
+
+        const beginRunPreV65 = beginRunFromStartScreen;
+        beginRunFromStartScreen = function beginRunFromStartScreenV65() {
+          const result = beginRunPreV65.apply(this, arguments);
+          ensureV65State();
+          updateHorseTrainingApplyV65();
+          centerKnightOnTownV65();
+          return result;
+        };
+
+        const drawPreV65 = draw;
+        draw = function drawV65() {
+          drawPreV65();
+          ensureV65State();
+          drawResearchOverlayV65();
+          drawBriefingBackButtonV65();
+          drawDamageReportV65();
+        };
+
+        ensureV65State();
+        updateHorseTrainingApplyV65();
+        window.__mountedVillageDefenseV65 = {
+          applied: true,
+          note: 'Follow-up patch: stable layered build menu, minimized locked minimap, university-locked research, repeatable gather research, tower targeting priorities, bookkeeping report, safer input guards, and stronger horse training.',
+          hasResearchAccess: hasResearchAccessV65,
+          applyResearch: applyResearchV65,
+          buildUniversityAt: buildUniversityAtV65
+        };
+      })();
+
+
+      // === v76 radial category repair ===
+      // Several earlier patch blocks define these helpers inside private scopes, while
+      // later build-menu overrides call them from the main game scope. Keep small
+      // main-scope fallbacks so category selection can build the second-stage menu.
+      const BARRIER_STATS = {
+        wall: { blockRadius: 16 },
+        gate: { blockRadius: 16 }
+      };
+
+      function getBarrierAtCell(col, row) {
+        return (state.barriers || []).find((barrier) =>
+          barrier &&
+          barrier.hp > 0 &&
+          barrier.gridCol === col &&
+          barrier.gridRow === row
+        ) || null;
+      }
+
+      function canPlaceBuildable(x, y, buildKey) {
+        const towerDef = TOWER_TYPES[buildKey];
+        const isBarrier = buildKey === 'wall' || buildKey === 'gate';
+        if (!towerDef && !isBarrier) return false;
+        const snapped = snapWorldToGrid(x, y);
+        const grid = state.map && state.map.gridMeta;
+        if (!grid) return false;
+        if (snapped.x < GRID_SIZE / 2 || snapped.x > WORLD_WIDTH - GRID_SIZE / 2) return false;
+        if (snapped.y < GRID_SIZE / 2 || snapped.y > WORLD_HEIGHT - GRID_SIZE / 2) return false;
+        if (grid.noBuild[snapped.row][snapped.col]) return false;
+        if ((state.camps || []).some((camp) => !camp.destroyed && distance(snapped.x, snapped.y, camp.x, camp.y) <= camp.radius + 42)) return false;
+        if (getTowerAtCell(snapped.col, snapped.row) || getBarrierAtCell(snapped.col, snapped.row)) return false;
+        if ((state.torches || []).some((torch) => torch && torch.hp > 0 && torch.gridCol === snapped.col && torch.gridRow === snapped.row)) return false;
+        const margin = towerDef
+          ? towerDef.radius + 10
+          : 24;
+        if (pointInAnyWall(snapped.x, snapped.y, margin)) return false;
+        if (distance(snapped.x, snapped.y, state.player.x, state.player.y) < 36) return false;
+        return true;
+      }
+
+      function ensureV13State() {
+        const api = window.__mountedVillageDefenseV13;
+        if (api && typeof api.ensureState === 'function' && api.ensureState !== ensureV13State) {
+          return api.ensureState();
+        }
+        if (!state.v13) state.v13 = {};
+        return state.v13;
+      }
+
+      const makeBuildMenuBeforeV76RadialRepair = makeBuildMenu;
+      makeBuildMenu = function makeBuildMenuV76RadialRepair(x, y, layer) {
+        const menu = makeBuildMenuBeforeV76RadialRepair(x, y, layer);
+        if (menu && menu.kind === 'build' && menu.buildLayer) {
+          menu.options = (menu.options || []).filter((option) => option && option.key !== 'cat_back');
+          menu.title = 'Back';
+          menu.subtitle = menu.buildLayer === 'towers' ? 'Towers' : 'Support';
+        }
+        return menu;
+      };
+
+      // === v77 radial readability and high-contrast action panels ===
+      const PRIORITIES_V77 = [
+        { key: 'closest', label: 'Closest' },
+        { key: 'strongest', label: 'Strongest' },
+        { key: 'boss', label: 'Boss' },
+        { key: 'lowest', label: 'Lowest HP' }
+      ];
+
+      function roundRectPathV65(x, y, w, h, r) {
+        const rr = Math.max(0, Math.min(r || 0, Math.min(w, h) / 2));
+        ctx.beginPath();
+        ctx.moveTo(x + rr, y);
+        ctx.lineTo(x + w - rr, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+        ctx.lineTo(x + w, y + h - rr);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+        ctx.lineTo(x + rr, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+        ctx.lineTo(x, y + rr);
+        ctx.quadraticCurveTo(x, y, x + rr, y);
+        ctx.closePath();
+      }
+
+      function cleanCostV77(value) {
+        return String(value || '').replace(/[^0-9A-Za-z+\-/.%]+/g, ' ').trim();
+      }
+
+      function fitTextV77(text, maxW) {
+        let value = String(text || '');
+        if (ctx.measureText(value).width <= maxW) return value;
+        while (value.length > 3 && ctx.measureText(value + '...').width > maxW) {
+          value = value.slice(0, -1);
+        }
+        return value.trim() + '...';
+      }
+
+      function centeredWrapLinesV77(text, maxW, maxLines) {
+        const words = String(text || '').split(/\s+/).filter(Boolean);
+        const lines = [];
+        let line = '';
+        words.forEach((word) => {
+          const test = line ? line + ' ' + word : word;
+          if (ctx.measureText(test).width > maxW && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        });
+        if (line) lines.push(line);
+        return lines.slice(0, maxLines || lines.length);
+      }
+
+      function drawCenteredWrappedTextV77(text, cx, y, maxW, lineH, maxLines) {
+        centeredWrapLinesV77(text, maxW, maxLines).forEach((line, index) => {
+          ctx.fillText(fitTextV77(line, maxW), cx, y + index * lineH);
+        });
+      }
+
+      function priorityLabelV77(key) {
+        const entry = PRIORITIES_V77.find((item) => item.key === key);
+        return entry ? entry.label : 'Closest';
+      }
+
+      function resourceGainTextV77(cost) {
+        const parts = [];
+        if (cost && cost.wood) parts.push('+' + cost.wood + 'w');
+        if (cost && cost.stone) parts.push('+' + cost.stone + 's');
+        if (cost && cost.gold) parts.push('+' + cost.gold + 'g');
+        if (cost && cost.food) parts.push('+' + cost.food + 'f');
+        return parts.join(' ');
+      }
+
+      function refundForCostV77(cost) {
+        const rate = state.research && state.research.deconstruction ? 0.9 : 0.5;
+        return {
+          wood: Math.max(0, Math.ceil(((cost && cost.wood) || 0) * rate)),
+          stone: Math.max(0, Math.ceil(((cost && cost.stone) || 0) * rate))
+        };
+      }
+
+      function buildDetailRowsV77(option) {
+        if (!option) return null;
+        const key = option.key;
+        if (key === 'archer' || key === 'ballista' || key === 'sniper') {
+          const stats = getTowerStats(key);
+          return {
+            title: 'Details',
+            columns: false,
+            rows: [
+              ['Cost', cleanCostV77(option.cost)],
+              ['Damage', Math.round(stats.damage)],
+              ['Range', Math.round(stats.range)],
+              ['Fire rate', (stats.fireRate || 0).toFixed(2) + '/s']
+            ]
+          };
+        }
+        if (key === 'wall' || key === 'gate') {
+          return {
+            title: 'Details',
+            columns: false,
+            rows: [
+              ['Cost', cleanCostV77(option.cost)],
+              ['HP', key === 'gate' ? '220' : '190'],
+              ['Effect', key === 'gate' ? 'Allies pass' : 'Blocks enemies']
+            ]
+          };
+        }
+        if (key === 'torch') {
+          return {
+            title: 'Details',
+            columns: false,
+            rows: [
+              ['Cost', cleanCostV77(option.cost)],
+              ['Light', '205 radius'],
+              ['HP', '72']
+            ]
+          };
+        }
+        if (key === 'university') {
+          return {
+            title: 'Details',
+            columns: false,
+            rows: [
+              ['Cost', cleanCostV77(option.cost)],
+              ['Unlocks', 'Research'],
+              ['HP', '420']
+            ]
+          };
+        }
+        return {
+          title: 'Details',
+          columns: false,
+          rows: [
+            ['Cost', cleanCostV77(option.cost)],
+            ['Effect', cleanCostV77(option.tag || option.label)]
+          ]
+        };
+      }
+
+      function towerChangeRowsV77(menu, option) {
+        const tower = menu && menu.kind === 'tower' ? getCurrentTower(menu.targetId) : null;
+        if (!tower) return null;
+        const stats = getTowerStats(tower);
+        const buildCost = (BUILD_COSTS.tower && BUILD_COSTS.tower[tower.type]) || {};
+        const refund = refundForCostV77(buildCost);
+        const rows = [
+          ['Damage', Math.round(stats.damage), option && option.key === 'damage' ? '+' + Math.round(stats.damage * 0.22) : ''],
+          ['Range', Math.round(stats.range), option && option.key === 'range' ? '+26' : ''],
+          ['Fire rate', (stats.fireRate || 0).toFixed(2) + '/s', option && option.key === 'rate' ? '+18%' : ''],
+          ['HP', Math.round(tower.hp || 0) + '/' + Math.round(tower.maxHp || 0), ''],
+          ['Target', priorityLabelV77(tower.priority || 'closest'), '']
+        ];
+        if (option && option.key === 'demolish') rows.push(['Salvage', '', resourceGainTextV77(refund)]);
+        return { title: 'Changes', columns: true, rows };
+      }
+
+      function barrierChangeRowsV77(menu, option) {
+        const barrier = menu && menu.kind === 'barrier'
+          ? (state.barriers || []).find((entry) => entry.id === menu.targetId && entry.hp > 0)
+          : null;
+        if (!barrier) return null;
+        const buildCost = (BUILD_COSTS.barrier && BUILD_COSTS.barrier[barrier.kind]) || {};
+        const refund = refundForCostV77(buildCost);
+        const rows = [
+          ['HP', Math.round(barrier.hp || 0) + '/' + Math.round(barrier.maxHp || 0), option && option.key === 'repair' ? '+65' : ''],
+          ['Max HP', Math.round(barrier.maxHp || 0), option && option.key === 'reinforce' ? '+42' : ''],
+          ['Salvage', '', option && option.key === 'demolish' ? resourceGainTextV77(refund) : '']
+        ];
+        return { title: 'Changes', columns: true, rows };
+      }
+
+      function simpleChangeRowsV77(menu, option) {
+        if (!option) return null;
+        const effectByKey = {
+          damage: '+8 damage',
+          rate: '+18% fire rate',
+          range: '+26 range',
+          speed: '+96 top speed',
+          armor: '+28 max HP',
+          walls: '+village wall HP',
+          archers: '+town arrows',
+          market: '+more income',
+          workshop: '+tower stats',
+          repair: '+base HP'
+        };
+        return {
+          title: 'Changes',
+          columns: false,
+          rows: [
+            ['Cost', cleanCostV77(option.cost)],
+            ['Effect', effectByKey[option.key] || cleanCostV77(option.label)]
+          ]
+        };
+      }
+
+      function infoForRadialV77(menu, option) {
+        if (!menu) return null;
+        if (menu.kind === 'build') {
+          if (!option || String(option.key || '').startsWith('cat_')) return null;
+          return buildDetailRowsV77(option);
+        }
+        if (menu.kind === 'tower') return towerChangeRowsV77(menu, option);
+        if (menu.kind === 'barrier') return barrierChangeRowsV77(menu, option);
+        if (menu.kind === 'player' || menu.kind === 'village') return simpleChangeRowsV77(menu, option);
+        return null;
+      }
+
+      function drawInfoPanelV77(menu, option, built) {
+        const info = infoForRadialV77(menu, option);
+        if (!info || !info.rows || !info.rows.length) return;
+        const boxW = info.columns ? 316 : 286;
+        const rowH = 18;
+        const headerH = info.columns ? 47 : 34;
+        const boxH = headerH + info.rows.length * rowH + 14;
+        const x = 12;
+        const y = clamp((built ? built.centerY : HEIGHT / 2) - boxH / 2, 78, HEIGHT - boxH - 18);
+        ctx.save();
+        roundRectPathV65(x, y, boxW, boxH, 10);
+        ctx.fillStyle = 'rgba(0,0,0,0.94)';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = '900 13px Inter, sans-serif';
+        ctx.fillText(info.title, x + 12, y + 20);
+        ctx.font = '800 10px Inter, sans-serif';
+        if (info.columns) {
+          ctx.fillText('Stat', x + 12, y + 39);
+          ctx.fillText('Current', x + 116, y + 39);
+          ctx.fillText('Change', x + 224, y + 39);
+        }
+        ctx.font = '12px Inter, sans-serif';
+        info.rows.forEach((row, index) => {
+          const ry = y + headerH + index * rowH;
+          ctx.globalAlpha = 1;
+          if (info.columns) {
+            ctx.fillText(fitTextV77(row[0], 92), x + 12, ry);
+            ctx.fillText(fitTextV77(row[1], 96), x + 116, ry);
+            ctx.fillText(fitTextV77(row[2], 78), x + 224, ry);
+          } else {
+            ctx.fillText(fitTextV77(row[0], 82), x + 12, ry);
+            ctx.fillText(fitTextV77(row[1], boxW - 116), x + 104, ry);
+          }
+        });
+        ctx.restore();
+      }
+
+      function priorityRectsV77(built) {
+        if (!built) return [];
+        const w = 112;
+        const h = 28;
+        const x = clamp(built.centerX + built.orbitRadius + 54, 12, WIDTH - w - 12);
+        const startY = clamp(built.centerY - 62, 84, HEIGHT - 4 * (h + 6) - 24);
+        return PRIORITIES_V77.map((priority, index) => ({
+          ...priority,
+          rect: { x, y: startY + index * (h + 6), w, h }
+        }));
+      }
+
+      function drawPriorityPanelV77(menu, built) {
+        if (!menu || menu.kind !== 'tower') return;
+        const tower = getCurrentTower(menu.targetId);
+        if (!tower) return;
+        if (!tower.priority) tower.priority = 'closest';
+        const rects = priorityRectsV77(built);
+        if (!rects.length) return;
+        const first = rects[0].rect;
+        const last = rects[rects.length - 1].rect;
+        const panel = {
+          x: first.x - 10,
+          y: first.y - 32,
+          w: first.w + 20,
+          h: last.y + last.h - first.y + 44
+        };
+        ctx.save();
+        roundRectPathV65(panel.x, panel.y, panel.w, panel.h, 10);
+        ctx.fillStyle = 'rgba(0,0,0,0.94)';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '900 11px Inter, sans-serif';
+        ctx.fillText('Target priority', panel.x + panel.w / 2, panel.y + 16);
+        rects.forEach((entry) => {
+          const active = tower.priority === entry.key;
+          const r = entry.rect;
+          roundRectPathV65(r.x, r.y, r.w, r.h, 7);
+          ctx.fillStyle = active ? '#ffffff' : '#000000';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = active ? '#000000' : '#ffffff';
+          ctx.font = '800 11px Inter, sans-serif';
+          ctx.fillText(entry.label, r.x + r.w / 2, r.y + r.h / 2 + 0.5);
+        });
+        ctx.restore();
+      }
+
+      function centerLabelV77(menu) {
+        if (!menu) return '';
+        if (menu.kind === 'tower') return 'Tower';
+        if (menu.kind === 'player') return 'Knight';
+        if (menu.kind === 'village') return 'Town';
+        return menu.title || '';
+      }
+
+      drawRadialMenu = function drawRadialMenuV77() {
+        if (!state.menu || state.phase !== 'build') return;
+        const menu = buildRadialMenu(state.menu);
+        if (!menu) return;
+        const hovered = getHoveredMenuOption(menu);
+        ctx.save();
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = 0.76;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(menu.centerX, menu.centerY, menu.orbitRadius, 0, TAU);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        if (menu.kind === 'build') {
+          const anchor = worldToScreen(menu.anchorX, menu.anchorY);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(menu.centerX, menu.centerY);
+          ctx.lineTo(anchor.x, anchor.y);
+          ctx.stroke();
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(anchor.x, anchor.y, 7, 0, TAU);
+          ctx.fill();
+        }
+
+        menu.options.forEach((option) => {
+          const active = hovered && hovered.key === option.key;
+          ctx.save();
+          ctx.globalAlpha = option.disabled ? 0.58 : 1;
+          ctx.fillStyle = active ? '#ffffff' : '#000000';
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = active ? 3 : 2;
+          ctx.beginPath();
+          ctx.arc(option.x, option.y, option.r, 0, TAU);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = active ? '#000000' : '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'alphabetic';
+          ctx.font = '900 12px Inter, sans-serif';
+          drawCenteredWrappedTextV77(option.label, option.x, option.y - 10, option.r * 1.55, 12, 2);
+          const lower = option.level !== undefined && option.level > 0
+            ? 'L' + option.level + ' ' + cleanCostV77(option.cost)
+            : cleanCostV77(option.cost);
+          if (lower) {
+            ctx.font = '800 10px Inter, sans-serif';
+            ctx.fillText(fitTextV77(lower, option.r * 1.55), option.x, option.y + 18);
+          }
+          ctx.restore();
+        });
+
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(menu.centerX, menu.centerY, 58, 0, TAU);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '900 16px Inter, sans-serif';
+        ctx.fillText(fitTextV77(centerLabelV77(menu), 90), menu.centerX, menu.centerY + 1);
+
+        drawInfoPanelV77(state.menu, hovered, menu);
+        drawPriorityPanelV77(state.menu, menu);
+        ctx.restore();
+      };
 
 
       registerButtons();
