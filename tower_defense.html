@@ -507,6 +507,15 @@
     (() => {
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
+      window.addEventListener("error", (event) => {
+        const message = event && event.message ? event.message : "Unknown startup error";
+        const existing = document.getElementById("codexStartupError");
+        const box = existing || document.createElement("div");
+        box.id = "codexStartupError";
+        box.style.cssText = "position:fixed;left:12px;right:12px;top:12px;z-index:99999;background:#000;color:#fff;border:2px solid #fff;padding:10px 12px;font:13px/1.35 monospace;white-space:pre-wrap;";
+        box.textContent = "Startup error: " + message + (event && event.filename ? "\n" + event.filename + ":" + event.lineno + ":" + event.colno : "");
+        if (!existing) document.body.appendChild(box);
+      });
 
       const ui = {
         goldValue: document.getElementById("goldValue"),
@@ -2590,7 +2599,14 @@ function attemptTowerUpgrade(towerId, key) {
         const dist = distance(enemy.x, enemy.y, state.base.x, state.base.y);
         const threshold = state.base.noBuildRadius + 50;
         if (dist <= threshold) return 0;
-        const ratio = clamp((dist - threshold) / (OUTER_FIELD_RADIUS - threshold), 0, 1);
+        const farthestTownEdge = Math.max(
+          distance(state.base.x, state.base.y, 0, 0),
+          distance(state.base.x, state.base.y, WORLD_WIDTH, 0),
+          distance(state.base.x, state.base.y, 0, WORLD_HEIGHT),
+          distance(state.base.x, state.base.y, WORLD_WIDTH, WORLD_HEIGHT),
+          OUTER_FIELD_RADIUS
+        );
+        const ratio = clamp((dist - threshold) / Math.max(1, farthestTownEdge - threshold), 0, 1);
         return Math.round(enemy.reward * 0.75 * ratio);
       }
 
@@ -7482,6 +7498,20 @@ function handleTownClick(screenX, screenY) {
               extra[tower.gridRow][tower.gridCol] = true;
             }
           });
+          const university = state.university;
+          if (university && university.hp > 0) {
+            const width = university.w || GRID_SIZE * 2;
+            const height = university.h || GRID_SIZE * 3;
+            const minCol = clamp(Math.floor((university.x - width / 2) / GRID_SIZE), 0, cols - 1);
+            const maxCol = clamp(Math.floor((university.x + width / 2 - 1) / GRID_SIZE), 0, cols - 1);
+            const minRow = clamp(Math.floor((university.y - height / 2) / GRID_SIZE), 0, rows - 1);
+            const maxRow = clamp(Math.floor((university.y + height / 2 - 1) / GRID_SIZE), 0, rows - 1);
+            for (let row = minRow; row <= maxRow; row += 1) {
+              for (let col = minCol; col <= maxCol; col += 1) {
+                extra[row][col] = true;
+              }
+            }
+          }
           return extra;
         }
 
@@ -7494,6 +7524,17 @@ function handleTownClick(screenX, screenY) {
           if (barrier && !(opts.friendly && barrier.kind === 'gate')) return true;
           const tower = getTowerAtCell(col, row);
           if (tower && tower.hp > 0) return true;
+          const university = state.university;
+          if (university && university.hp > 0) {
+            const width = university.w || GRID_SIZE * 2;
+            const height = university.h || GRID_SIZE * 3;
+            const cx = col * GRID_SIZE + GRID_SIZE / 2;
+            const cy = row * GRID_SIZE + GRID_SIZE / 2;
+            if (cx >= university.x - width / 2 && cx <= university.x + width / 2
+                && cy >= university.y - height / 2 && cy <= university.y + height / 2) {
+              return true;
+            }
+          }
           return false;
         }
 
@@ -7734,6 +7775,15 @@ function handleTownClick(screenX, screenY) {
           if (grid.noBuild[snapped.row][snapped.col]) return false;
           if (isBlockedByCamp(snapped.x, snapped.y)) return false;
           if (getTowerAtCell(snapped.col, snapped.row) || getBarrierAtCell(snapped.col, snapped.row)) return false;
+          const university = state.university;
+          if (university && university.hp > 0) {
+            const width = university.w || GRID_SIZE * 2;
+            const height = university.h || GRID_SIZE * 3;
+            if (snapped.x >= university.x - width / 2 && snapped.x <= university.x + width / 2
+                && snapped.y >= university.y - height / 2 && snapped.y <= university.y + height / 2) {
+              return false;
+            }
+          }
           if (distance(snapped.x, snapped.y, state.player.x, state.player.y) < 36) return false;
           return true;
         };
@@ -7767,7 +7817,7 @@ function handleTownClick(screenX, screenY) {
         // v9 tuning patch: smoother tile sliding, economy rebalance, menu click fix, clearer floaters.
         const ECONOMY_TUNING = {
           enemyGoldScale: 0.58,
-          farGoldScale: 0.5,
+          farGoldScale: 0.4,
           waveGoldScale: 0.62,
           marketWaveGold: 22,
           campReward: { gold: 40, wood: 28, stone: 22 },
@@ -7784,28 +7834,38 @@ function handleTownClick(screenX, screenY) {
           if (!entity) return false;
           const radius = Math.max(2, (entity.radius || 0) + (opts.padding || 0));
           const maxDelta = Math.max(Math.abs(dx), Math.abs(dy));
-          const steps = Math.max(1, Math.ceil(maxDelta / 8));
+          const steps = Math.max(1, Math.ceil(maxDelta / 6));
           const stepX = dx / steps;
           const stepY = dy / steps;
           let moved = false;
+          const tryMove = (mx, my) => {
+            if (Math.abs(mx) + Math.abs(my) <= 0.0001) return false;
+            const nextX = clamp(entity.x + mx, radius, WORLD_WIDTH - radius);
+            const nextY = clamp(entity.y + my, radius, WORLD_HEIGHT - radius);
+            if (!isOpenPosition(nextX, nextY, radius, opts)) return false;
+            entity.x = nextX;
+            entity.y = nextY;
+            moved = true;
+            return true;
+          };
           for (let i = 0; i < steps; i += 1) {
-            if (stepX !== 0) {
-              const nextX = clamp(entity.x + stepX, radius, WORLD_WIDTH - radius);
-              if (isOpenPosition(nextX, entity.y, radius, opts)) {
-                entity.x = nextX;
-                moved = true;
-              } else if (typeof entity.vx === 'number') {
-                entity.vx = 0;
-              }
+            const len = Math.hypot(stepX, stepY);
+            const candidates = [[stepX, stepY], [stepX, 0], [0, stepY]];
+            if (len > 0) {
+              const fx = stepX / len;
+              const fy = stepY / len;
+              const px = -fy;
+              const py = fx;
+              candidates.push(
+                [px * len * 0.75, py * len * 0.75],
+                [-px * len * 0.75, -py * len * 0.75],
+                [(fx * 0.62 + px * 0.55) * len, (fy * 0.62 + py * 0.55) * len],
+                [(fx * 0.62 - px * 0.55) * len, (fy * 0.62 - py * 0.55) * len]
+              );
             }
-            if (stepY !== 0) {
-              const nextY = clamp(entity.y + stepY, radius, WORLD_HEIGHT - radius);
-              if (isOpenPosition(entity.x, nextY, radius, opts)) {
-                entity.y = nextY;
-                moved = true;
-              } else if (typeof entity.vy === 'number') {
-                entity.vy = 0;
-              }
+            if (!candidates.some((candidate) => tryMove(candidate[0], candidate[1]))) {
+              if (typeof entity.vx === 'number') entity.vx *= 0.2;
+              if (typeof entity.vy === 'number') entity.vy *= 0.2;
             }
           }
           entity._lastValidX = entity.x;
@@ -8858,6 +8918,36 @@ function handleTownClick(screenX, screenY) {
           return candidates[0] || null;
         }
 
+        function steerSupportUnitV79(unit, targetX, targetY, safeDt, speedCap) {
+          const dx = targetX - unit.x;
+          const dy = targetY - unit.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist <= 2) return false;
+          const step = Math.min(dist, speedCap * safeDt);
+          const dir = normalize(dx, dy);
+          const probes = [
+            dir,
+            { x: dir.x * 0.72 - dir.y * 0.54, y: dir.y * 0.72 + dir.x * 0.54 },
+            { x: dir.x * 0.72 + dir.y * 0.54, y: dir.y * 0.72 - dir.x * 0.54 },
+            { x: -dir.y, y: dir.x },
+            { x: dir.y, y: -dir.x }
+          ];
+          for (const probe of probes) {
+            const p = normalize(probe.x, probe.y);
+            const beforeX = unit.x;
+            const beforeY = unit.y;
+            if (moveEntityWithTileSlide(unit, p.x * step, p.y * step, { friendly: true, padding: 1 })) {
+              if (Math.hypot(unit.x - beforeX, unit.y - beforeY) > 0.45) return true;
+            }
+          }
+          const rescue = searchNearestOpenPosition(targetX, targetY, unit.radius + 1, { friendly: true });
+          if (rescue) {
+            const rd = normalize(rescue.x - unit.x, rescue.y - unit.y);
+            return moveEntityWithTileSlide(unit, rd.x * step * 0.75, rd.y * step * 0.75, { friendly: true, padding: 1 });
+          }
+          return false;
+        }
+
         updateSupportUnits = function updateSupportUnitsV10(dt) {
           if (!Array.isArray(state.supportUnits) || state.supportUnits.length === 0) return;
           const safeDt = Math.min(Math.max(dt || 0, 0), 0.05);
@@ -8871,9 +8961,7 @@ function handleTownClick(screenX, screenY) {
             unit.vx = Number.isFinite(unit.vx) ? unit.vx : 0;
             unit.vy = Number.isFinite(unit.vy) ? unit.vy : 0;
             unit.angle = Number.isFinite(unit.angle) ? unit.angle : (state.player.visualAngle || -Math.PI / 2);
-            unit.routeCells = [];
-            unit.routeTimer = 0;
-            unit.routeKey = null;
+            unit.routeTimer = Math.max(0, (unit.routeTimer || 0) - safeDt);
 
             // Critical fix: do not move/path followers while the town/research/summary UI is open.
             // The old v10 routine attempted to route newly hired units immediately, while they were
@@ -8893,15 +8981,7 @@ function handleTownClick(screenX, screenY) {
             const distDesired = Math.hypot(dxDesired, dyDesired);
             if (distDesired > 3) {
               const speedCap = unit.type === 'archer' ? 218 : 234;
-              const step = Math.min(distDesired, speedCap * safeDt);
-              const nx = unit.x + (dxDesired / distDesired) * step;
-              const ny = unit.y + (dyDesired / distDesired) * step;
-              if (typeof moveEntityWithTileSlide === 'function') {
-                moveEntityWithTileSlide(unit, nx - unit.x, ny - unit.y, { friendly: true, padding: 0 });
-              } else {
-                unit.x = nx;
-                unit.y = ny;
-              }
+              steerSupportUnitV79(unit, desired.x, desired.y, safeDt, speedCap);
               unit.angle = lerpAngle(unit.angle || 0, Math.atan2(dyDesired, dxDesired), 0.22);
             }
             unit.x = clamp(unit.x, unit.radius, WORLD_WIDTH - unit.radius);
@@ -8940,11 +9020,7 @@ function handleTownClick(screenX, screenY) {
                 const dy = target.y - unit.y;
                 const dist = Math.hypot(dx, dy) || 1;
                 if (dist > def.range + 2) {
-                  const step = Math.min(dist, 250 * safeDt);
-                  const sx = (dx / dist) * step;
-                  const sy = (dy / dist) * step;
-                  if (typeof moveEntityWithTileSlide === 'function') moveEntityWithTileSlide(unit, sx, sy, { friendly: true, padding: 0 });
-                  else { unit.x += sx; unit.y += sy; }
+                  steerSupportUnitV79(unit, target.x, target.y, safeDt, 250);
                 }
                 unit.angle = lerpAngle(unit.angle || 0, Math.atan2(dy, dx), 0.32);
                 if (dist <= def.range && unit.cooldown <= 0) {
@@ -11172,10 +11248,10 @@ function handleTownClick(screenX, screenY) {
           ctx.fillStyle = '#edf2dd';
           ctx.font = '700 24px Inter, sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('Place your town', WIDTH / 2, 54);
+          ctx.fillText('Place your town strategically by clicking', WIDTH / 2, 54);
           ctx.fillStyle = '#b1bc9c';
           ctx.font = '14px Inter, sans-serif';
-          ctx.fillText('Avoid overlap with camps, forests, rocks, spawn routes, towers, and walls.', WIDTH / 2, 80);
+          ctx.fillText('Pick a clear tile. Avoid camps, forests, rocks, spawn routes, towers, and walls.', WIDTH / 2, 80);
           ctx.restore();
         };
 
@@ -11536,6 +11612,8 @@ function handleTownClick(screenX, screenY) {
         const RESOURCE_ICON_SRC_V31 = window.RESOURCE_ICON_SRC_V31 = {"villager": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACz0lEQVR4AeyZW1rjMAyFldnWzHbmZZYwPMMSeGE7sK6gE8XUDXZ9iaQm1PkikliyrfNbLin8ogc/BoAHLwAaFTAq4MEJjC3gXAAzz1drHGp/ulfA2z+iktnLvszgDuAy9THuBoBjrMP9shgVcD/2x5h5VMAx1sEvi+1MGhVQ+2KDOPr7SkVbk0R8i63d2i4aACaestY4lM//70Q5Y/d61o4Z4tZubRcNADUzykoG0bd6XGKkz61YBZ8HgPlrtVsSvgbR0rMp1hqAiG9KaRMMEESoho1D59ESwH7xQaMhBEsAIf1DX30BvPwhCpbCEnzhmopRbrMC8L38IYqTn2fezijp9Zmbrs4v/1UrP6CPwWeBFQDOOH1OTx80P/9OO7m15OcQ1dMPgKzgsgWmCe8uGR1cGdN0w5/p1tvsBwAZAkJsaIst9uE+9hnd+wIwErFnWCsA0/JpvyezbV/eGtykvjesAHCumRNCYBn30lzyL0E6P/wBhL0NkbCtjlTbNqbhuRRqCSC/DQABhuwgODa0BR/uYfATqZc/8WEJgIfnpCV53H83CE1ZHCn9TcRjGmsAmEMqQYTguc4QDyOGSHaHBwBkjxWsAwHRMFqEox9ZHl4AggYRBIE5C1vC4L0/JBFfvQFgboEQhG6viHC0ewDgr4OOCgtTeQKAcPmajFUvJLa60We9tblYA4AAMYiG1epoia0dMxFnBeBa9D4xGCuRuk6TNgAk21rmeSUAB5PfCBg7H9vp0QQgCUrCnelkumFMmIDIBPU1awGwEx/rMoCgBUD+1xcne5J7DQCy530FS8UpzKkBQCGNhiFkG2Q7tDr2AlBbiabEBYLK3HsBnHbvB+D7AYSRTnodAE66cGpp21UA/uChlmZiIKUPQjsAiZy7mwxhngNAN7lyxwGgzCgbcY9X4GwyvY5RAb3kfkq/UQE/ZSV7dYwK6CV3lH578/gEAAD//1I0iqwAAAAGSURBVAMAwLjioyj1SfwAAAAASUVORK5CYIIA", "villagers": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEUklEQVR4AeyZS9bTOBCF5d5Vn+5d9KBXwIQxIxjDiDETVsCAXcBhWUGfy5WUZZUetpOYE+f4RlK960o2Dv9f4cU/JwEvfgDCeQLOE/DiDJy3wMYDcIn+rYims6vVr9dulqS22HwCvr4NoQaviP/+DqEG9a3lQK+2PeNmAnqSHdH2JOCIu/LIms4T8Ei2j5jrPAFH3JV71pTGzp2AnheP8OZLqGJKmsYN33+FKibfag7qmGzTPMV1joAhBmpFNI3X+x8heIjq6Upjivj/zyF4EIvbt5cD+c0qzVNc5wi4hfJnwiqJgW93IyYE8dFRmy75qo4cQNe5ET3Q+DmbjGwNAZfrbmcCuiKKAxjQPGMJ395Z8kqWcx05gBAx12VWvQRI85lAzSKKo7mSA3rsSjY1nfhz6oqWPQRsb15LoTia1LUdkaO3srVziVMkoYeAtWUc2m8bAZ/+DUGRa1N1OqY27DZI5ela/RlTHWvkFsga0UrA8viTMCa5XOIJ46hN6yiaXVf9TBoX+MRhfKAqCYwqRwemuNc40xqVxVVvhcwlXiySxRKtBCw9J8nw4We4fPxnWi2Hmr7ka6PV4tT0NpadrydAmB1vgWHgXcOGNfO4Y8Pg64fB141Rdsozxsp8rSeAYBRngczC6phbnc55JwC6zo34WqQ2Vsc81RfW2wgoBP5TVK0EDOPTfs+u4q0x/gawMTkJyK1s61ziufdZKwF+GSQAvsX4nMiqeeqDrDIRkgMk4tmypp8Zy2I7AXrPkRxI3Nt3TqZadpw5JADmHlbm8cKpvIcA/zagOEBUGrZApjrmAL02zwiQKwnoWacgDkCOjQUy1TEH6ENwj3+Inx4ConkMJkGZL0EBOVhL/LVhK0dmgZ3V23kuBzJrI/7F5jHvJQAfOQmSgHUbsAdY604z9wAZ2APPJifHHoS4WaH+WUMAUWG2jQiKAWEsSPyYQwIIDR/8QckUPQjXPKHls5YAjU1D8pQneQ4cTbD8DwrxhQQPnAKg2XLxVUYOsMyj3tlxKwEElUZIngMWPsSXJnOY+4ltLgeyuW3zag8C3F9aDVX0+PbYNqQWky0EUJD8TG7fAXzIzHgZ3wTZeSQeuD3QkQMwr4P4dato0UsAgQUUA2KQputmW2+cphX4gaYk0ajHNpq3EjBvujNJzNN2pU1vy0PN1bw1AgjSe8z9pDQEtFG11DU6oPK1IzGA/ItAD26kEgHiKIHcAKsUxATaOEFYM+4JYgIhIhvZI+B+zdsypDj5A4iV7z2XPNJTEtsj4P5FJYU8a5kjQO75R1bE29xj8i1OQY6Ax5SiWeR46mrz6AZw8qQELBhyA+6poLhHnALyJA/ElICXufd1/5YEqOZFxpOAF9lot832E3DvhxQPKHIAt9wdFOQxD8J2AnbIfQ1x7yY1UUOe5xCgBR5gPAkwm/D4V2CT/FnT8wQ8i/mj5D1PwFF24ll1nCfgWczvlXdrnN8AAAD//1RtgScAAAAGSURBVAMA0T79KnzWKy4AAAAASUVORK5CYIIA", "gold": "data:image/png;base64,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", "stone": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEAElEQVR4AeyXO3LbMBCG4Yxv4Auod5XSrnIJ965yqFTufYlUdpnKvS6gQr1mFHwcLgeCFiBeJOUhPfwHj31g/x9LSf5hVv63CbDyBjBbB2wdsHIFtldg5Q2wfQje8itwtt0ZgjW1eW5RACFtnp6ertDTHnz6dfEwlwBScGgUAmeXtGy6o9j7PfL107JhagEo8IKUEHBHW/rgZ+cXz+FwuFjLQuLtuou1Y9EzlQBdUU6R0eLE7/Pz0wDfOSQCfsQylmIKAYYbzy0KMsAV4eHhQU2jiILoqm9ss7UAHfnYgWKDADidTrI1jL4Ig8GZIAzxbOHPaDEqgvW5eFoLcJGchUaQfQgw3t/fG3wAaw34ClnfLvuOCL5LdN1SgKvbpzghqFUhxI7Ho8HP9YHQ2KtAvBtTMm8pgHp+iggaESHP6MI/hFjO8PdT15MKQHEUIgXG2hw/IGRfXl6MBrHjK5BzZJ0zthCADx7QfYX5BUpxfotrRRIrpDU7e2LHl3UtagSA9Pn366vRQIGAAl0RQl2AL+TwTwG+xKT4xnxKBRiIh5KLKH6RWifgA6FQrtA+McSG7Cn7JQJ05FOS44MQFKkBO/sQYV4CYskBbPydRdZTIkDwgH9fXwa4Dn/e3tRXRIRxfZeY5wqg3j6kwc/HRwOEiJCXtT8iAnh/f/dN6nq/35u9hW+kC/y91HWOAEHyHOYSZz1GHh8XKSLsdjuzs9BEcHPlzHMEuMrLrbNZS54uACkicB4iMLrou4BvJnd7dF4lANlryZNDkCOCxNSOqQKo7e+Try1mifhUAZJqy33vtaRzd0FTATRCsT35DIn51NrG4hcVgFcIEcBYoVPZmwlQ2v6IADlXhDlfg2YCQKIUiABcEUpz5cbdhAC5Rbf0n1SA3BulCzRyLX/5+fmLBcgl5x+cs+aXHyKAUFz/K3Ky/wbv+JBzD+e2xkQQnzE/N29ojgjYYiJgz0VxB6QehAgg1T/mhwjAF6H09jmrSoBWxCgkB4iQ4x/zzRHg6jWIJZ7LVnP71JgjAP5BEfjx4n9OEFAC8vT/3kbDa8mTPFcAYm4CLchDpESAYBeQsBbcfiwHxIH1yf7KszFXT4kAJOlE8Itt+BrcQVKDPRziwE7rn1IBOJkiBiEQA2CQkXkFuvw23h/tVrunRgCpwi+QtdiG8e/HxzAPTXrh1PhQjL+fu24hgHZm1xm+ARGAv896CfKcO5UA5L4Q4dfzsxEgAsAJLEWes6cUgPydCD1B1h1ECPaB3Zy17e15wzO1ABwEuUEICAussbPZcbFnDgGEnJB1R7EtNs4pwGIkYwdvAsTUWYNt64A13HKM49YBMXXWYNs6YA23HOO4dUBMne9gq63xPwAAAP//pSqkhgAAAAZJREFUAwCzRNaQ6Vte2wAAAABJRU5ErkJgggAA", "wood": "data:image/png;base64,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", "food": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAD+0lEQVR4AeyaC3bbIBBF9bqWppvrerq5pntJfScMwRhJgMCf2D1+Yhh+cx9qeprkx/Lkf76bAR+n+3Sdwv3PdzEgQn98EBo4AbLO2uM7GGCQgCMHTWPPldpHNyDCO5ykpRaeNY9sQBEeqBbdkwEAufYYmHdx09w8YrEka3hs6dYGAGL69/a2oFCs5UKcN4xdwOeTavvXNoDiowB2pQX//RN7zI0dD/yWvZ+3kt1+ni72r2UAIB8O621e0c/398XhvT3NYe2psU8aWyJ/SBE+BvmctD/TAIo1rQGnhZRiTECnMdvn1G6++lJkjgFrtjTDgFhsC3h6+3nBwYQ8fdaXInMMziasdEYbcPaar5x5kd6C98lugqRFkqctlmI/BnHCTjDSAIPfOe9iuAbeF2EC8r4UeQmQD1W3owyYDp8SYYIUeWOQzqmNRxjQBV9b4No8TFgb28rnY0cN6IZvefXzokf2jxhwc/jwFvCvTrcnvQbcHD4j7jah14Ds/LrujNc+vAV1BRRm9RjQdfvAF86/earHgOaigeemUPPiyQtaDWi6fcDRPYK7r60G+Lrd1sHvGR6IKQY4PAfcu4YaADi691tPL2WIAUAjwFF6wIz41+9lSXXkjMMGAE4BM8FTWGLO8+810NLvVbcBgCMOngUPLOIMQFORG6FmA4BGHA44Ih4lgF0zgPM6Ww2I//ceCe7AtNeATk1oNYC1ZgLF0jki9kBHoMPbaDWVatnL9RjAnt0Hshil4PRvpV4DqFdAIDq1Yj7i1mvXzJx3xADqsjcBIDreEpfEOOCoNN6aC69/67Kz+UcNYLMzE0iUBHwpPyBn5/fuM8KA6rNH3TwHhts/BM8+Rwzg21Cu+CMrbhqx+SwF+CHb9xhwBs1PahHV0CLi1ATiUbefwB++fepsMcDAAXSxQUk+DnhpvCcHOAprh8CzV40BZ+AsqhVGjDAhAx8GD8eeAcDHv98saBUmsCaBoFsl1qDTZKDRKRz72TLgMHxeaoDJ0xd95qEwMAU87L1sGXDo5v0AyerngRbAkI+nLXkUcsxHoTunWTPAbn/CkQChaATArnAe4yh05zZrBlTfviT7JYVSmZJKaXIMrInxq2nVgJoKJBiWPbM+J9VseIM53QZIn1z+VT6vXbJxe+RjM/ute3cZIG1zSdvjrUXOnL9qgFSGkL7ya7cfCv6aGBL32KwZYMVL1sS6JevzQDGfBpIN2SPN32u8ZgD1GoQk+yovKeYISpL255TW3TK3ZQB1QZSKXJQkM4eEJGt4PJL2DNhigRi5CRZvLbjHsSMGOA/gyPsP1Y4w4KGA82JfBuSOPFv/9QY8243nvK83IHfk2fqvN+DRb/xo/f8BAAD//9zJN0oAAAAGSURBVAMA0hh3kLh7lMEAAAAASUVORK5CYIIA", "science": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEJUlEQVR4AeyYQbbTMAxFUwYMYR8wgSXALmAFbAIGsBeWwYg5I9gHbKD4+lg9airbsuPUv/2fk4cUSZb1XpI2/c+WR/7vSYBHfgMsT3fA0x3wyBWY+Qgcg/YlhPT+x0wBlu8/fplItEWcdLqPmSXAEfI5SuRAyiNEcsebWQKMZ9LZcZYAh4/v31ZHVndBtba3YJYA7nmTCLs9Bg9eAKXULiJMFcDzGCBAugtwh4swU4ADjLzYS4SZAsDd9WFIIRghAn00ZgugZ3H5o0W4OQFQaaQINymAiJCE4IMREG7GzQogTJMInHaJMFuArqFhq7FFhNkCxF+Dmkyv3yvCCAG4ihpeDsVfhN4muq5HhF4BToTZVCMMdMoFP3dQk8uZcd4aBWZBCjJLcl2mR4A4PBuB9S7EQIrH2uSLiTFVI/GshXhKxrdHzgWffj5fPrx7k9LtpkUABo+3rWd4VRPXhdHENj33EA1rOSL54GAFy78vr5eX3/4sCAFUfSitH14BGL5pcLZGBAvkPFBkIGwtIX5ABEEqIp7csvEI0EW+vG096yCvm0BYQ+eKfk2AKeTVxJBSp+PdmgDNt/2IEdXVH9Gu2KMkQLz6xdX7Jne/+oxfEmDK1WeoAeDiRdR65QRgcW3tg84fjz4KOQG6rz7P7xozlOLdwLOvJUCUbk1Cn+caU0PuxdffiwZxQK4BcY6G+q5SS4Cz4TURfHaBjIBzwDlWavAFEqMGSNyytby1xorxYmTF1zFTgHWRPoeMgDgDA3ziWAvkBNQLqBUfyzl12IDeu4BvEEFokz/WAjRtyKAa+W3OM7KGqCat4/jk98ZagHj7772p9IekQGLYv59fYWSWposSFzb8dyGAtZaB1rDqtsR0/y19WtdWBWAwmvK1okGsBllbqyOve+MTuwYuBFh/ejIMaB2mhXxrb2e969FZC8Anp7N/vaxHuHrXagXEAYVi8U2sBTCLeoITyS+8BvPh6pnbFGD9GHgaPZQaiLeIbwkw9DHYIsw1LoQlQJz5GpuzkePDsumCtM6dEyBuSjPAoKMBcZC7XTv3PTAnawF+DTkBWBdFwPE2o9YLiINK/WmGSp1Os0ZD5y78kgAU0whbBFeyWNCYTIK79m5sfVFeE4AFDHL62zsBC4gArFxLLJFvWbKp1iOAbIAQ4p9ZbmVAEBHWIO6BIp/dy9OnpaZFAPrGOwHHAiJYsGp1DOIgxCAOgnudo1UApooipIE53wTV56rEZegeAVjLsCchFAlyVVAvCMWxV7BTjl4BZNjT8ELIY9Pi09p0PtJUfwTJZlsFkD5CpsXK2ql2lABTSWzZ/J4E4LYXoIn4WM5N3IsAkSR/BxDwsxiYrFXwXgSIf0HW7yCKY9G9GwGKLAvJuxFAf/0KX2Li5+zNC5CInX39QhyoXHIvzX8AAAD//2X9Sq4AAAAGSURBVAMArTzGjSq7ORcAAAAASUVORK5CYIIA"};
         const RESOURCE_ICONS_V31 = {};
         window.RESOURCE_ICON_SRC_V31.hammer = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABt0lEQVR4AexYW27DIBCk/e653GvlWvW5+t8yCKQVsgMkhHFgIo94rWFndkikfLrFPxJgcQM4OUAOWFwBXYHFDaAvQV0BXYHFFdAVWNwA+hVgXIE/7zrAN+Of/MTRAljitp/nNWz8jAAgcIS7yW/b5oAYhPdjl9M8IgCSBgIRkEmIFLAGxOFxg3eOV8bOtgoQiCF5IE8Vcwl+DbEJfujQR5vjbD6Pe8m4VYBQ9ZpMjBAIDyQxh0FCPk7zI9sWAQKJ1uRAMqH13RHxLQIUq7/vuyvBkkKsHTP6tQKE6iPhewCB2/eXS8DY4MP0bfds3sa8rF8rgE0ACZ/BxgUh4gTiY/daTa0AIJDQhQGc5DfCnr7hPbUCdM0wku+656ObDRfAkKdXH6KNFiCRTi1yoGK0ACB7GfJIhiEAzr0MphegpLQEKCk0+7ocMHuFS/zkgJJCs6/LAbNXuMRPDigpNPu6HDB7hUv85ICSQrOvd3fA7efXWVxdwN4C4N+eIwzTofWg3gK0nk+PlwD0EpATkAPIBaAfLwfQS0BOQA4gF4B+vBxALwE5ATmAXAD68XIAvQTkBN7eAc/q9w8AAP//eu9tmAAAAAZJREFUAwDARGOBY9MrpgAAAABJRU5ErkJgggAA';
+        RESOURCE_ICON_SRC_V31.stone = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAuCAYAAABu3ppsAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJZaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49J++7vycgaWQ9J1c1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCc/Pg0KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj48ZXhpZjpEYXRlVGltZU9yaWdpbmFsPjIwMjYtMDUtMDhUMTI6Mjg6MTM8L2V4aWY6RGF0ZVRpbWVPcmlnaW5hbD48L3JkZjpEZXNjcmlwdGlvbj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+PHhtcDpDcmVhdGVEYXRlPjIwMjYtMDUtMDhUMTI6Mjg6MTM8L3htcDpDcmVhdGVEYXRlPjwvcmRmOkRlc2NyaXB0aW9uPjwvcmRmOlJERj48L3g6eG1wbWV0YT4NCjw/eHBhY2tldCBlbmQ9J3cnPz7FcyRBAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjY6MDU6MDggMTI6Mjg6MTNcJbpFAAACpklEQVRoQ+2YMW7jMBBFvxfqXegC6lW5VKq9hPtUeyhX6nWJVFGZyr0vwMK9AG2jEcbDGZGiKMcI8oAADimI/5FDmjDwy/dykA3fwCgbGMF8wQd2ZA7eNM1jD4C+7/m/Zk6zI5Gl2QQbb9RCazARNavamMAIYyY5FEZ7zjmHsixl84wlslUgKrhEE3HOAUCMRDaB6DKw6Pvek5ACvE1bhT/0YSXR4Z1zcM5hGAbZhaZp5Gb1KMtyXh025rzXUgU8tIBgJVEUBYZhMJ+DCCtRJIBEAW/2nXNzQA0Kdr/fURTFQ59cBVlCVhuRsgdUAUwDDcPghVzCKiE5Bth+4Js5iwCYxPF4BKaSWYKCn89n2QUA6LoOMERSBdQvKe0UCa1C3/dmcEnXdZ7EWoERAP69v8t2AMClbQFlpiyJNeEJKbFGYLSCSy5t60lIUsITXCJWIDo8QashoZMmNTxB+4LnThL4ul4BAKe6ntsubRsss2cKqOG14AiE51zaNkridrsBAKqqkl0ksXiV2CU8wWbRpKoqVFU1iyyhrYAnkCs8EbsSFnwVtBVQyRUe05EcsxIxSAFv9qGEfyWkQBRbZp/ItQpJAmuhPbQHTxE41TW+rtddRFYLpJYP7SMukaOMVgts4VTX82rk4qkCe5BFYO2MWsdyzDevJCiwNtwW6PqwJBK6Cx3klTimZnOeMnSBW5LgSIFkaIPmwLrMydlHrECuYGvRrtMSTcAro1dAm321gaFe7LDhy0wSe622wsNYgZdiKTwCAruWUujdXdcFwyPUOaH+LrS1jCaBg/WDWWS2uIcm1IFSJZjAJpZKSHJQ/jw+Pj9lk0eu8Mj0kofTigv8fXubPxM5wyPji9Qjl2RIJHd4ZH6ZutnxeOLkHA/Y44XGZt9jnJ/Bf6zCbEuLGCezAAAAAElFTkSuQmCC';
+        RESOURCE_ICON_SRC_V31.hammer = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAiCAYAAABBY8kOAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADGSURBVEhL7ZZBEoMgDEU/Xfdc9Fq9VjlX93ZjMCYfbCMuOsObwXHA5BFgVOCPWda2I9mOk1hBzd8T2SChG5NzBgCUUqQv1YuhCiRIUMFoxeqY9XkqWkAEDCJ1sboqJ/pGotFCFitVaZGb0Qio6EhilotytHStE+Z4Pu7b/euth5KdrD4MN/WgkDpth5K6MYuImsmi6GrQqOg0bC+Hi+wbQRgtkuRuC0aLwCS4SESZojBTFGaKwkxRmCkKQz9SHVq/Zb/muY4PWv06oRNAFQwAAAAASUVORK5CYII=';
         Object.keys(RESOURCE_ICON_SRC_V31).forEach((key) => {
           const img = new Image();
           img.src = RESOURCE_ICON_SRC_V31[key];
@@ -11946,6 +12024,8 @@ function handleTownClick(screenX, screenY) {
       (function applyResourceBannerV32() {
         const RESOURCE_ICON_SRC_V32 = {"villager": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAACz0lEQVR4AeyZW1rjMAyFldnWzHbmZZYwPMMSeGE7sK6gE8XUDXZ9iaQm1PkikliyrfNbLin8ogc/BoAHLwAaFTAq4MEJjC3gXAAzz1drHGp/ulfA2z+iktnLvszgDuAy9THuBoBjrMP9shgVcD/2x5h5VMAx1sEvi+1MGhVQ+2KDOPr7SkVbk0R8i63d2i4aACaestY4lM//70Q5Y/d61o4Z4tZubRcNADUzykoG0bd6XGKkz61YBZ8HgPlrtVsSvgbR0rMp1hqAiG9KaRMMEESoho1D59ESwH7xQaMhBEsAIf1DX30BvPwhCpbCEnzhmopRbrMC8L38IYqTn2fezijp9Zmbrs4v/1UrP6CPwWeBFQDOOH1OTx80P/9OO7m15OcQ1dMPgKzgsgWmCe8uGR1cGdN0w5/p1tvsBwAZAkJsaIst9uE+9hnd+wIwErFnWCsA0/JpvyezbV/eGtykvjesAHCumRNCYBn30lzyL0E6P/wBhL0NkbCtjlTbNqbhuRRqCSC/DQABhuwgODa0BR/uYfATqZc/8WEJgIfnpCV53H83CE1ZHCn9TcRjGmsAmEMqQYTguc4QDyOGSHaHBwBkjxWsAwHRMFqEox9ZHl4AggYRBIE5C1vC4L0/JBFfvQFgboEQhG6viHC0ewDgr4OOCgtTeQKAcPmajFUvJLa60We9tblYA4AAMYiG1epoia0dMxFnBeBa9D4xGCuRuk6TNgAk21rmeSUAB5PfCBg7H9vp0QQgCUrCnelkumFMmIDIBPU1awGwEx/rMoCgBUD+1xcne5J7DQCy530FS8UpzKkBQCGNhiFkG2Q7tDr2AlBbiabEBYLK3HsBnHbvB+D7AYSRTnodAE66cGpp21UA/uChlmZiIKUPQjsAiZy7mwxhngNAN7lyxwGgzCgbcY9X4GwyvY5RAb3kfkq/UQE/ZSV7dYwK6CV3lH578/gEAAD//1I0iqwAAAAGSURBVAMAwLjioyj1SfwAAAAASUVORK5CYIIA", "villagers": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEUklEQVR4AeyZS9bTOBCF5d5Vn+5d9KBXwIQxIxjDiDETVsCAXcBhWUGfy5WUZZUetpOYE+f4RlK960o2Dv9f4cU/JwEvfgDCeQLOE/DiDJy3wMYDcIn+rYims6vVr9dulqS22HwCvr4NoQaviP/+DqEG9a3lQK+2PeNmAnqSHdH2JOCIu/LIms4T8Ei2j5jrPAFH3JV71pTGzp2AnheP8OZLqGJKmsYN33+FKibfag7qmGzTPMV1joAhBmpFNI3X+x8heIjq6Upjivj/zyF4EIvbt5cD+c0qzVNc5wi4hfJnwiqJgW93IyYE8dFRmy75qo4cQNe5ET3Q+DmbjGwNAZfrbmcCuiKKAxjQPGMJ395Z8kqWcx05gBAx12VWvQRI85lAzSKKo7mSA3rsSjY1nfhz6oqWPQRsb15LoTia1LUdkaO3srVziVMkoYeAtWUc2m8bAZ/+DUGRa1N1OqY27DZI5ela/RlTHWvkFsga0UrA8viTMCa5XOIJ46hN6yiaXVf9TBoX+MRhfKAqCYwqRwemuNc40xqVxVVvhcwlXiySxRKtBCw9J8nw4We4fPxnWi2Hmr7ka6PV4tT0NpadrydAmB1vgWHgXcOGNfO4Y8Pg64fB141Rdsozxsp8rSeAYBRngczC6phbnc55JwC6zo34WqQ2Vsc81RfW2wgoBP5TVK0EDOPTfs+u4q0x/gawMTkJyK1s61ziufdZKwF+GSQAvsX4nMiqeeqDrDIRkgMk4tmypp8Zy2I7AXrPkRxI3Nt3TqZadpw5JADmHlbm8cKpvIcA/zagOEBUGrZApjrmAL02zwiQKwnoWacgDkCOjQUy1TEH6ENwj3+Inx4ConkMJkGZL0EBOVhL/LVhK0dmgZ3V23kuBzJrI/7F5jHvJQAfOQmSgHUbsAdY604z9wAZ2APPJifHHoS4WaH+WUMAUWG2jQiKAWEsSPyYQwIIDR/8QckUPQjXPKHls5YAjU1D8pQneQ4cTbD8DwrxhQQPnAKg2XLxVUYOsMyj3tlxKwEElUZIngMWPsSXJnOY+4ltLgeyuW3zag8C3F9aDVX0+PbYNqQWky0EUJD8TG7fAXzIzHgZ3wTZeSQeuD3QkQMwr4P4dato0UsAgQUUA2KQputmW2+cphX4gaYk0ajHNpq3EjBvujNJzNN2pU1vy0PN1bw1AgjSe8z9pDQEtFG11DU6oPK1IzGA/ItAD26kEgHiKIHcAKsUxATaOEFYM+4JYgIhIhvZI+B+zdsypDj5A4iV7z2XPNJTEtsj4P5FJYU8a5kjQO75R1bE29xj8i1OQY6Ax5SiWeR46mrz6AZw8qQELBhyA+6poLhHnALyJA/ElICXufd1/5YEqOZFxpOAF9lot832E3DvhxQPKHIAt9wdFOQxD8J2AnbIfQ1x7yY1UUOe5xCgBR5gPAkwm/D4V2CT/FnT8wQ8i/mj5D1PwFF24ll1nCfgWczvlXdrnN8AAAD//1RtgScAAAAGSURBVAMA0T79KnzWKy4AAAAASUVORK5CYIIA", "gold": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAGOElEQVR4AdTZSZLkxBaF4fT3jBGbYcYi2ArLYSssghmbYYRhgX9CV3ZD6Y0UXUaW6U+53G93jiKjyqz+9/F9/1zq6CPq8fz6bgZkwR9//fFDk1V2xK6P7dt3MoCgTQXx28Nu4Qzr9lXeurfdvoMBBGAbOonb9lqLFHeVn2Pf3YBl8CRk+chnAbN1zm3FvqsBhGOZ+cef/16Ez8QswY0fa95WL4e8owGfBl0F5LkPr5mHXsI7GUA4rma9V7xiv//2f7cm72JAU/izxXPkHQxoijfcrcRHfvTmo/ZXG/Cl4pnwlQZcifdxh6FuwVuHt45OjaueYr7CAENA/4V7hCtAuPtAuOPgqverDbhqbqJ7xBMOwqFei19+/WfZTr22OV5pwNZ0mab+SAPVp3MX4TJGwp3vxe97vsIAwmGeBUNgebjhxxHxhEMfRBv39XmZ6dkGLE00Ddbm8Xj6Try3jl4y4c5aveTDOZ5lAOHQY6M10HY4WRgaI+G5RKuXfDG5xjMMaApvDWSYI7QG7+V5+61evRqPNqApvjfskX2De2MYxROOM+LVe6QBTxNv0BGEOz8rXs4jDCAc6i0YBMvDDT+8dZx56/t+8qEGemPca8BDhRvS0O6joZ3f89blB/cY8El8FL3lTjgIR68G4XB+61uPfDVuNWATbwgodiuEyx0Jdx6D6wd7wdkakXfWAMIvuXk0joJn7nIh54x48ZkjNZgHs2PNvxw1YBEuKSV/XP608/ERA/z3dOxn5BCOXpah0TtXRz56MZGfZ4/1EQMuCkuAdeZyhwmjofXIg+sN+yAcsxpikXM9w97MgItAaObe4nLQBDWC2eAhvtVPDfuzGmLUIdQ6owZ6Blxq8Pa7fjkgcBajWa35YWhYtzAwDB3kOHXkI+/v12pAjf2ZGvbU2BtwqQdY/iOirrfrcqMJmkEhDd17GLh3Zl+dWQ1xUWcmXuzegEV4K1HwWRMMLM/QsO6Rh973VwdHaqgjH3pl1PCc62QDLg4jyLrFZf0ktM5iL8fkZnG+vxva3tGhxe4Z1RAbuvbzZAMO/7WWBSreY9+sFWdwwpHPDQw1kM/yWj7s7WvYUwNqwF7mygAHIU6S5xHlp9Hp+MzQ6A0tuzWw/UC+tRqwzoSGUZ1PBihwxISIOWuCoWFg6BcYGJ5HQztXw31fw54aUAP2WqjRNEBwCLTuETFMQC/Ovmaw7g3tzMCwbqEGWmf2CHcf1XAeNboGCMoCPfeIZkxAjtMI9giHdYuo0zqzt6+zr3VEvBqo9QqGBtSA7YuxHPh93xu2Nur+1Wrg4Kh4M7VQRw20zu3FPHVdKss1NUBUFlYmRkSsvBEGdm5gWLcwNLztIMepg1GNHF/XpbJdhwzYotdFqSZgffx0Y0Lg0IDusIb1bGjCxfU4Wkf+WqtYZ64MKFVYPmytCYv9iF+Lx/bVPeINC4eEw7pH1Gy9dTlqqQHPPdRBPS+VT1c2YAkoJ034VLGxESY4mg0sZh14+e7wvCfE7/f3z1Gn7pdK88oGCFgCSzUBNnpkUd5SLy7vHxWvHnKuNeGY1SEcNaes1Fv72hsgaksqEyPCBEMtiTXe/RYMjJZw9aLHEfHiK6UyvVoGRJIC+CgDYWHCljSIjZh8JxqEI59ZEw7CYa+FGljPynqf3kYGRPK0WMuEMjHCsNCkJdw+4e4j4c6jTl2XlXo7dh0xQKVp4b0JS1I1oVSsA8PCM+GwzhAOeyfFf8g5w1EDztTc/vUYSWHCTLj4LHwkXi3IuYfTBoSYWdPWJ2KWE+cj4WKS8FKfg7o8f501QLPhl2IeIZvgox7kGGtvPTghXurdnDVAw82Esvv9drgnTCBwf+Y59gmHvRbeOupZSdTlfdctBugYQyyfhjIxomUC4VBsJNz5Ktzy4dxqQAxS6gKLEXXdvbIJWfgJ8fqg2+OWg3sNiJ6HBgsTJM2Ei0lv/lB9OWd5lAH6GhLWQ06IVw/DevccPtKAbY4y+U7YAhsLbx31qFSefj3DgGXwctIEolEVl5V6e/71DANMTcTyxVgmRhANSZVSeen1LAOIIAZNI4iGwIo41OVrr2caEEoIw2KEzXcQbg68wgB9sJhg8U680gC6mZCx96W82oCHi7234L8AAAD//wTH2FoAAAAGSURBVAMAALxNrg6f070AAAAASUVORK5CYIIA", "stone": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEAElEQVR4AeyXO3LbMBCG4Yxv4Auod5XSrnIJ965yqFTufYlUdpnKvS6gQr1mFHwcLgeCFiBeJOUhPfwHj31g/x9LSf5hVv63CbDyBjBbB2wdsHIFtldg5Q2wfQje8itwtt0ZgjW1eW5RACFtnp6ertDTHnz6dfEwlwBScGgUAmeXtGy6o9j7PfL107JhagEo8IKUEHBHW/rgZ+cXz+FwuFjLQuLtuou1Y9EzlQBdUU6R0eLE7/Pz0wDfOSQCfsQylmIKAYYbzy0KMsAV4eHhQU2jiILoqm9ss7UAHfnYgWKDADidTrI1jL4Ig8GZIAzxbOHPaDEqgvW5eFoLcJGchUaQfQgw3t/fG3wAaw34ClnfLvuOCL5LdN1SgKvbpzghqFUhxI7Ho8HP9YHQ2KtAvBtTMm8pgHp+iggaESHP6MI/hFjO8PdT15MKQHEUIgXG2hw/IGRfXl6MBrHjK5BzZJ0zthCADx7QfYX5BUpxfotrRRIrpDU7e2LHl3UtagSA9Pn366vRQIGAAl0RQl2AL+TwTwG+xKT4xnxKBRiIh5KLKH6RWifgA6FQrtA+McSG7Cn7JQJ05FOS44MQFKkBO/sQYV4CYskBbPydRdZTIkDwgH9fXwa4Dn/e3tRXRIRxfZeY5wqg3j6kwc/HRwOEiJCXtT8iAnh/f/dN6nq/35u9hW+kC/y91HWOAEHyHOYSZz1GHh8XKSLsdjuzs9BEcHPlzHMEuMrLrbNZS54uACkicB4iMLrou4BvJnd7dF4lANlryZNDkCOCxNSOqQKo7e+Try1mifhUAZJqy33vtaRzd0FTATRCsT35DIn51NrG4hcVgFcIEcBYoVPZmwlQ2v6IADlXhDlfg2YCQKIUiABcEUpz5cbdhAC5Rbf0n1SA3BulCzRyLX/5+fmLBcgl5x+cs+aXHyKAUFz/K3Ky/wbv+JBzD+e2xkQQnzE/N29ojgjYYiJgz0VxB6QehAgg1T/mhwjAF6H09jmrSoBWxCgkB4iQ4x/zzRHg6jWIJZ7LVnP71JgjAP5BEfjx4n9OEFAC8vT/3kbDa8mTPFcAYm4CLchDpESAYBeQsBbcfiwHxIH1yf7KszFXT4kAJOlE8Itt+BrcQVKDPRziwE7rn1IBOJkiBiEQA2CQkXkFuvw23h/tVrunRgCpwi+QtdiG8e/HxzAPTXrh1PhQjL+fu24hgHZm1xm+ARGAv896CfKcO5UA5L4Q4dfzsxEgAsAJLEWes6cUgPydCD1B1h1ECPaB3Zy17e15wzO1ABwEuUEICAussbPZcbFnDgGEnJB1R7EtNs4pwGIkYwdvAsTUWYNt64A13HKM49YBMXXWYNs6YA23HOO4dUBMne9gq63xPwAAAP//pSqkhgAAAAZJREFUAwCzRNaQ6Vte2wAAAABJRU5ErkJgggAA", "wood": "data:image/png;base64,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", "food": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAD+0lEQVR4AeyaC3bbIBBF9bqWppvrerq5pntJfScMwRhJgMCf2D1+Yhh+cx9qeprkx/Lkf76bAR+n+3Sdwv3PdzEgQn98EBo4AbLO2uM7GGCQgCMHTWPPldpHNyDCO5ykpRaeNY9sQBEeqBbdkwEAufYYmHdx09w8YrEka3hs6dYGAGL69/a2oFCs5UKcN4xdwOeTavvXNoDiowB2pQX//RN7zI0dD/yWvZ+3kt1+ni72r2UAIB8O621e0c/398XhvT3NYe2psU8aWyJ/SBE+BvmctD/TAIo1rQGnhZRiTECnMdvn1G6++lJkjgFrtjTDgFhsC3h6+3nBwYQ8fdaXInMMziasdEYbcPaar5x5kd6C98lugqRFkqctlmI/BnHCTjDSAIPfOe9iuAbeF2EC8r4UeQmQD1W3owyYDp8SYYIUeWOQzqmNRxjQBV9b4No8TFgb28rnY0cN6IZvefXzokf2jxhwc/jwFvCvTrcnvQbcHD4j7jah14Ds/LrujNc+vAV1BRRm9RjQdfvAF86/earHgOaigeemUPPiyQtaDWi6fcDRPYK7r60G+Lrd1sHvGR6IKQY4PAfcu4YaADi691tPL2WIAUAjwFF6wIz41+9lSXXkjMMGAE4BM8FTWGLO8+810NLvVbcBgCMOngUPLOIMQFORG6FmA4BGHA44Ih4lgF0zgPM6Ww2I//ceCe7AtNeATk1oNYC1ZgLF0jki9kBHoMPbaDWVatnL9RjAnt0Hshil4PRvpV4DqFdAIDq1Yj7i1mvXzJx3xADqsjcBIDreEpfEOOCoNN6aC69/67Kz+UcNYLMzE0iUBHwpPyBn5/fuM8KA6rNH3TwHhts/BM8+Rwzg21Cu+CMrbhqx+SwF+CHb9xhwBs1PahHV0CLi1ATiUbefwB++fepsMcDAAXSxQUk+DnhpvCcHOAprh8CzV40BZ+AsqhVGjDAhAx8GD8eeAcDHv98saBUmsCaBoFsl1qDTZKDRKRz72TLgMHxeaoDJ0xd95qEwMAU87L1sGXDo5v0AyerngRbAkI+nLXkUcsxHoTunWTPAbn/CkQChaATArnAe4yh05zZrBlTfviT7JYVSmZJKaXIMrInxq2nVgJoKJBiWPbM+J9VseIM53QZIn1z+VT6vXbJxe+RjM/ute3cZIG1zSdvjrUXOnL9qgFSGkL7ya7cfCv6aGBL32KwZYMVL1sS6JevzQDGfBpIN2SPN32u8ZgD1GoQk+yovKeYISpL255TW3TK3ZQB1QZSKXJQkM4eEJGt4PJL2DNhigRi5CRZvLbjHsSMGOA/gyPsP1Y4w4KGA82JfBuSOPFv/9QY8243nvK83IHfk2fqvN+DRb/xo/f8BAAD//9zJN0oAAAAGSURBVAMA0hh3kLh7lMEAAAAASUVORK5CYIIA", "science": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAEJUlEQVR4AeyYQbbTMAxFUwYMYR8wgSXALmAFbAIGsBeWwYg5I9gHbKD4+lg9airbsuPUv/2fk4cUSZb1XpI2/c+WR/7vSYBHfgMsT3fA0x3wyBWY+Qgcg/YlhPT+x0wBlu8/fplItEWcdLqPmSXAEfI5SuRAyiNEcsebWQKMZ9LZcZYAh4/v31ZHVndBtba3YJYA7nmTCLs9Bg9eAKXULiJMFcDzGCBAugtwh4swU4ADjLzYS4SZAsDd9WFIIRghAn00ZgugZ3H5o0W4OQFQaaQINymAiJCE4IMREG7GzQogTJMInHaJMFuArqFhq7FFhNkCxF+Dmkyv3yvCCAG4ihpeDsVfhN4muq5HhF4BToTZVCMMdMoFP3dQk8uZcd4aBWZBCjJLcl2mR4A4PBuB9S7EQIrH2uSLiTFVI/GshXhKxrdHzgWffj5fPrx7k9LtpkUABo+3rWd4VRPXhdHENj33EA1rOSL54GAFy78vr5eX3/4sCAFUfSitH14BGL5pcLZGBAvkPFBkIGwtIX5ABEEqIp7csvEI0EW+vG096yCvm0BYQ+eKfk2AKeTVxJBSp+PdmgDNt/2IEdXVH9Gu2KMkQLz6xdX7Jne/+oxfEmDK1WeoAeDiRdR65QRgcW3tg84fjz4KOQG6rz7P7xozlOLdwLOvJUCUbk1Cn+caU0PuxdffiwZxQK4BcY6G+q5SS4Cz4TURfHaBjIBzwDlWavAFEqMGSNyytby1xorxYmTF1zFTgHWRPoeMgDgDA3ziWAvkBNQLqBUfyzl12IDeu4BvEEFokz/WAjRtyKAa+W3OM7KGqCat4/jk98ZagHj7772p9IekQGLYv59fYWSWposSFzb8dyGAtZaB1rDqtsR0/y19WtdWBWAwmvK1okGsBllbqyOve+MTuwYuBFh/ejIMaB2mhXxrb2e969FZC8Anp7N/vaxHuHrXagXEAYVi8U2sBTCLeoITyS+8BvPh6pnbFGD9GHgaPZQaiLeIbwkw9DHYIsw1LoQlQJz5GpuzkePDsumCtM6dEyBuSjPAoKMBcZC7XTv3PTAnawF+DTkBWBdFwPE2o9YLiINK/WmGSp1Os0ZD5y78kgAU0whbBFeyWNCYTIK79m5sfVFeE4AFDHL62zsBC4gArFxLLJFvWbKp1iOAbIAQ4p9ZbmVAEBHWIO6BIp/dy9OnpaZFAPrGOwHHAiJYsGp1DOIgxCAOgnudo1UApooipIE53wTV56rEZegeAVjLsCchFAlyVVAvCMWxV7BTjl4BZNjT8ELIY9Pi09p0PtJUfwTJZlsFkD5CpsXK2ql2lABTSWzZ/J4E4LYXoIn4WM5N3IsAkSR/BxDwsxiYrFXwXgSIf0HW7yCKY9G9GwGKLAvJuxFAf/0KX2Li5+zNC5CInX39QhyoXHIvzX8AAAD//2X9Sq4AAAAGSURBVAMArTzGjSq7ORcAAAAASUVORK5CYIIA"};
         const RESOURCE_ICONS_V32 = {};
+        RESOURCE_ICON_SRC_V32.stone = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAuCAYAAABu3ppsAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJZaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49J++7vycgaWQ9J1c1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCc/Pg0KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj48ZXhpZjpEYXRlVGltZU9yaWdpbmFsPjIwMjYtMDUtMDhUMTI6Mjg6MTM8L2V4aWY6RGF0ZVRpbWVPcmlnaW5hbD48L3JkZjpEZXNjcmlwdGlvbj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+PHhtcDpDcmVhdGVEYXRlPjIwMjYtMDUtMDhUMTI6Mjg6MTM8L3htcDpDcmVhdGVEYXRlPjwvcmRmOkRlc2NyaXB0aW9uPjwvcmRmOlJERj48L3g6eG1wbWV0YT4NCjw/eHBhY2tldCBlbmQ9J3cnPz7FcyRBAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjY6MDU6MDggMTI6Mjg6MTNcJbpFAAACpklEQVRoQ+2YMW7jMBBFvxfqXegC6lW5VKq9hPtUeyhX6nWJVFGZyr0vwMK9AG2jEcbDGZGiKMcI8oAADimI/5FDmjDwy/dykA3fwCgbGMF8wQd2ZA7eNM1jD4C+7/m/Zk6zI5Gl2QQbb9RCazARNavamMAIYyY5FEZ7zjmHsixl84wlslUgKrhEE3HOAUCMRDaB6DKw6Pvek5ACvE1bhT/0YSXR4Z1zcM5hGAbZhaZp5Gb1KMtyXh025rzXUgU8tIBgJVEUBYZhMJ+DCCtRJIBEAW/2nXNzQA0Kdr/fURTFQ59cBVlCVhuRsgdUAUwDDcPghVzCKiE5Bth+4Js5iwCYxPF4BKaSWYKCn89n2QUA6LoOMERSBdQvKe0UCa1C3/dmcEnXdZ7EWoERAP69v8t2AMClbQFlpiyJNeEJKbFGYLSCSy5t60lIUsITXCJWIDo8QashoZMmNTxB+4LnThL4ul4BAKe6ntsubRsss2cKqOG14AiE51zaNkridrsBAKqqkl0ksXiV2CU8wWbRpKoqVFU1iyyhrYAnkCs8EbsSFnwVtBVQyRUe05EcsxIxSAFv9qGEfyWkQBRbZp/ItQpJAmuhPbQHTxE41TW+rtddRFYLpJYP7SMukaOMVgts4VTX82rk4qkCe5BFYO2MWsdyzDevJCiwNtwW6PqwJBK6Cx3klTimZnOeMnSBW5LgSIFkaIPmwLrMydlHrECuYGvRrtMSTcAro1dAm321gaFe7LDhy0wSe622wsNYgZdiKTwCAruWUujdXdcFwyPUOaH+LrS1jCaBg/WDWWS2uIcm1IFSJZjAJpZKSHJQ/jw+Pj9lk0eu8Mj0kofTigv8fXubPxM5wyPji9Qjl2RIJHd4ZH6ZutnxeOLkHA/Y44XGZt9jnJ/Bf6zCbEuLGCezAAAAAElFTkSuQmCC';
+        RESOURCE_ICON_SRC_V32.hammer = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAiCAYAAABBY8kOAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADGSURBVEhL7ZZBEoMgDEU/Xfdc9Fq9VjlX93ZjMCYfbCMuOsObwXHA5BFgVOCPWda2I9mOk1hBzd8T2SChG5NzBgCUUqQv1YuhCiRIUMFoxeqY9XkqWkAEDCJ1sboqJ/pGotFCFitVaZGb0Qio6EhilotytHStE+Z4Pu7b/euth5KdrD4MN/WgkDpth5K6MYuImsmi6GrQqOg0bC+Hi+wbQRgtkuRuC0aLwCS4SESZojBTFGaKwkxRmCkKQz9SHVq/Zb/muY4PWv06oRNAFQwAAAAASUVORK5CYII=';
         Object.keys(RESOURCE_ICON_SRC_V32).forEach((key) => {
           const img = new Image();
           img.src = RESOURCE_ICON_SRC_V32[key];
@@ -12629,6 +12709,12 @@ function handleTownClick(screenX, screenY) {
           if (state.research && state.research.torchlight && state.player.alive) {
             addLight(state.player.x, state.player.y, Math.max(210, V33.knightLightRadius), 24, 0.92, 0.12, 6.1);
           }
+          if (state.research && state.research.towerLanterns) {
+            (state.towers || []).forEach((tower, index) => {
+              if (!tower || (tower.hp !== undefined && tower.hp <= 0)) return;
+              addLight(tower.x, tower.y, Math.max(210, V33.knightLightRadius), 24, 0.92, 0.12, 8.4 + index * 1.3);
+            });
+          }
 
           if (!drawNightLightingV33._layer) {
             drawNightLightingV33._layer = document.createElement('canvas');
@@ -12980,8 +13066,7 @@ function handleTownClick(screenX, screenY) {
     drawButtonV33(button.rect, upgrade ? upgrade.label : button.label, `${cost}g`, { center: false, disabled: !affordable, font: '800 12px Inter, sans-serif', subFont: '10px Inter, sans-serif' });
     buttons.upgrades.push(button);
   });
-  const unlockedCount = Object.keys(V33.researchCatalog).filter((key) => state.research[key]).length;
-  drawButtonV33(layout.researchBtn, 'Open research tree', `${unlockedCount}/${Object.keys(V33.researchCatalog).length} unlocked`, { fill: 'rgba(75,98,60,0.96)', color: '#edf2dd' });
+  drawButtonV33(layout.researchBtn, 'Open research tree', 'Spend research', { fill: 'rgba(75,98,60,0.96)', color: '#edf2dd' });
   ctx.restore();
 }
 
@@ -13232,6 +13317,12 @@ function handleTownClick(screenX, screenY) {
           const lastSyntheticTapV62 = window.__mvLastSyntheticCanvasTapV62;
           updatePointerFromEvent(event);
           ensureStateV33();
+          const tNowGuardV78 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+          if (tNowGuardV78 < (window.__v78SuppressCanvasClickUntil || 0)) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+            return;
+          }
           if (lastSyntheticTapV62 && event.isTrusted && !event.__mvSyntheticTapV62) {
             const tNowV62 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
             const dxV62 = (event.clientX || 0) - lastSyntheticTapV62.x;
@@ -14274,7 +14365,9 @@ function handleTownClick(screenX, screenY) {
         }
 
         function liveTowersV43() {
-          return (state && Array.isArray(state.towers)) ? state.towers.filter((t) => t && t.hp > 0) : [];
+          const towers = (state && Array.isArray(state.towers)) ? state.towers.filter((t) => t && t.hp > 0) : [];
+          if (state && state.university && state.university.hp > 0) towers.push(state.university);
+          return towers;
         }
 
         function clearRoutesV43() {
@@ -14331,6 +14424,12 @@ function handleTownClick(screenX, screenY) {
               try { if (typeof createSplat === 'function') createSplat(obstacle.x, obstacle.y, 'rgba(80,60,40,0.20)', (obstacle.radius || 18) * 1.5); } catch (_) {}
               try { if (typeof logMessage === 'function') logMessage(`${obstacle.label || obstacle.type || 'Tower'} destroyed by enemies.`, 'bad'); } catch (_) {}
               removeDestroyedObstacleV43(obstacle, 'towers');
+            } else if (state && state.university && (state.university === obstacle || state.university.id === obstacle.id)) {
+              try { if (typeof createSplat === 'function') createSplat(obstacle.x, obstacle.y, 'rgba(80,110,130,0.22)', 64); } catch (_) {}
+              try { if (typeof logMessage === 'function') logMessage('The University was destroyed. Research is locked until it is rebuilt.', 'bad'); } catch (_) {}
+              obstacle.hp = 0;
+              if (state.v33ResearchOpen) state.v33ResearchOpen = false;
+              rebuildDynamicRoutesV43();
             }
           }
           return true;
@@ -15796,8 +15895,8 @@ function handleTownClick(screenX, screenY) {
         const V64 = {
           duplicateMs: 520,
           postTransitionClickGuardMs: 700,
-          horseBaseSpeed: 178,
-          horseTrainingSpeedGain: 96,
+          horseBaseSpeed: 142,
+          horseTrainingSpeedGain: 132,
           horseTrainingChargeGain: 18,
           cavalryResearchSpeedGain: 42,
           towerLanternCost: 6,
@@ -16029,7 +16128,7 @@ function handleTownClick(screenX, screenY) {
         function updateHorseTrainingDefinitionV64() {
           const speedDef = PLAYER_UPGRADES.find((item) => item.key === 'speed');
           if (speedDef && !speedDef._v64Updated) {
-            speedDef.description = '+96 effective top speed and much stronger charge impacts.';
+            speedDef.description = '+132 effective top speed and much stronger charge impacts.';
             speedDef.apply = (s) => {
               s.upgrades.player.speed += 1;
               s.player.maxSpeed += V64.horseTrainingSpeedGain;
@@ -16071,7 +16170,9 @@ function handleTownClick(screenX, screenY) {
         }
 
         function markBuildClickGuardV64() {
-          suppressCanvasBuildClickUntilV64 = Math.max(suppressCanvasBuildClickUntilV64, nowV64() + V64.postTransitionClickGuardMs);
+          const until = nowV64() + V64.postTransitionClickGuardMs;
+          suppressCanvasBuildClickUntilV64 = Math.max(suppressCanvasBuildClickUntilV64, until);
+          window.__v78SuppressCanvasClickUntil = Math.max(window.__v78SuppressCanvasClickUntil || 0, until);
         }
 
         function townLayoutV64() {
@@ -16100,7 +16201,7 @@ function handleTownClick(screenX, screenY) {
             key: upgrade.key,
             label: upgrade.label,
             rect: { x: upgrades.x + 14, y: upgrades.y + 52 + index * 42, w: upgrades.w - 28, h: 36 },
-            info: { x: upgrades.x + 26 + Math.min(upgrades.w - 124, Math.max(88, Math.round((upgrade.label || '').length * 7.4))), y: upgrades.y + 60 + index * 42, w: 20, h: 20 }
+            info: { x: upgrades.x + upgrades.w - 98, y: upgrades.y + 60 + index * 42, w: 20, h: 20 }
           }));
           return { panelX, panelY, panelW, panelH, jobs, followers, upgrades, hireButtons, upgradeButtons, projection, close };
         }
@@ -16164,12 +16265,27 @@ function handleTownClick(screenX, screenY) {
           if (!state || !state.townOpen || state.v33ResearchOpen) return { x: -1000, y: -1000, w: 20, h: 20 };
           const layout = townLayoutV64();
           const chipW = Math.floor((layout.projection.w - 28) / 7);
-          return { x: layout.projection.x + 14 + chipW * 3 + 88, y: layout.projection.y + 21, w: 20, h: 20 };
+          return { x: layout.projection.x + 14 + chipW * 3 + 114, y: layout.projection.y + 13, w: 20, h: 20 };
+        }
+
+        function foodBubbleRectV64() {
+          if (!state || !state.townOpen || state.v33ResearchOpen) return { x: -1000, y: -1000, w: 420, h: 92 };
+          const layout = townLayoutV64();
+          return { x: Math.min(WIDTH - 446, layout.projection.x + 360), y: layout.projection.y + 72, w: 420, h: 92 };
+        }
+
+        function foodBubbleCloseRectV64() {
+          const bubble = foodBubbleRectV64();
+          return { x: bubble.x + bubble.w - 30, y: bubble.y + 8, w: 22, h: 22 };
         }
 
         function drawFoodInfoV64() {
           if (!state || !state.townOpen || state.v33ResearchOpen || state.phase !== 'build') return;
           ensureV64State();
+          if (!state.v64.foodInfoShownOnce) {
+            state.v64.info.food = true;
+            state.v64.foodInfoShownOnce = true;
+          }
           const rect = topFoodInfoRectV64();
           ctx.save();
           drawInfoIconV64(rect, !!state.v64.info.food);
@@ -16177,8 +16293,19 @@ function handleTownClick(screenX, screenY) {
             const food = Math.max(0, Math.floor(state.food || 0));
             const births = Math.floor(food / 60);
             const text = 'Villagers are born automatically at dawn from stored food. Every full 60 food can produce one villager: 60, 120, 180, and so on. Current stored food could support ' + births + ' birth' + (births === 1 ? '' : 's') + ' if it remains after upkeep.';
-            const layout = townLayoutV64();
-            drawBubbleV64(Math.min(WIDTH - 446, layout.projection.x + 360), layout.projection.y + 72, 420, 'Food and births', text, { h: 92, lines: 4 });
+            const bubble = foodBubbleRectV64();
+            drawBubbleV64(bubble.x, bubble.y, bubble.w, 'Food and births', text, { h: bubble.h, lines: 4 });
+            const close = foodBubbleCloseRectV64();
+            roundRectPathV64(close.x, close.y, close.w, close.h, 8);
+            ctx.fillStyle = 'rgba(0,0,0,0.96)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(237,242,221,0.68)';
+            ctx.stroke();
+            ctx.fillStyle = '#edf2dd';
+            ctx.font = '900 13px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('x', close.x + close.w / 2, close.y + close.h / 2 + 0.5);
           }
           ctx.restore();
         }
@@ -16838,6 +16965,7 @@ function handleTownClick(screenX, screenY) {
               if (pointInRectV64(sx, sy, rect.info)) {
                 state.v64.info.research = state.v64.info.research === def.key ? null : def.key;
                 uiDirty = true;
+                markBuildClickGuardV64();
                 event.preventDefault();
                 event.stopImmediatePropagation();
                 return;
@@ -16858,6 +16986,7 @@ function handleTownClick(screenX, screenY) {
               if (pointInRectV64(sx, sy, button.info)) {
                 state.v64.info.village = state.v64.info.village === button.key ? null : button.key;
                 uiDirty = true;
+                markBuildClickGuardV64();
                 event.preventDefault();
                 event.stopImmediatePropagation();
                 return;
@@ -16865,10 +16994,20 @@ function handleTownClick(screenX, screenY) {
             }
           }
 
+          if (state.v64.info.food && pointInRectV64(sx, sy, foodBubbleCloseRectV64())) {
+            state.v64.info.food = false;
+            uiDirty = true;
+            markBuildClickGuardV64();
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return;
+          }
+
           const foodRect = topFoodInfoRectV64();
           if (pointInRectV64(sx, sy, foodRect) && state.phase !== 'start' && state.phase !== 'mapselect') {
             state.v64.info.food = !state.v64.info.food;
             uiDirty = true;
+            markBuildClickGuardV64();
             event.preventDefault();
             event.stopImmediatePropagation();
             return;
@@ -16915,8 +17054,8 @@ function handleTownClick(screenX, screenY) {
         const V65 = {
           inputBlockMs: 820,
           duplicateMs: 620,
-          knightBaseSpeed: 178,
-          knightSpeedGain: 96,
+          knightBaseSpeed: 142,
+          knightSpeedGain: 132,
           knightCavalryGain: 42,
           universityCost: { wood: 85, stone: 55, research: 3 },
           universityHp: 420,
@@ -16950,7 +17089,9 @@ function handleTownClick(screenX, screenY) {
         }
 
         function blockCanvasInputV65(ms) {
-          blockCanvasInputUntilV65 = Math.max(blockCanvasInputUntilV65, nowV65() + (ms || V65.inputBlockMs));
+          const until = nowV65() + (ms || V65.inputBlockMs);
+          blockCanvasInputUntilV65 = Math.max(blockCanvasInputUntilV65, until);
+          window.__v78SuppressCanvasClickUntil = Math.max(window.__v78SuppressCanvasClickUntil || 0, until);
         }
 
         function pointInRectV65(px, py, rect) {
@@ -17099,7 +17240,7 @@ function handleTownClick(screenX, screenY) {
         function updateHorseTrainingApplyV65() {
           const def = PLAYER_UPGRADES.find((item) => item.key === 'speed');
           if (!def || def._v65Updated) return;
-          def.description = '+96 effective top speed and much stronger charge impacts.';
+          def.description = '+132 effective top speed and much stronger charge impacts.';
           def.apply = (s) => {
             s.upgrades.player.speed += 1;
             s.player.maxSpeed += V65.knightSpeedGain;
@@ -17216,6 +17357,7 @@ function handleTownClick(screenX, screenY) {
           createFloater('University', check.snapped.x, check.snapped.y - 72, '#dbe9ff', 14);
           playSfx('build');
           logMessage('University built. Research can now be performed while it stands.', 'good');
+          if (typeof rebuildRuntimeMap === 'function') rebuildRuntimeMap(true);
           uiDirty = true;
         }
 
@@ -17382,6 +17524,7 @@ function handleTownClick(screenX, screenY) {
             createSplat(u.x, u.y, 'rgba(80, 110, 130, 0.22)', 64);
             logMessage('The University was destroyed. Research is locked until it is rebuilt.', 'bad');
             if (state.v33ResearchOpen) state.v33ResearchOpen = false;
+            if (typeof rebuildRuntimeMap === 'function') rebuildRuntimeMap(true);
           }
           uiDirty = true;
         }
@@ -17543,6 +17686,21 @@ function handleTownClick(screenX, screenY) {
           ctx.restore();
         }
 
+        function researchCompletionPercentV65() {
+          ensureV65State();
+          const onceKeys = ['fletching', 'cavalry', 'torchlight', 'masonry', 'cartography', 'towerLanterns', 'deconstruction', 'bookkeeping'];
+          let done = 0;
+          let total = onceKeys.length;
+          onceKeys.forEach((key) => {
+            if (state.research && state.research[key]) done += 1;
+          });
+          Object.keys(V65.gatherDefs).forEach((key) => {
+            total += 3;
+            done += researchLevelV65(key);
+          });
+          return Math.round((done / Math.max(1, total)) * 100);
+        }
+
         function drawResearchOverlayV65() {
           if (!state || !state.v33ResearchOpen) return;
           ensureV65State();
@@ -17560,7 +17718,7 @@ function handleTownClick(screenX, screenY) {
           ctx.textBaseline = 'alphabetic';
           ctx.fillStyle = '#edf2dd';
           ctx.font = '900 25px Inter, sans-serif';
-          ctx.fillText('Research tree', layout.x + 26, layout.y + 38);
+          ctx.fillText('Research tree - ' + researchCompletionPercentV65() + '% completed', layout.x + 26, layout.y + 38);
           ctx.fillStyle = '#9fd1ff';
           ctx.font = '900 18px Inter, sans-serif';
           ctx.fillText(Math.round(state.researchResource || 0) + ' research available', layout.x + layout.w - 318, layout.y + 38);
@@ -17829,6 +17987,10 @@ function handleTownClick(screenX, screenY) {
                 pierce: def.pierce || 0, life: 1.45, source: tower.type,
                 knockback: def.knockback, impactColor: def.color
               });
+              const typeCooldownScale = tower.type === 'sniper' ? 1.22 : tower.type === 'ballista' ? 1.08 : 1;
+              tower.cooldown = Math.max(0.12, (1 / Math.max(0.05, def.fireRate || 0.5)) * typeCooldownScale);
+              tower.flash = 1;
+              playSfx('tower');
             }
           }
         };
@@ -18253,6 +18415,15 @@ function handleTownClick(screenX, screenY) {
         if (grid.noBuild[snapped.row][snapped.col]) return false;
         if ((state.camps || []).some((camp) => !camp.destroyed && distance(snapped.x, snapped.y, camp.x, camp.y) <= camp.radius + 42)) return false;
         if (getTowerAtCell(snapped.col, snapped.row) || getBarrierAtCell(snapped.col, snapped.row)) return false;
+        const university = state.university;
+        if (university && university.hp > 0) {
+          const width = university.w || GRID_SIZE * 2;
+          const height = university.h || GRID_SIZE * 3;
+          if (snapped.x >= university.x - width / 2 && snapped.x <= university.x + width / 2
+              && snapped.y >= university.y - height / 2 && snapped.y <= university.y + height / 2) {
+            return false;
+          }
+        }
         if ((state.torches || []).some((torch) => torch && torch.hp > 0 && torch.gridCol === snapped.col && torch.gridRow === snapped.row)) return false;
         const margin = towerDef
           ? towerDef.radius + 10
@@ -18307,6 +18478,158 @@ function handleTownClick(screenX, screenY) {
 
       function cleanCostV77(value) {
         return String(value || '').replace(/[^0-9A-Za-z+\-/.%]+/g, ' ').trim();
+      }
+
+      const RESOURCE_ICON_OVERRIDES_V78 = {
+        stone: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAuCAYAAABu3ppsAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJZaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49J++7vycgaWQ9J1c1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCc/Pg0KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj48ZXhpZjpEYXRlVGltZU9yaWdpbmFsPjIwMjYtMDUtMDhUMTI6Mjg6MTM8L2V4aWY6RGF0ZVRpbWVPcmlnaW5hbD48L3JkZjpEZXNjcmlwdGlvbj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyI+PHhtcDpDcmVhdGVEYXRlPjIwMjYtMDUtMDhUMTI6Mjg6MTM8L3htcDpDcmVhdGVEYXRlPjwvcmRmOkRlc2NyaXB0aW9uPjwvcmRmOlJERj48L3g6eG1wbWV0YT4NCjw/eHBhY2tldCBlbmQ9J3cnPz7FcyRBAAAAIXRFWHRDcmVhdGlvbiBUaW1lADIwMjY6MDU6MDggMTI6Mjg6MTNcJbpFAAACpklEQVRoQ+2YMW7jMBBFvxfqXegC6lW5VKq9hPtUeyhX6nWJVFGZyr0vwMK9AG2jEcbDGZGiKMcI8oAADimI/5FDmjDwy/dykA3fwCgbGMF8wQd2ZA7eNM1jD4C+7/m/Zk6zI5Gl2QQbb9RCazARNavamMAIYyY5FEZ7zjmHsixl84wlslUgKrhEE3HOAUCMRDaB6DKw6Pvek5ACvE1bhT/0YSXR4Z1zcM5hGAbZhaZp5Gb1KMtyXh025rzXUgU8tIBgJVEUBYZhMJ+DCCtRJIBEAW/2nXNzQA0Kdr/fURTFQ59cBVlCVhuRsgdUAUwDDcPghVzCKiE5Bth+4Js5iwCYxPF4BKaSWYKCn89n2QUA6LoOMERSBdQvKe0UCa1C3/dmcEnXdZ7EWoERAP69v8t2AMClbQFlpiyJNeEJKbFGYLSCSy5t60lIUsITXCJWIDo8QashoZMmNTxB+4LnThL4ul4BAKe6ntsubRsss2cKqOG14AiE51zaNkridrsBAKqqkl0ksXiV2CU8wWbRpKoqVFU1iyyhrYAnkCs8EbsSFnwVtBVQyRUe05EcsxIxSAFv9qGEfyWkQBRbZp/ItQpJAmuhPbQHTxE41TW+rtddRFYLpJYP7SMukaOMVgts4VTX82rk4qkCe5BFYO2MWsdyzDevJCiwNtwW6PqwJBK6Cx3klTimZnOeMnSBW5LgSIFkaIPmwLrMydlHrECuYGvRrtMSTcAro1dAm321gaFe7LDhy0wSe622wsNYgZdiKTwCAruWUujdXdcFwyPUOaH+LrS1jCaBg/WDWWS2uIcm1IFSJZjAJpZKSHJQ/jw+Pj9lk0eu8Mj0kofTigv8fXubPxM5wyPji9Qjl2RIJHd4ZH6ZutnxeOLkHA/Y44XGZt9jnJ/Bf6zCbEuLGCezAAAAAElFTkSuQmCC',
+        hammer: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAiCAYAAABBY8kOAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAADGSURBVEhL7ZZBEoMgDEU/Xfdc9Fq9VjlX93ZjMCYfbCMuOsObwXHA5BFgVOCPWda2I9mOk1hBzd8T2SChG5NzBgCUUqQv1YuhCiRIUMFoxeqY9XkqWkAEDCJ1sboqJ/pGotFCFitVaZGb0Qio6EhilotytHStE+Z4Pu7b/euth5KdrD4MN/WgkDpth5K6MYuImsmi6GrQqOg0bC+Hi+wbQRgtkuRuC0aLwCS4SESZojBTFGaKwkxRmCkKQz9SHVq/Zb/muY4PWv06oRNAFQwAAAAASUVORK5CYII='
+      };
+      window.RESOURCE_ICON_SRC_V31 = window.RESOURCE_ICON_SRC_V31 || {};
+      Object.assign(window.RESOURCE_ICON_SRC_V31, RESOURCE_ICON_OVERRIDES_V78);
+      window.RESOURCE_ICON_SRC_V78 = { ...(window.RESOURCE_ICON_SRC_V31 || {}), ...RESOURCE_ICON_OVERRIDES_V78 };
+
+      const RESOURCE_ICON_CACHE_V77 = {};
+
+      function resourceIconImageV77(key) {
+        const iconKey = key === 'research' ? 'science' : key === 'villagers' ? 'villager' : key;
+        const sources = window.RESOURCE_ICON_SRC_V78 || window.RESOURCE_ICON_SRC_V31 || {};
+        const src = sources[iconKey];
+        if (!src) return null;
+        if (!RESOURCE_ICON_CACHE_V77[iconKey] || RESOURCE_ICON_CACHE_V77[iconKey].src !== src) {
+          const img = new Image();
+          img.src = src;
+          RESOURCE_ICON_CACHE_V77[iconKey] = { src, img };
+        }
+        return RESOURCE_ICON_CACHE_V77[iconKey].img;
+      }
+
+      function parseResourceTokensV77(value) {
+        const text = String(value || '');
+        const tokens = [];
+        const pattern = /([+\-]?\d+)\s*(gold|wood|stone|food|research|science|hammer|g|w|s|f|r|h)\b/gi;
+        let match;
+        while ((match = pattern.exec(text))) {
+          const key = ({
+            g: 'gold',
+            gold: 'gold',
+            w: 'wood',
+            wood: 'wood',
+            s: 'stone',
+            stone: 'stone',
+            f: 'food',
+            food: 'food',
+            r: 'research',
+            research: 'research',
+            science: 'research',
+            h: 'hammer',
+            hammer: 'hammer'
+          })[match[2].toLowerCase()];
+          if (key) tokens.push({ amount: match[1], key });
+        }
+        return tokens;
+      }
+
+      function drawResourceIconV77(key, cx, cy, size) {
+        ctx.save();
+        const img = resourceIconImageV77(key);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * 0.56, 0, TAU);
+        ctx.fill();
+        if (img && img.complete && img.naturalWidth > 0) {
+          const drawSize = size * 0.96;
+          ctx.imageSmoothingEnabled = true;
+          ctx.drawImage(img, cx - drawSize / 2, cy - drawSize / 2, drawSize, drawSize);
+        } else {
+          ctx.fillStyle = '#000000';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = '900 ' + Math.max(8, Math.round(size * 0.48)) + 'px Inter, sans-serif';
+          ctx.fillText(String(key || '?').slice(0, 1).toUpperCase(), cx, cy + 0.5);
+        }
+        ctx.restore();
+      }
+
+      function measureResourceTokenLineV77(tokens, iconSize) {
+        return tokens.reduce((sum, token, index) => (
+          sum + (index ? 5 : 0) + ctx.measureText(token.amount).width + iconSize + 5
+        ), 0);
+      }
+
+      function resourceTokenLinesV77(tokens, maxW, iconSize, maxLines) {
+        const lines = [];
+        let line = [];
+        tokens.forEach((token) => {
+          const test = line.concat(token);
+          if (line.length && measureResourceTokenLineV77(test, iconSize) > maxW && lines.length < (maxLines || 2) - 1) {
+            lines.push(line);
+            line = [token];
+          } else {
+            line = test;
+          }
+        });
+        if (line.length) lines.push(line);
+        return lines.slice(0, maxLines || lines.length);
+      }
+
+      function drawResourceTokenLineV77(tokens, cx, y, iconSize) {
+        const totalW = measureResourceTokenLineV77(tokens, iconSize);
+        let cursor = cx - totalW / 2;
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        tokens.forEach((token, index) => {
+          if (index > 0) cursor += 5;
+          const tw = ctx.measureText(token.amount).width;
+          ctx.fillText(token.amount, cursor, y);
+          cursor += tw + iconSize / 2 + 5;
+          drawResourceIconV77(token.key, cursor, y - 5, iconSize);
+          cursor += iconSize / 2;
+        });
+        ctx.restore();
+      }
+
+      function drawOptionCostV77(option, lower) {
+        if (!lower) return;
+        const maxW = option.r * 1.6;
+        const tokens = parseResourceTokensV77(lower);
+        if (tokens.length) {
+          ctx.font = '800 9px Inter, sans-serif';
+          const iconSize = 11;
+          const lines = resourceTokenLinesV77(tokens, maxW, iconSize, 2);
+          const baseY = lines.length > 1 ? option.y + 13 : option.y + 21;
+          lines.forEach((line, index) => {
+            drawResourceTokenLineV77(line, option.x, baseY + index * 12, iconSize);
+          });
+          return;
+        }
+        ctx.font = '800 9px Inter, sans-serif';
+        const lines = centeredWrapLinesV77(lower, maxW, 2);
+        const baseY = lines.length > 1 ? option.y + 13 : option.y + 20;
+        lines.forEach((line, index) => {
+          ctx.fillText(fitTextV77(line, maxW), option.x, baseY + index * 11);
+        });
+      }
+
+      function drawValueCellV77(value, x, y, maxW) {
+        const tokens = parseResourceTokensV77(value);
+        if (!tokens.length) {
+          ctx.fillText(fitTextV77(value, maxW), x, y);
+          return;
+        }
+        const iconSize = 16;
+        let cursor = x;
+        const baseY = y - 5;
+        tokens.forEach((token, index) => {
+          if (index > 0) cursor += 4;
+          const amount = token.amount;
+          const tw = ctx.measureText(amount).width;
+          if (cursor + tw + iconSize + 3 > x + maxW) return;
+          ctx.fillText(amount, cursor, y);
+          cursor += tw + iconSize / 2 + 5;
+          drawResourceIconV77(token.key, cursor, baseY, iconSize);
+          cursor += iconSize / 2 + 2;
+        });
       }
 
       function fitTextV77(text, maxW) {
@@ -18455,12 +18778,13 @@ function handleTownClick(screenX, screenY) {
       }
 
       function simpleChangeRowsV77(menu, option) {
+        if (menu && menu.kind === 'player') return knightChangeRowsV77(option);
         if (!option) return null;
         const effectByKey = {
           damage: '+8 damage',
           rate: '+18% fire rate',
           range: '+26 range',
-          speed: '+96 top speed',
+          speed: '+132 top speed',
           armor: '+28 max HP',
           walls: '+village wall HP',
           archers: '+town arrows',
@@ -18474,6 +18798,22 @@ function handleTownClick(screenX, screenY) {
           rows: [
             ['Cost', cleanCostV77(option.cost)],
             ['Effect', effectByKey[option.key] || cleanCostV77(option.label)]
+          ]
+        };
+      }
+
+      function knightChangeRowsV77(option) {
+        const p = state.player || {};
+        const key = option && option.key;
+        return {
+          title: 'Changes',
+          columns: true,
+          rows: [
+            ['Damage', Math.round(p.damage || 0), key === 'damage' ? '+8' : ''],
+            ['Range', Math.round(p.range || 0), key === 'range' ? '+26' : ''],
+            ['Fire rate', (p.fireRate || 0).toFixed(2) + '/s', key === 'rate' ? '+18%' : ''],
+            ['Top speed', Math.round(p.maxSpeed || 0), key === 'speed' ? '+132' : ''],
+            ['HP', Math.round(p.maxHp || 0), key === 'armor' ? '+28' : '']
           ]
         };
       }
@@ -18494,9 +18834,9 @@ function handleTownClick(screenX, screenY) {
         const info = infoForRadialV77(menu, option);
         if (!info || !info.rows || !info.rows.length) return;
         const boxW = info.columns ? 316 : 286;
-        const rowH = 18;
-        const headerH = info.columns ? 47 : 34;
-        const boxH = headerH + info.rows.length * rowH + 14;
+        const rowH = info.columns ? 19 : 18;
+        const headerH = info.columns ? 48 : 34;
+        const boxH = headerH + info.rows.length * rowH + 18;
         const x = 12;
         const y = clamp((built ? built.centerY : HEIGHT / 2) - boxH / 2, 78, HEIGHT - boxH - 18);
         ctx.save();
@@ -18510,12 +18850,12 @@ function handleTownClick(screenX, screenY) {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
         ctx.font = '900 13px Inter, sans-serif';
-        ctx.fillText(info.title, x + 12, y + 20);
+        ctx.fillText(info.title, x + 12, y + 18);
         ctx.font = '800 10px Inter, sans-serif';
         if (info.columns) {
-          ctx.fillText('Stat', x + 12, y + 39);
-          ctx.fillText('Current', x + 116, y + 39);
-          ctx.fillText('Change', x + 224, y + 39);
+          ctx.fillText('Stat', x + 12, y + 32);
+          ctx.fillText('Current', x + 116, y + 32);
+          ctx.fillText('Change', x + 224, y + 32);
         }
         ctx.font = '12px Inter, sans-serif';
         info.rows.forEach((row, index) => {
@@ -18523,11 +18863,11 @@ function handleTownClick(screenX, screenY) {
           ctx.globalAlpha = 1;
           if (info.columns) {
             ctx.fillText(fitTextV77(row[0], 92), x + 12, ry);
-            ctx.fillText(fitTextV77(row[1], 96), x + 116, ry);
-            ctx.fillText(fitTextV77(row[2], 78), x + 224, ry);
+            drawValueCellV77(row[1], x + 116, ry, 96);
+            drawValueCellV77(row[2], x + 224, ry, 78);
           } else {
             ctx.fillText(fitTextV77(row[0], 82), x + 12, ry);
-            ctx.fillText(fitTextV77(row[1], boxW - 116), x + 104, ry);
+            drawValueCellV77(row[1], x + 104, ry, boxW - 116);
           }
         });
         ctx.restore();
@@ -18643,10 +18983,7 @@ function handleTownClick(screenX, screenY) {
           const lower = option.level !== undefined && option.level > 0
             ? 'L' + option.level + ' ' + cleanCostV77(option.cost)
             : cleanCostV77(option.cost);
-          if (lower) {
-            ctx.font = '800 10px Inter, sans-serif';
-            ctx.fillText(fitTextV77(lower, option.r * 1.55), option.x, option.y + 18);
-          }
+          drawOptionCostV77(option, lower);
           ctx.restore();
         });
 
@@ -18668,6 +19005,10 @@ function handleTownClick(screenX, screenY) {
         ctx.restore();
       };
 
+      window.__mountedVillageDefenseV79 = {
+        applied: true,
+        note: 'Startup-safe routing/cooldown/input follow-up. Movement fixes are installed inside the existing scoped movement systems.'
+      };
 
       registerButtons();
       window.__mountedVillageDefense = {
@@ -18691,6 +19032,9 @@ function handleTownClick(screenX, screenY) {
         MAP_LIBRARY
       };
       resetGame();
+      update(0);
+      draw();
+      updateUI();
       requestAnimationFrame(loop);
     })();
 
