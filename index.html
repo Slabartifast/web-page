@@ -93,6 +93,15 @@
       padding: 0;
     }
 
+    .nav-main {
+      margin-bottom: 12px;
+    }
+
+    .nav-games {
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
     nav a {
       display: block;
       border: 1px solid rgba(255, 255, 255, 0.16);
@@ -344,6 +353,11 @@
       background: #0d120a;
     }
 
+    .fish-game-frame {
+      height: min(88vh, 980px);
+      min-height: 760px;
+    }
+
     .game-note {
       margin: 0 0 18px;
       color: var(--muted);
@@ -383,6 +397,7 @@
       nav ul { gap: 8px; }
       nav a { padding: 10px 12px; font-size: 0.93rem; }
       .game-frame { min-height: 620px; height: 78vh; }
+      .fish-game-frame { min-height: 700px; height: 84vh; }
       .pdf-frame { min-height: 620px; height: 78vh; }
     }
     .media-card {
@@ -427,15 +442,17 @@
       </header>
 
       <nav aria-label="Hovedmeny">
-        <ul>
+        <ul class="nav-main">
           <li><a href="#home" class="tab-link active-tab" data-tab="home">Hjemme bra</a></li>
-          <li><a href="#tower-defense" class="tab-link game-nav-link" data-tab="tower-defense">tower defense 9000</a></li>
-          <li><a href="#fiskespill" class="tab-link game-nav-link" data-tab="fiskespill">fiskespill 3000</a></li>
           <li><a href="#doktorgrad" class="tab-link" data-tab="doktorgrad">Doktorgrad</a></li>
           <li><a href="#trening" class="tab-link" data-tab="trening">Treningsprogram</a></li>
           <li><a href="#forskning" class="tab-link" data-tab="forskning">Forskning</a></li>
           <li><a href="#musikk" class="tab-link" data-tab="musikk">Musikk</a></li>
           <li><a href="#kontakt" class="tab-link" data-tab="kontakt">Kontakt</a></li>
+        </ul>
+        <ul class="nav-games" aria-label="Spill">
+          <li><a href="#tower-defense" class="tab-link game-nav-link" data-tab="tower-defense">tower defense 9000</a></li>
+          <li><a href="#fiskespill" class="tab-link game-nav-link" data-tab="fiskespill">fiskespill 3000</a></li>
         </ul>
       </nav>
     </div>
@@ -455,15 +472,15 @@
         <h2>tower defense 9000</h2>
         <p class="game-note">Bygg en by og forsvar den mot nattens skapninger. Om å gjøre å overleve lengst. Fortell meg hva du klarte, da vel!</p>
         <div class="game-frame-wrap">
-          <iframe class="game-frame" src="tower_defense.html" title="tower defense 9000" loading="lazy" allow="fullscreen; autoplay"></iframe>
+          <iframe class="game-frame deferred-frame" src="about:blank" data-src="tower_defense.html" title="tower defense 9000" loading="eager" allow="fullscreen; autoplay"></iframe>
         </div>
       </section>
 
       <section id="fiskespill" class="container">
         <h2>fiskespill 3000</h2>
-        <p class="game-note">Fiskespillet lastes fra <code>fiskespill/index.html</code>. Legg hele <code>fiskespill</code>-mappen i samme mappe som denne siden.</p>
+        <p class="game-note">Fiskespillet lastes fra <code>fiskespill/index.html</code>. Legg hele <code>fiskespill</code>-mappen i samme mappe som denne siden. Spillet lastes først når denne fanen åpnes, slik at grafikken får riktig størrelse.</p>
         <div class="game-frame-wrap">
-          <iframe class="game-frame" src="fiskespill/index" title="fiskespill 3000" loading="lazy" allow="fullscreen; autoplay"></iframe>
+          <iframe class="game-frame fish-game-frame deferred-frame" src="about:blank" data-src="fiskespill/index.html" title="fiskespill 3000" loading="eager" allow="fullscreen; autoplay"></iframe>
         </div>
       </section>
 
@@ -637,9 +654,21 @@
     const tabLinks = document.querySelectorAll('.tab-link');
     const sections = document.querySelectorAll('.container');
 
+    function loadEmbeddedFrame(tabId) {
+      const section = document.getElementById(tabId);
+      if (!section) return;
+
+      const frame = section.querySelector('iframe.deferred-frame');
+      if (!frame || frame.dataset.loaded === 'true') return;
+
+      frame.src = frame.dataset.src;
+      frame.dataset.loaded = 'true';
+    }
+
     function showTab(tabId) {
       sections.forEach(section => section.classList.toggle('active', section.id === tabId));
       tabLinks.forEach(link => link.classList.toggle('active-tab', link.dataset.tab === tabId));
+      loadEmbeddedFrame(tabId);
       history.replaceState(null, '', '#' + tabId);
     }
 
