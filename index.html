@@ -452,7 +452,7 @@
         </ul>
         <ul class="nav-games" aria-label="Spill">
           <li><a href="#tower-defense" class="tab-link game-nav-link" data-tab="tower-defense">tower defense 9000</a></li>
-          <li><a href="#fiskespill" class="tab-link game-nav-link" data-tab="fiskespill">fiskespill 3000</a></li>
+          <li><a href="fiskespill/index.html" class="tab-link game-nav-link" data-tab="fiskespill" data-launch-url="fiskespill/index.html">fiskespill 3000</a></li>
         </ul>
       </nav>
     </div>
@@ -478,9 +478,11 @@
 
       <section id="fiskespill" class="container">
         <h2>fiskespill 3000</h2>
-        <p class="game-note">Fiskespillet lastes fra <code>fiskespill/index.html</code>. Legg hele <code>fiskespill</code>-mappen i samme mappe som denne siden. Spillet lastes først når denne fanen åpnes, slik at grafikken får riktig størrelse.</p>
-        <div class="game-frame-wrap">
-          <iframe class="game-frame fish-game-frame deferred-frame" src="about:blank" data-src="fiskespill/index.html" title="fiskespill 3000" loading="eager" allow="fullscreen; autoplay"></iframe>
+        <p class="game-note">Fiskespillet fungerer best på sin egen side. Der får du riktig størrelse, fungerende startknapp og samme presentasjon som når du åpner <code>fiskespill/index.html</code> direkte.</p>
+        <div class="note-card">
+          <h3>Åpne fullversjonen</h3>
+          <p>Start fiskespillet i egen side for å spille uten iframe-trøbbel.</p>
+          <a class="link-button" href="fiskespill/index.html">Åpne fiskespill 3000</a>
         </div>
       </section>
 
@@ -674,13 +676,26 @@
 
     tabLinks.forEach(link => {
       link.addEventListener('click', event => {
+        const launchUrl = link.dataset.launchUrl;
+        if (launchUrl) {
+          event.preventDefault();
+          window.location.href = launchUrl;
+          return;
+        }
+
         event.preventDefault();
         showTab(link.dataset.tab);
       });
     });
 
     const initialTab = window.location.hash.replace('#', '');
-    if (initialTab && document.getElementById(initialTab)) {
+    const launchLink = initialTab
+      ? document.querySelector('.tab-link[data-tab="' + initialTab + '"][data-launch-url]')
+      : null;
+
+    if (launchLink) {
+      window.location.replace(launchLink.dataset.launchUrl);
+    } else if (initialTab && document.getElementById(initialTab)) {
       showTab(initialTab);
     }
 
