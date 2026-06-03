@@ -1,0 +1,700 @@
+:root {
+  --bg: #efe2c8;
+  --bg-deep: #d2b586;
+  --ink: #17313a;
+  --muted: #5e6f73;
+  --line: rgba(23, 49, 58, 0.12);
+  --sea: #3f8baa;
+  --sea-deep: #21556d;
+  --accent: #de8540;
+  --accent-soft: #efb771;
+  --good: #74c983;
+  --bad: #cb6f57;
+  --glass: rgba(255, 250, 241, 0.88);
+  --glass-strong: rgba(255, 252, 246, 0.97);
+  --shadow: 0 22px 55px rgba(24, 40, 48, 0.26);
+  --radius: 24px;
+  --radius-small: 16px;
+  --top-banner-height: 86px;
+  --bottom-bar-height: 58px;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(239, 183, 113, 0.34), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(63, 139, 170, 0.18), transparent 24%),
+    linear-gradient(180deg, #f9f3e8 0%, #f1e6d1 55%, #e4d2b0 100%);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-shell {
+  width: 100vw;
+  height: 100vh;
+  padding: 8px;
+  display: grid;
+  place-items: center;
+}
+
+.game-frame {
+  width: min(calc(100vw - 16px), calc((100vh - 16px) * 16 / 9), 1360px);
+  aspect-ratio: 16 / 9;
+  padding: 8px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 249, 240, 0.96), rgba(232, 217, 190, 0.84));
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(24, 49, 58, 0.1);
+}
+
+.canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #d3c6a9 0%, #bca980 100%);
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.screen-overlay {
+  position: absolute;
+  inset: 0;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+.top-banner,
+.phase-overlay,
+.panel-drawer,
+.fishing-hud,
+.touch-controls,
+.log-dock,
+.nav-button,
+.icon-button {
+  pointer-events: auto;
+}
+
+.top-banner {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  min-height: var(--top-banner-height);
+  padding: 10px;
+  border-radius: 18px;
+  background: rgba(255, 251, 243, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(12px);
+}
+
+.banner-stat,
+.summary-chip {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 10px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(24, 49, 58, 0.08);
+}
+
+.wish-stat {
+  background: linear-gradient(135deg, rgba(255, 245, 221, 0.96), rgba(255, 255, 255, 0.76));
+}
+
+.banner-stat strong,
+.summary-chip strong {
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.label,
+.small-note,
+.panel-meta,
+.phase-kicker {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.phase-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(20, 34, 41, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.phase-card {
+  width: min(92%, 880px);
+  min-height: min(72%, 430px);
+  max-height: calc(100% - 16px);
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 24px;
+  background: rgba(255, 252, 246, 0.98);
+  border: 1px solid rgba(24, 49, 58, 0.08);
+  box-shadow: 0 26px 58px rgba(16, 28, 34, 0.28);
+  overflow: hidden;
+}
+
+.phase-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+.phase-copy.wide {
+  grid-column: 1 / -1;
+}
+
+.phase-copy h1,
+.phase-copy h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.8vw, 2.5rem);
+  line-height: 1.02;
+}
+
+.phase-lead {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.welcome-points,
+.summary-lines,
+.help-list {
+  display: grid;
+  gap: 8px;
+}
+
+.welcome-points p,
+.help-list p,
+.menu-card p,
+.summary-lines p {
+  margin: 0;
+  line-height: 1.42;
+}
+
+.phase-button {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.phase-art {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+
+.scene-art {
+  width: 100%;
+  max-height: 100%;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#mapSelectPanel,
+.summary-lines {
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.panel-drawer {
+  display: none;
+  position: absolute;
+  left: 12px;
+  bottom: calc(var(--bottom-bar-height) + 12px);
+  width: min(48%, 460px);
+  max-height: 58%;
+  padding: 12px;
+  border-radius: 20px;
+  background: rgba(255, 251, 244, 0.95);
+  border: 1px solid rgba(24, 49, 58, 0.09);
+  box-shadow: 0 20px 38px rgba(21, 35, 41, 0.22);
+  overflow: auto;
+}
+
+.panel-drawer.active {
+  display: block;
+}
+
+.panel-header {
+  margin-bottom: 10px;
+}
+
+.panel-header h2 {
+  margin: 0 0 3px;
+  font-size: 1rem;
+}
+
+.panel-body {
+  display: none;
+}
+
+.panel-body.active {
+  display: block;
+}
+
+.map-card,
+.shop-card,
+.journal-card,
+.summary-card,
+.quest-card,
+.skill-card,
+.menu-card {
+  padding: 12px;
+  border-radius: var(--radius-small);
+  background: var(--glass-strong);
+  border: 1px solid var(--line);
+}
+
+.map-card + .map-card,
+.shop-card + .shop-card,
+.journal-card + .journal-card,
+.summary-card + .summary-card,
+.quest-card + .quest-card,
+.skill-card + .skill-card,
+.menu-card + .menu-card {
+  margin-top: 10px;
+}
+
+.card-head,
+.skill-row,
+.log-head,
+.fishing-row,
+.meter-head,
+.save-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-meta,
+.shop-meta,
+.journal-meta,
+.skill-meta {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.detail-list {
+  margin: 8px 0 0;
+  padding-left: 16px;
+  color: var(--muted);
+  font-size: 0.79rem;
+  line-height: 1.36;
+}
+
+.detail-list li + li {
+  margin-top: 4px;
+}
+
+.quality-pill,
+.tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 8px;
+  border: 1px solid rgba(24, 49, 58, 0.08);
+  background: rgba(221, 133, 64, 0.14);
+  color: #96521a;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.tag {
+  background: rgba(63, 139, 170, 0.12);
+  color: var(--sea-deep);
+}
+
+.primary-button,
+.secondary-button,
+.danger-button,
+.map-button,
+.shop-button,
+.bait-button,
+.skill-button,
+.nav-button,
+.touch-button,
+.touch-action-button,
+.icon-button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+
+.primary-button,
+.nav-button.active,
+.touch-action-button {
+  color: #fff8ef;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+}
+
+.secondary-button,
+.map-button,
+.shop-button,
+.bait-button,
+.skill-button,
+.nav-button,
+.touch-button,
+.icon-button {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.84);
+  border-color: rgba(24, 49, 58, 0.1);
+}
+
+.danger-button,
+.nav-end-day {
+  color: #fff7f1;
+  background: linear-gradient(135deg, #c96954 0%, #b44e40 100%);
+}
+
+.primary-button,
+.secondary-button,
+.danger-button {
+  min-height: 40px;
+  padding: 0 16px;
+}
+
+.map-button,
+.shop-button,
+.bait-button,
+.skill-button {
+  width: 100%;
+  margin-top: 10px;
+  min-height: 40px;
+  padding: 10px 14px;
+}
+
+.map-button.active {
+  color: #fff8ef;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+}
+
+.map-button[disabled],
+.shop-button[disabled],
+.bait-button[disabled],
+.skill-button[disabled] {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.xp-block {
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(24, 49, 58, 0.08);
+}
+
+.xp-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.xp-bar,
+.fishing-progress-bar,
+.quest-progress {
+  width: 100%;
+  height: 10px;
+  margin-top: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(24, 49, 58, 0.11);
+}
+
+#xpBarFill,
+#actionMeterFill,
+.quest-progress > div {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #de9f46 0%, #efc86e 100%);
+}
+
+.quest-progress > div {
+  background: linear-gradient(90deg, #5d9f64 0%, #7cc582 100%);
+}
+
+.fishing-hud {
+  display: grid;
+  gap: 8px;
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--bottom-bar-height) + 68px);
+  width: min(36%, 336px);
+  padding: 11px;
+  border-radius: 18px;
+  background: rgba(18, 31, 39, 0.88);
+  color: #fff8ef;
+  box-shadow: 0 18px 32px rgba(14, 24, 29, 0.34);
+  transform: translateX(-50%);
+}
+
+.fishing-row {
+  align-items: flex-start;
+}
+
+.fishing-row span:first-child {
+  font-weight: 700;
+}
+
+.fishing-row span:last-child {
+  color: rgba(255, 248, 239, 0.8);
+  font-size: 0.77rem;
+  text-align: right;
+}
+
+.minigame-track {
+  position: relative;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+}
+
+.target-zone,
+.marker {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.target-zone {
+  background: rgba(116, 201, 131, 0.84);
+}
+
+.marker {
+  width: 10px;
+  background: #fff6e8;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.14);
+}
+
+.touch-controls {
+  position: absolute;
+  bottom: calc(var(--bottom-bar-height) + 12px);
+  right: 12px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.touch-action-dock {
+  left: auto;
+  width: auto;
+}
+
+.virtual-joystick {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.joystick-base,
+.joystick-knob {
+  position: absolute;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity 100ms ease;
+}
+
+.virtual-joystick.active .joystick-base,
+.virtual-joystick.active .joystick-knob {
+  opacity: 1;
+}
+
+.joystick-base {
+  width: 88px;
+  height: 88px;
+  background: rgba(255, 251, 243, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  backdrop-filter: blur(4px);
+  box-shadow: 0 10px 24px rgba(18, 31, 39, 0.18);
+}
+
+.joystick-knob {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 251, 243, 0.82);
+  border: 1px solid rgba(24, 49, 58, 0.12);
+  box-shadow: 0 10px 20px rgba(18, 31, 39, 0.22);
+}
+
+.touch-controls {
+  display: flex;
+  min-width: 86px;
+  min-height: 44px;
+  padding: 0 12px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 20px rgba(19, 30, 35, 0.18);
+}
+
+.log-dock {
+  position: absolute;
+  right: 12px;
+  bottom: calc(var(--bottom-bar-height) + 12px);
+  width: min(27%, 220px);
+  padding: 7px 8px;
+  border-radius: 16px;
+  background: rgba(255, 251, 243, 0.86);
+  border: 1px solid rgba(24, 49, 58, 0.08);
+  box-shadow: 0 14px 28px rgba(21, 35, 41, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+.log-dock.collapsed {
+  width: 84px;
+}
+
+.log-head {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.icon-button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.log-list {
+  display: grid;
+  gap: 4px;
+  max-height: 88px;
+  margin-top: 6px;
+  overflow: auto;
+}
+
+.log-entry {
+  padding: 5px 7px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(24, 49, 58, 0.06);
+  line-height: 1.24;
+  font-size: 0.71rem;
+}
+
+.bottom-nav {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: auto;
+}
+
+.nav-button {
+  min-height: var(--bottom-bar-height);
+  padding: 6px 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.skill-levels {
+  display: flex;
+  gap: 6px;
+}
+
+.skill-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(24, 49, 58, 0.14);
+}
+
+.skill-dot.filled {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+}
+
+@media (hover: hover) {
+  .primary-button:hover,
+  .secondary-button:hover,
+  .danger-button:hover,
+  .map-button:hover,
+  .shop-button:hover,
+  .bait-button:hover,
+  .skill-button:hover,
+  .nav-button:hover,
+  .touch-button:hover,
+  .touch-action-button:hover,
+  .icon-button:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-aspect-ratio: 10 / 7) {
+  .game-frame {
+    width: min(calc(100vw - 12px), 100%);
+  }
+
+  .phase-card {
+    width: min(96%, 760px);
+    grid-template-columns: 1fr;
+  }
+
+  .top-banner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: auto;
+  }
+
+  .panel-drawer {
+    width: calc(100% - 24px);
+    max-height: 52%;
+  }
+
+  .fishing-hud,
+  .log-dock {
+    width: min(48%, 260px);
+  }
+
+  .bottom-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
