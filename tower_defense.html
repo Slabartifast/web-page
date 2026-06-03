@@ -7530,8 +7530,8 @@ function handleTownClick(screenX, screenY) {
             const height = university.h || GRID_SIZE * 3;
             const cx = col * GRID_SIZE + GRID_SIZE / 2;
             const cy = row * GRID_SIZE + GRID_SIZE / 2;
-            if (cx >= university.x - width / 2 && cx <= university.x + width / 2
-                && cy >= university.y - height / 2 && cy <= university.y + height / 2) {
+            if (cx >= university.x - width / 2 && cx < university.x + width / 2
+                && cy >= university.y - height / 2 && cy < university.y + height / 2) {
               return true;
             }
           }
@@ -7779,8 +7779,8 @@ function handleTownClick(screenX, screenY) {
           if (university && university.hp > 0) {
             const width = university.w || GRID_SIZE * 2;
             const height = university.h || GRID_SIZE * 3;
-            if (snapped.x >= university.x - width / 2 && snapped.x <= university.x + width / 2
-                && snapped.y >= university.y - height / 2 && snapped.y <= university.y + height / 2) {
+            if (snapped.x >= university.x - width / 2 && snapped.x < university.x + width / 2
+                && snapped.y >= university.y - height / 2 && snapped.y < university.y + height / 2) {
               return false;
             }
           }
@@ -14418,6 +14418,7 @@ function handleTownClick(screenX, screenY) {
           if (!obstacle || obstacle.hp <= 0) return false;
           const applied = Math.max(1, amount || 1);
           obstacle.hp = Math.max(0, obstacle.hp - applied);
+          uiDirty = true;
           try {
             if (typeof createFloater === 'function') createFloater(`-${Math.round(applied)}`, obstacle.x, obstacle.y - (obstacle.blockRadius || obstacle.radius || 18) - 12, '#f0c5bb', 11);
             if (typeof createRing === 'function') createRing(obstacle.x, obstacle.y, 'rgba(221,114,96,0.42)', 5, (obstacle.blockRadius || obstacle.radius || 18) + 12, 0.20);
@@ -17182,8 +17183,18 @@ function handleTownClick(screenX, screenY) {
           if (!state.v65.damageLast) state.v65.damageLast = makeDamageReportV65();
           if (!state.research || typeof state.research !== 'object') state.research = {};
           if (typeof state.research.bookkeeping !== 'boolean') state.research.bookkeeping = false;
-          if (state.university && !Number.isFinite(state.university.maxHp)) state.university.maxHp = V65.universityHp;
-          if (state.university && !Number.isFinite(state.university.hp)) state.university.hp = state.university.maxHp;
+          if (typeof state.research.medicinalBreakthrough !== 'boolean') state.research.medicinalBreakthrough = false;
+          if (state.university) {
+            if (!Number.isFinite(state.university.maxHp) || state.university.maxHp <= 0) state.university.maxHp = V65.universityHp;
+            if (!Number.isFinite(state.university.hp)) state.university.hp = state.university.maxHp;
+            state.university.hp = Math.max(0, Math.min(state.university.maxHp, state.university.hp));
+            state.university.w = V65.universityW;
+            state.university.h = V65.universityH;
+            state.university.kind = 'university';
+            state.university.label = 'University';
+            if (!Number.isFinite(state.university.radius) || state.university.radius <= 0) state.university.radius = Math.round(GRID_SIZE * 0.95);
+            state.university.blockRadius = Math.max(state.university.blockRadius || 0, Math.round(GRID_SIZE * 0.95));
+          }
           if (!(state.research && state.research.cartography)) state.minimapCollapsed = true;
           applyGatherRatesV65();
           tuneKnightSpeedV65();
@@ -17281,13 +17292,22 @@ function handleTownClick(screenX, screenY) {
         function universityRectV65(u) {
           const uni = u || liveUniversityV65();
           if (!uni) return null;
-          return { x: uni.x - V65.universityW / 2, y: uni.y - V65.universityH / 2, w: V65.universityW, h: V65.universityH };
+          const width = uni.w || V65.universityW;
+          const height = uni.h || V65.universityH;
+          return {
+            x: uni.x - width / 2,
+            y: uni.y - height / 2,
+            w: width,
+            h: height,
+            right: uni.x + width / 2,
+            bottom: uni.y + height / 2
+          };
         }
 
         function pointInUniversityV65(x, y) {
           const u = liveUniversityV65();
           const r = universityRectV65(u);
-          return !!r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h ? u : null;
+          return !!r && x >= r.x && x < r.right && y >= r.y && y < r.bottom ? u : null;
         }
 
         function canPlaceUniversityAtV65(x, y) {
@@ -17354,12 +17374,14 @@ function handleTownClick(screenX, screenY) {
             y: check.snapped.y,
             gridCol: check.snapped.col,
             gridRow: check.snapped.row,
-            radius: 44,
+            radius: Math.round(GRID_SIZE * 0.95),
+            blockRadius: Math.round(GRID_SIZE * 0.95),
             maxHp: V65.universityHp,
             hp: V65.universityHp,
             w: V65.universityW,
             h: V65.universityH,
-            kind: 'university'
+            kind: 'university',
+            label: 'University'
           };
           closeMenu();
           createRing(check.snapped.x, check.snapped.y, 'rgba(159, 209, 255, 0.70)', 18, 78, 0.42, 3);
@@ -17481,37 +17503,49 @@ function handleTownClick(screenX, screenY) {
           const u = state && state.university;
           if (!u || u.hp <= 0) return;
           const rect = universityRectV65(u);
+          const bodyW = Math.max(44, rect.w - 16);
+          const bodyH = Math.max(84, rect.h - 20);
+          const bodyX = u.x - bodyW / 2;
+          const bodyY = u.y - bodyH / 2 + 8;
+          const hallW = Math.max(30, bodyW - 22);
+          const hallH = Math.max(34, bodyH - 40);
+          const hallX = u.x - hallW / 2;
+          const hallY = bodyY + 10;
           ctx.save();
           ctx.fillStyle = 'rgba(0,0,0,0.18)';
           ctx.beginPath();
-          ctx.ellipse(u.x, u.y + 38, V65.universityW * 0.55, 26, 0, 0, TAU);
+          ctx.ellipse(u.x, bodyY + bodyH - 2, bodyW * 0.48, 22, 0, 0, TAU);
           ctx.fill();
-          roundRectPathV65(rect.x, rect.y, rect.w, rect.h, 8);
-          ctx.fillStyle = '#5e644d';
+          roundRectPathV65(bodyX, bodyY, bodyW, bodyH, 8);
+          ctx.fillStyle = '#57604b';
           ctx.fill();
           ctx.strokeStyle = '#2a3027';
           ctx.lineWidth = 4;
           ctx.stroke();
+          roundRectPathV65(hallX, hallY, hallW, hallH, 6);
           ctx.fillStyle = '#9ea681';
-          ctx.fillRect(u.x - 30, u.y - 44, 60, 42);
+          ctx.fill();
+          ctx.fillStyle = '#88906c';
+          ctx.fillRect(bodyX + 8, bodyY + 14, 10, bodyH - 28);
+          ctx.fillRect(bodyX + bodyW - 18, bodyY + 14, 10, bodyH - 28);
           ctx.fillStyle = '#765334';
           ctx.beginPath();
-          ctx.moveTo(u.x - 40, u.y - 44);
-          ctx.lineTo(u.x, u.y - 74);
-          ctx.lineTo(u.x + 40, u.y - 44);
+          ctx.moveTo(hallX - 8, hallY + 2);
+          ctx.lineTo(u.x, hallY - 24);
+          ctx.lineTo(hallX + hallW + 8, hallY + 2);
           ctx.closePath();
           ctx.fill();
           ctx.fillStyle = '#c9d8e9';
-          ctx.fillRect(u.x - 22, u.y - 32, 14, 14);
-          ctx.fillRect(u.x + 8, u.y - 32, 14, 14);
+          ctx.fillRect(u.x - 20, hallY + 12, 12, 13);
+          ctx.fillRect(u.x + 8, hallY + 12, 12, 13);
           ctx.fillStyle = '#3f2b1d';
-          ctx.fillRect(u.x - 9, u.y - 2, 18, 34);
+          ctx.fillRect(u.x - 8, bodyY + bodyH - 30, 16, 28);
           ctx.fillStyle = '#9fd1ff';
-          ctx.font = '900 15px Inter, sans-serif';
+          ctx.font = '900 13px Inter, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText('U', u.x, u.y + 50);
-          if (u.hp < u.maxHp) drawHealthBar(u.x - 48, u.y + 72, 96, 8, u.hp, u.maxHp, '#9fd1ff', '#314555');
+          ctx.fillText('U', u.x, bodyY + bodyH - 10);
+          if (u.hp < u.maxHp) drawHealthBar(u.x - 48, rect.y + rect.h + 12, 96, 8, u.hp, u.maxHp, '#9fd1ff', '#314555');
           ctx.restore();
         }
 
@@ -17524,6 +17558,11 @@ function handleTownClick(screenX, screenY) {
         function damageUniversityV65(amount) {
           const u = liveUniversityV65();
           if (!u || state.phase !== 'wave') return;
+          if (typeof damageBuildableObstacleV43 === 'function') {
+            damageBuildableObstacleV43(u, amount, 'enemy');
+            uiDirty = true;
+            return;
+          }
           u.hp -= Math.max(0, amount || 0);
           u.flash = 1;
           createFloater('-' + Math.round(amount || 0), u.x, u.y - 72, '#ffbcac', 12);
@@ -17572,6 +17611,7 @@ function handleTownClick(screenX, screenY) {
             { key: 'cavalry', label: 'Cavalry tack', cost: 5, short: 'Knight speed and charge power improve.', detail: 'Adds a permanent top-speed bonus and extra charge impact. Stacks with Horse training.', icon: 'horse' },
             { key: 'torchlight', label: 'Knight torch', cost: 4, short: 'The knight carries a night light.', detail: 'During waves, the knight reveals a small area around himself.', icon: 'torch' },
             { key: 'masonry', label: 'Masonry', cost: 5, short: 'More base health and stronger palisade.', detail: 'Adds +120 max base HP, repairs 120 HP, and adds a village wall level.', icon: 'stone' },
+            { key: 'medicinalBreakthrough', label: 'Medicinal breakthrough', cost: 6, short: 'The knight heals 30 HP at each dawn.', detail: 'After each dawn begins, the knight restores 30 HP automatically if alive.', icon: 'research' },
             { key: 'logistics', label: 'Logistics', cost: 5, short: '+100 wood, +100 stone, +100 food.', detail: 'Repeatable. Each purchase immediately grants 100 wood, 100 stone, and 100 food.', icon: 'wood', repeatable: true },
             { key: 'cartography', label: 'Cartography', cost: 5, short: 'Unlocks the minimap.', detail: 'Shows the minimap with enemies, towers, torches, town, knight, and camera view.', icon: 'map' },
             { key: 'towerLanterns', label: 'Tower lanterns', cost: 6, short: 'Towers shine during night waves.', detail: 'Every living tower becomes a small fixed light source at night.', icon: 'torch' },
@@ -17623,6 +17663,22 @@ function handleTownClick(screenX, screenY) {
             applyGatherRatesV65();
             createBanner(def.label + ' level ' + (level + 1), 'rgba(121, 201, 140, 0.55)');
             logMessage(def.label + ' improved to level ' + (level + 1) + '.', 'good');
+            uiDirty = true;
+            return true;
+          }
+          if (def.key === 'medicinalBreakthrough') {
+            if (state.research.medicinalBreakthrough) {
+              logMessage('Medicinal breakthrough is already researched.', 'bad');
+              return false;
+            }
+            if ((state.researchResource || 0) < def.cost) {
+              logMessage('Need ' + def.cost + ' research for ' + def.label + '.', 'bad');
+              return false;
+            }
+            state.researchResource -= def.cost;
+            state.research.medicinalBreakthrough = true;
+            createBanner('Medicinal breakthrough researched', 'rgba(121, 201, 140, 0.55)');
+            logMessage('Medicinal breakthrough researched. The knight now heals 30 HP at each dawn.', 'good');
             uiDirty = true;
             return true;
           }
@@ -17697,7 +17753,7 @@ function handleTownClick(screenX, screenY) {
 
         function researchCompletionPercentV65() {
           ensureV65State();
-          const onceKeys = ['fletching', 'cavalry', 'torchlight', 'masonry', 'cartography', 'towerLanterns', 'deconstruction', 'bookkeeping'];
+          const onceKeys = ['fletching', 'cavalry', 'torchlight', 'masonry', 'medicinalBreakthrough', 'cartography', 'towerLanterns', 'deconstruction', 'bookkeeping'];
           let done = 0;
           let total = onceKeys.length;
           onceKeys.forEach((key) => {
@@ -18238,6 +18294,17 @@ function handleTownClick(screenX, screenY) {
             if (state.raidSummary) state.raidSummary.researchGain = (state.raidSummary.researchGain || 0) + extra;
             logMessage('Scribe training produced +' + extra + ' extra research.', 'good');
           }
+          if (state.research && state.research.medicinalBreakthrough && state.player && state.player.alive && Number.isFinite(state.player.hp)) {
+            const maxHp = Number.isFinite(state.player.maxHp) ? state.player.maxHp : state.player.hp;
+            const beforeHp = state.player.hp;
+            state.player.hp = Math.min(maxHp, state.player.hp + 30);
+            const healed = Math.round(state.player.hp - beforeHp);
+            if (healed > 0) {
+              if (state.raidSummary) state.raidSummary.knightDawnHeal = (state.raidSummary.knightDawnHeal || 0) + healed;
+              logMessage('Medicinal breakthrough restored +' + healed + ' knight HP at dawn.', 'good');
+              uiDirty = true;
+            }
+          }
           if (state.raidSummary && state.research && state.research.bookkeeping) state.raidSummary.damageReport = { ...state.v65.damageLast };
           return result;
         };
@@ -18428,8 +18495,8 @@ function handleTownClick(screenX, screenY) {
         if (university && university.hp > 0) {
           const width = university.w || GRID_SIZE * 2;
           const height = university.h || GRID_SIZE * 3;
-          if (snapped.x >= university.x - width / 2 && snapped.x <= university.x + width / 2
-              && snapped.y >= university.y - height / 2 && snapped.y <= university.y + height / 2) {
+          if (snapped.x >= university.x - width / 2 && snapped.x < university.x + width / 2
+              && snapped.y >= university.y - height / 2 && snapped.y < university.y + height / 2) {
             return false;
           }
         }
