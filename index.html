@@ -349,6 +349,33 @@
       color: var(--muted);
     }
 
+    .pdf-frame-wrap {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #f8fafc;
+      box-shadow: 0 18px 48px rgba(23, 32, 51, 0.22);
+    }
+
+    .pdf-frame {
+      display: block;
+      width: 100%;
+      height: min(82vh, 980px);
+      min-height: 720px;
+      border: 0;
+      background: #f8fafc;
+    }
+
+    .pdf-fallback {
+      margin-top: 14px;
+      margin-bottom: 0;
+    }
+
+    .pdf-fallback a {
+      font-weight: 750;
+      color: var(--accent-dark);
+    }
+
     @media (max-width: 760px) {
       .page-shell { width: min(100% - 20px, 1120px); padding-top: 10px; }
       header { grid-template-columns: 1fr; }
@@ -356,6 +383,7 @@
       nav ul { gap: 8px; }
       nav a { padding: 10px 12px; font-size: 0.93rem; }
       .game-frame { min-height: 620px; height: 78vh; }
+      .pdf-frame { min-height: 620px; height: 78vh; }
     }
     .media-card {
   margin-top: 22px;
@@ -401,7 +429,9 @@
       <nav aria-label="Hovedmeny">
         <ul>
           <li><a href="#home" class="tab-link active-tab" data-tab="home">Hjemme bra</a></li>
-          <li><a href="#game" class="tab-link game-nav-link" data-tab="game">supergame 3000</a></li>
+          <li><a href="#tower-defense" class="tab-link game-nav-link" data-tab="tower-defense">tower defense 9000</a></li>
+          <li><a href="#fiskespill" class="tab-link game-nav-link" data-tab="fiskespill">fiskespill 3000</a></li>
+          <li><a href="#doktorgrad" class="tab-link" data-tab="doktorgrad">Doktorgrad</a></li>
           <li><a href="#trening" class="tab-link" data-tab="trening">Treningsprogram</a></li>
           <li><a href="#forskning" class="tab-link" data-tab="forskning">Forskning</a></li>
           <li><a href="#musikk" class="tab-link" data-tab="musikk">Musikk</a></li>
@@ -421,14 +451,30 @@
         </div>
       </section>
 
-      <section id="game" class="container">
-        <h2>supergame 3000</h2>
+      <section id="tower-defense" class="container">
+        <h2>tower defense 9000</h2>
         <p class="game-note">Bygg en by og forsvar den mot nattens skapninger. Om å gjøre å overleve lengst. Fortell meg hva du klarte, da vel!</p>
         <div class="game-frame-wrap">
-          <iframe class="game-frame" src="tower_defense.html" title="supergame 3000" loading="lazy" allow="fullscreen; autoplay"></iframe>
+          <iframe class="game-frame" src="tower_defense.html" title="tower defense 9000" loading="lazy" allow="fullscreen; autoplay"></iframe>
         </div>
       </section>
 
+      <section id="fiskespill" class="container">
+        <h2>fiskespill 3000</h2>
+        <p class="game-note">Fiskespillet lastes fra <code>fiskespill/index.html</code>. Legg hele <code>fiskespill</code>-mappen i samme mappe som denne siden.</p>
+        <div class="game-frame-wrap">
+          <iframe class="game-frame" src="fiskespill/index.html" title="fiskespill 3000" loading="lazy" allow="fullscreen; autoplay"></iframe>
+        </div>
+      </section>
+
+      <section id="doktorgrad" class="container">
+        <h2>Doktorgrad</h2>
+        <p class="game-note">PDF-en lastes fra <code>doktorgrad.pdf</code>. Legg PDF-filen i samme mappe som <code>index.html</code>.</p>
+        <div class="pdf-frame-wrap">
+          <iframe class="pdf-frame" src="doktorgrad.pdf" title="Doktorgrad PDF" loading="lazy"></iframe>
+        </div>
+        <p class="pdf-fallback"><a href="doktorgrad.pdf" target="_blank" rel="noopener">Åpne doktorgrad.pdf i ny fane</a></p>
+      </section>
 
       <section id="trening" class="container">
         <h2>Ukentlig treningsplan</h2>
