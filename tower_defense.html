@@ -13327,6 +13327,15 @@ function handleTownClick(screenX, screenY) {
             const tNowV62 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
             const dxV62 = (event.clientX || 0) - lastSyntheticTapV62.x;
             const dyV62 = (event.clientY || 0) - lastSyntheticTapV62.y;
+            if (tNowV62 - lastSyntheticTapV62.t < 520 && Math.hypot(dxV62, dyV62) < 32) {
+              // Touch taps already dispatch a synthetic canvas click in V44.
+              // Swallow the follow-up trusted click from the same tap before any
+              // world/menu handler can treat it as a second action.
+              window.__mvLastSyntheticCanvasTapV62 = null;
+              event.stopImmediatePropagation();
+              event.preventDefault();
+              return;
+            }
             if (tNowV62 - lastSyntheticTapV62.t < 900 && Math.hypot(dxV62, dyV62) < 32) {
               const buttonsV63 = (state && state.v33 && state.v33.ui && Array.isArray(state.v33.ui.actionButtons)) ? state.v33.ui.actionButtons : [];
               const hitsActionV63 = buttonsV63.some((btn) => btn && btn.rect && pointInRectV33(pointer.screenX, pointer.screenY, btn.rect));
