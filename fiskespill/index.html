@@ -52,9 +52,14 @@
                     <p><strong>Napp:</strong> vent på utropstegnet over hodet ditt og trykk raskt.</p>
                     <p><strong>Kveld:</strong> selg fisken, tjen XP og bruk ferdighetspoeng smart.</p>
                   </div>
-                  <button class="primary-button phase-button" id="startGameButton" type="button">
-                    Start eventyret
-                  </button>
+                  <div class="phase-button" style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <button class="primary-button" id="startGameButton" type="button">
+                      Start eventyret
+                    </button>
+                    <button class="secondary-button" type="button" onclick="if (document.fullscreenElement) { if (document.exitFullscreen) { document.exitFullscreen(); } } else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(() => {}); }">
+                      Full skjerm
+                    </button>
+                  </div>
                 </div>
                 <div class="phase-art">
                   <svg viewBox="0 0 360 280" class="scene-art" aria-hidden="true">
