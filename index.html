@@ -37,7 +37,7 @@
     a { color: inherit; }
 
     .page-shell {
-      width: min(1120px, calc(100% - 32px));
+      width: min(1480px, calc(100% - 32px));
       margin: 0 auto;
       padding: 28px 0 36px;
     }
@@ -142,6 +142,8 @@
 
     .container {
       display: none;
+      width: 100%;
+      margin: 0 auto;
       padding: clamp(20px, 4vw, 38px);
       background: var(--card);
       border: 1px solid rgba(255, 255, 255, 0.42);
@@ -150,6 +152,18 @@
     }
 
     .container.active { display: block; }
+
+    .hero,
+    footer,
+    .container:not(.game-container) {
+      max-width: 1120px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .game-container {
+      max-width: none;
+    }
 
     .section-grid {
       display: grid;
@@ -337,6 +351,9 @@
 
 
     .game-frame-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3 / 2;
       overflow: hidden;
       border: 1px solid var(--line);
       border-radius: 22px;
@@ -345,17 +362,16 @@
     }
 
     .game-frame {
-      display: block;
+      position: absolute;
+      inset: 0;
       width: 100%;
-      height: min(82vh, 920px);
-      min-height: 680px;
+      height: 100%;
       border: 0;
       background: #0d120a;
     }
 
     .fish-game-frame {
-      height: min(88vh, 980px);
-      min-height: 760px;
+      background: #efe2c8;
     }
 
     .game-note {
@@ -391,13 +407,11 @@
     }
 
     @media (max-width: 760px) {
-      .page-shell { width: min(100% - 20px, 1120px); padding-top: 10px; }
+      .page-shell { width: min(100% - 20px, 1480px); padding-top: 10px; }
       header { grid-template-columns: 1fr; }
       .section-grid { grid-template-columns: 1fr; }
       nav ul { gap: 8px; }
       nav a { padding: 10px 12px; font-size: 0.93rem; }
-      .game-frame { min-height: 620px; height: 78vh; }
-      .fish-game-frame { min-height: 700px; height: 84vh; }
       .pdf-frame { min-height: 620px; height: 78vh; }
     }
     .media-card {
@@ -452,7 +466,7 @@
         </ul>
         <ul class="nav-games" aria-label="Spill">
           <li><a href="#tower-defense" class="tab-link game-nav-link" data-tab="tower-defense">tower defense 9000</a></li>
-          <li><a href="fiskespill/index.html" class="tab-link game-nav-link" data-tab="fiskespill" data-launch-url="fiskespill/index.html">fiskespill 3000</a></li>
+          <li><a href="#fiskespill" class="tab-link game-nav-link" data-tab="fiskespill">fiskespill 3000</a></li>
         </ul>
       </nav>
     </div>
@@ -468,7 +482,7 @@
         </div>
       </section>
 
-      <section id="tower-defense" class="container">
+      <section id="tower-defense" class="container game-container">
         <h2>tower defense 9000</h2>
         <p class="game-note">Bygg en by og forsvar den mot nattens skapninger. Om å gjøre å overleve lengst. Fortell meg hva du klarte, da vel!</p>
         <div class="game-frame-wrap">
@@ -476,23 +490,21 @@
         </div>
       </section>
 
-      <section id="fiskespill" class="container">
+      <section id="fiskespill" class="container game-container">
         <h2>fiskespill 3000</h2>
-        <p class="game-note">Fiskespillet fungerer best på sin egen side. Der får du riktig størrelse, fungerende startknapp og samme presentasjon som når du åpner <code>fiskespill/index.html</code> direkte.</p>
-        <div class="note-card">
-          <h3>Åpne fullversjonen</h3>
-          <p>Start fiskespillet i egen side for å spille uten iframe-trøbbel.</p>
-          <a class="link-button" href="fiskespill/index.html">Åpne fiskespill 3000</a>
+        <p class="game-note">Fisk på dagtid, servering på kveldstid. Her kan du spille direkte i siden, med menyene fortsatt tilgjengelige.</p>
+        <div class="game-frame-wrap">
+          <iframe class="game-frame fish-game-frame deferred-frame" src="about:blank" data-src="fiskespill/index.html" title="fiskespill 3000" loading="eager" allow="fullscreen; autoplay"></iframe>
         </div>
       </section>
 
       <section id="doktorgrad" class="container">
         <h2>Doktorgrad</h2>
-        <p class="game-note">PDF-en lastes fra <code>doktorgrad.pdf</code>. Legg PDF-filen i samme mappe som <code>index.html</code>.</p>
+        <p class="game-note">Doktoravhandlingen ble levert 17. desember 2025 og forsvart 28. mai 2026. Her kan du lese avhandlingen nedenfor og finne mer informasjon om disputasen på <a href="https://www.sv.uio.no/psi/forskning/aktuelt/arrangementer/disputaser/2026/aasvik" target="_blank" rel="noopener">UiOs disputasside</a>.</p>
         <div class="pdf-frame-wrap">
           <iframe class="pdf-frame" src="doktorgrad.pdf" title="Doktorgrad PDF" loading="lazy"></iframe>
         </div>
-        <p class="pdf-fallback"><a href="doktorgrad.pdf" target="_blank" rel="noopener">Åpne doktorgrad.pdf i ny fane</a></p>
+        <p class="pdf-fallback"><a href="doktorgrad.pdf" target="_blank" rel="noopener">Åpne doktorgrad.pdf i ny fane</a> · <a href="https://www.sv.uio.no/psi/forskning/aktuelt/arrangementer/disputaser/2026/aasvik" target="_blank" rel="noopener">Se disputassiden ved UiO</a></p>
       </section>
 
       <section id="trening" class="container">
@@ -676,26 +688,13 @@
 
     tabLinks.forEach(link => {
       link.addEventListener('click', event => {
-        const launchUrl = link.dataset.launchUrl;
-        if (launchUrl) {
-          event.preventDefault();
-          window.location.href = launchUrl;
-          return;
-        }
-
         event.preventDefault();
         showTab(link.dataset.tab);
       });
     });
 
     const initialTab = window.location.hash.replace('#', '');
-    const launchLink = initialTab
-      ? document.querySelector('.tab-link[data-tab="' + initialTab + '"][data-launch-url]')
-      : null;
-
-    if (launchLink) {
-      window.location.replace(launchLink.dataset.launchUrl);
-    } else if (initialTab && document.getElementById(initialTab)) {
+    if (initialTab && document.getElementById(initialTab)) {
       showTab(initialTab);
     }
 
