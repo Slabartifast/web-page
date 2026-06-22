@@ -14423,7 +14423,7 @@ function handleTownClick(screenX, screenY) {
       // A short tap is converted into the same canvas click used by mouse controls.
       (function installAndroidTouchControlsV44() {
         if (window.__mountedVillageDefenseMobileControlsV44) return;
-        window.__mountedVillageDefenseMobileControlsV44 = true;
+        window.__mountedVillageDefenseMobileControlsV44 = { applied: true };
 
         const MOBILE_KEY_MAP = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
         const mobileMoveKeys = new Set();
@@ -14679,7 +14679,20 @@ function handleTownClick(screenX, screenY) {
 
         canvas.addEventListener('pointerup', (event) => finishPointerV44(event, false), { passive: false, capture: true });
         canvas.addEventListener('pointercancel', (event) => finishPointerV44(event, true), { passive: false, capture: true });
+        document.addEventListener('pointerup', (event) => {
+          if (event.pointerId === joystick.pointerId) finishPointerV44(event, false);
+        }, { passive: false, capture: true });
+        document.addEventListener('pointercancel', (event) => {
+          if (event.pointerId === joystick.pointerId) finishPointerV44(event, true);
+        }, { passive: false, capture: true });
+        window.addEventListener('pointerdown', (event) => {
+          if ((event.pointerType !== 'touch' && event.pointerType !== 'pen') || event.target !== canvas) return;
+          if (joystick.pointerId === null || event.pointerId === joystick.pointerId) return;
+          const age = Math.max(0, performance.now() - (joystick.startedAt || 0));
+          if (!joystick.active || age > 1200) resetJoystickV44();
+        }, true);
         window.addEventListener('blur', resetJoystickV44);
+        window.addEventListener('pagehide', resetJoystickV44);
         document.addEventListener('visibilitychange', () => { if (document.hidden) resetJoystickV44(); });
 
         // Prevent stuck mobile movement if a hardware keyboard keyup is missed after touch use.
@@ -14691,6 +14704,8 @@ function handleTownClick(screenX, screenY) {
         if (ui && ui.canvasTip) {
           ui.canvasTip.textContent = 'Desktop: WASD moves, click selects. Phone: touch-drag the field for a joystick, tap to click/select.';
         }
+
+        window.__mountedVillageDefenseMobileControlsV44.resetJoystick = resetJoystickV44;
       })();
 
 
@@ -24962,6 +24977,39 @@ function handleTownClick(screenX, screenY) {
         };
       })();
 
+      // === v83: suppress duplicate native canvas clicks after synthetic mobile taps ===
+      (function applyMobileTapDebounceV83() {
+        if (window.__mountedVillageDefenseV83 && window.__mountedVillageDefenseV83.applied) return;
+
+        function coarsePointerV83() {
+          return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+        }
+
+        function isDuplicateNativeCanvasClickV83(event) {
+          if (!event || event.__mvSyntheticTapV62 || event.target !== canvas) return false;
+          if (!coarsePointerV83()) return false;
+          const lastTap = window.__mvLastSyntheticCanvasTapV62;
+          if (!lastTap) return false;
+          const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+          if (now - lastTap.t > 900) return false;
+          const dx = (event.clientX || 0) - lastTap.x;
+          const dy = (event.clientY || 0) - lastTap.y;
+          return Math.hypot(dx, dy) < 28;
+        }
+
+        document.addEventListener('click', (event) => {
+          if (!isDuplicateNativeCanvasClickV83(event)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        }, true);
+
+        window.__mountedVillageDefenseV83 = {
+          applied: true,
+          note: 'Duplicate native clicks after synthetic mobile taps are suppressed before they can reopen or close radial menus.'
+        };
+      })();
+
       function collectMountedVillageDefenseModulesV79() {
         const keys = [
           '__mountedVillageDefenseV13',
@@ -24987,7 +25035,8 @@ function handleTownClick(screenX, screenY) {
           '__mountedVillageDefenseChainHooksV79',
           '__mountedVillageDefenseV80',
           '__mountedVillageDefenseV81',
-          '__mountedVillageDefenseV82'
+          '__mountedVillageDefenseV82',
+          '__mountedVillageDefenseV83'
         ];
         const modules = {};
         keys.forEach((key) => {
