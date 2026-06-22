@@ -83,7 +83,7 @@
       towers: [],
       barriers: [],
       supportUnits: [],
-      camps: proceduralMap.campSlots.map(deps.buildCampState),
+      camps: [],
       enemies: [],
       projectiles: [],
       floaters: [],
