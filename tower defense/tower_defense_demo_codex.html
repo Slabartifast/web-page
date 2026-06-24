@@ -4952,7 +4952,7 @@ function createProceduralMap() {
           if (!grid) return false;
           if (snapped.x < GRID_SIZE / 2 || snapped.x > WORLD_WIDTH - GRID_SIZE / 2 || snapped.y < GRID_SIZE / 2 || snapped.y > WORLD_HEIGHT - GRID_SIZE / 2) return false;
           if (grid.noBuild[snapped.row][snapped.col]) return false;
-          if (isBlockedByCamp(snapped.x, snapped.y)) return false;
+          if (typeof isBlockedByCamp === 'function' && isBlockedByCamp(snapped.x, snapped.y)) return false;
           if (getTowerAtCell(snapped.col, snapped.row) || getBarrierAtCell(snapped.col, snapped.row)) return false;
           if (state && state.university && state.university.hp > 0) {
             const u = state.university;
@@ -15641,8 +15641,8 @@ function handleTownClick(screenX, screenY) {
             },
             masonry: {
               key: 'masonry', label: 'Masonry', cost: 5, icon: 'stone', repeatable: false,
-              short: 'More base health and stronger palisade.',
-              detail: 'Adds +120 maximum base HP, repairs 120 base HP, and adds one visual wall level to the village.'
+              short: 'All buildings become sturdier.',
+              detail: 'Increases max HP for towers, walls, gates, houses, support buildings, torches, and the University.'
             },
             logistics: {
               key: 'logistics', label: 'Logistics', cost: 5, icon: 'wood', repeatable: true,
@@ -25010,6 +25010,1181 @@ function handleTownClick(screenX, screenY) {
         };
       })();
 
+      // === v84: strict footprint placement for university and barriers ===
+      (function applyStructureFootprintConsistencyV84() {
+        if (window.__mountedVillageDefenseV84 && window.__mountedVillageDefenseV84.applied) return;
+        const v6ScopeV84 = window.__mountedVillageDefenseV6Scope || null;
+        const v65ScopeV84 = window.__mountedVillageDefenseV65Scope || null;
+
+        function supportBuildingAtCellV84(col, row) {
+          const supportApi = (typeof window !== 'undefined') ? window.__mountedVillageDefenseV69 : null;
+          return !!(supportApi && typeof supportApi.getSupportBuildingAtCell === 'function' && supportApi.getSupportBuildingAtCell(col, row));
+        }
+
+        function houseAtCellV84(col, row) {
+          return (state.houses || []).some((house) => house && house.hp > 0
+            && col >= house.gridCol
+            && col < house.gridCol + (house.footprintCols || 2)
+            && row >= house.gridRow
+            && row < house.gridRow + (house.footprintRows || 2));
+        }
+
+        function universityAtCellV84(col, row) {
+          const university = state.university;
+          return !!(university && university.hp > 0
+            && col >= university.gridCol
+            && col < university.gridCol + (university.footprintCols || 2)
+            && row >= university.gridRow
+            && row < university.gridRow + (university.footprintRows || 3));
+        }
+
+        function torchAtCellV84(col, row) {
+          return (state.torches || []).some((torch) => torch && torch.hp > 0 && torch.gridCol === col && torch.gridRow === row);
+        }
+
+        function footprintCellBlockedV84(col, row, grid, options = {}) {
+          if (col < 0 || row < 0 || col >= grid.cols || row >= grid.rows) return 'Map edge.';
+          if (cellBlockedByTownCore(col, row, 2)) return 'Town stands here.';
+          if (!grid.noBuild[row] || grid.noBuild[row][col]) return 'Blocked footprint.';
+          if (getTowerAtCell(col, row)) return 'Buildable already here.';
+          if (typeof getBarrierAtCell === 'function' && getBarrierAtCell(col, row)) return 'Buildable already here.';
+          if (!options.ignoreUniversity && universityAtCellV84(col, row)) return 'University stands here.';
+          if (houseAtCellV84(col, row)) return 'House stands here.';
+          if (supportBuildingAtCellV84(col, row)) return 'Support building already here.';
+          if (torchAtCellV84(col, row)) return 'Torch already here.';
+          return '';
+        }
+
+        function universityPlacementV84(x, y) {
+          const snapped = snapWorldToGrid(x, y);
+          const footprintCols = 2;
+          const footprintRows = 3;
+          const rect = {
+            x: snapped.col * GRID_SIZE,
+            y: snapped.row * GRID_SIZE,
+            w: footprintCols * GRID_SIZE,
+            h: footprintRows * GRID_SIZE
+          };
+          return {
+            snapped,
+            gridCol: snapped.col,
+            gridRow: snapped.row,
+            footprintCols,
+            footprintRows,
+            rect,
+            centerX: rect.x + rect.w / 2,
+            centerY: rect.y + rect.h / 2
+          };
+        }
+
+        function canPlaceUniversityAtV84(x, y) {
+          const placement = universityPlacementV84(x, y);
+          const grid = state && state.map ? state.map.gridMeta : null;
+          const result = { ...placement, ok: false, reason: '' };
+          if (!grid) return { ...result, reason: 'No map grid.' };
+          if (state.university && state.university.hp > 0) return { ...result, reason: 'Only one University can stand at a time.' };
+          if (placement.rect.x < 0 || placement.rect.y < 0 || placement.rect.x + placement.rect.w > WORLD_WIDTH || placement.rect.y + placement.rect.h > WORLD_HEIGHT) {
+            return { ...result, reason: 'Map edge.' };
+          }
+          for (let row = placement.gridRow; row < placement.gridRow + placement.footprintRows; row += 1) {
+            for (let col = placement.gridCol; col < placement.gridCol + placement.footprintCols; col += 1) {
+              const reason = footprintCellBlockedV84(col, row, grid, { ignoreUniversity: true });
+              if (reason) return { ...result, reason };
+            }
+          }
+          if (state.player && distance(placement.centerX, placement.centerY, state.player.x, state.player.y) < 52) return { ...result, reason: 'Too close to the knight.' };
+          return { ...result, ok: true };
+        }
+
+        const canPlaceBuildableBaseV84 = v6ScopeV84 && typeof v6ScopeV84.canPlaceBuildable === 'function'
+          ? v6ScopeV84.canPlaceBuildable
+          : null;
+        const canPlaceBuildableV84 = function canPlaceBuildableV84(x, y, buildKey) {
+          const buildable = BUILDABLES[buildKey];
+          if (!buildable) return false;
+          if (buildable.category !== 'barrier') return canPlaceBuildableBaseV84 ? canPlaceBuildableBaseV84(x, y, buildKey) : false;
+          const snapped = snapWorldToGrid(x, y);
+          const grid = state && state.map ? state.map.gridMeta : null;
+          if (!grid) return false;
+          const reason = footprintCellBlockedV84(snapped.col, snapped.row, grid);
+          if (reason) return false;
+          if (typeof isBlockedByCamp === 'function' && isBlockedByCamp(snapped.x, snapped.y)) return false;
+          if (state.player && distance(snapped.x, snapped.y, state.player.x, state.player.y) < 36) return false;
+          return true;
+        };
+
+        if (v6ScopeV84) v6ScopeV84.canPlaceBuildable = canPlaceBuildableV84;
+        if (v65ScopeV84) v65ScopeV84.canPlaceUniversityAt = canPlaceUniversityAtV84;
+
+        window.__mountedVillageDefenseV84 = {
+          applied: true,
+          note: 'University, walls, and gates now use strict footprint cells without hidden natural-wall margins.'
+        };
+      })();
+
+      function damageTrebuchetImpact(projectile) {
+        if (!projectile || !state) return false;
+        const splash = Math.max(0, projectile.structureSplashRadius || projectile.splashRadius || projectile.impactRadius || 48);
+        const impactX = Number.isFinite(projectile.impactX) ? projectile.impactX : projectile.x;
+        const impactY = Number.isFinite(projectile.impactY) ? projectile.impactY : projectile.y;
+        try {
+          if (typeof createRing === 'function') createRing(impactX, impactY, projectile.impactColor || 'rgba(255, 182, 112, 0.65)', 10, Math.max(36, splash), 0.28);
+          if (typeof createSplat === 'function') createSplat(impactX, impactY, 'rgba(180, 105, 52, 0.18)', Math.max(42, splash * 0.9));
+        } catch (_) {}
+
+        const supportBuildings = (typeof window !== 'undefined' && typeof window.liveSupportBuildingsV69 === 'function')
+          ? window.liveSupportBuildingsV69()
+          : [].concat(state.stablesBuildings || [], state.archeryRangeBuildings || []).filter((building) => building && building.hp > 0);
+        const structures = []
+          .concat((state.barriers || []).filter((barrier) => barrier && barrier.hp > 0))
+          .concat((state.towers || []).filter((tower) => tower && tower.hp > 0))
+          .concat((state.houses || []).filter((house) => house && house.hp > 0))
+          .concat(supportBuildings)
+          .concat((state.torches || []).filter((torch) => torch && torch.hp > 0));
+        if (state.university && state.university.hp > 0) structures.push(state.university);
+
+        structures.forEach((obstacle) => {
+          const hitRadius = Math.max(16, obstacle.blockRadius || obstacle.radius || Math.max(obstacle.w || 0, obstacle.h || 0) * 0.35 || 20);
+          const dist = distance(impactX, impactY, obstacle.x, obstacle.y);
+          if (dist > splash + hitRadius) return;
+          const falloff = dist <= hitRadius * 0.7 ? 1 : 0.78;
+          const applied = (projectile.damage || 1) * falloff;
+          if (state.barriers && state.barriers.includes(obstacle) && typeof damageBarrier === 'function') {
+            damageBarrier(obstacle, applied, { source: projectile.source || 'trebuchet', ringColor: projectile.impactColor });
+          } else if (state.towers && state.towers.includes(obstacle) && typeof damageTower === 'function') {
+            damageTower(obstacle, applied, { source: projectile.source || 'trebuchet', ringColor: projectile.impactColor });
+          } else {
+            const v43Scope = (typeof window !== 'undefined') ? window.__mountedVillageDefenseV43Scope : null;
+            if (v43Scope && typeof v43Scope.damageBuildableObstacle === 'function') {
+              v43Scope.damageBuildableObstacle(obstacle, applied, projectile.source || 'trebuchet');
+            } else {
+              obstacle.hp = Math.max(0, (obstacle.hp || 0) - Math.max(1, applied));
+            }
+          }
+        });
+
+        if (projectile.canHitBase && state.base && distance(impactX, impactY, state.base.x, state.base.y) <= splash + state.base.radius) {
+          const baseDist = distance(impactX, impactY, state.base.x, state.base.y);
+          const baseApplied = (projectile.damage || 1) * (baseDist <= state.base.radius * 0.6 ? 1 : 0.82);
+          damageBase(baseApplied);
+        }
+        return true;
+      }
+
+      // === v85: unified building durability, damage, repair, research log, and true tower lanterns ===
+      (function applyBuildingSystemsConsistencyV85() {
+        if (window.__mountedVillageDefenseV85 && window.__mountedVillageDefenseV85.applied) return;
+        const v43ScopeV85 = window.__mountedVillageDefenseV43Scope || null;
+        const v65ScopeV85 = window.__mountedVillageDefenseV65Scope || null;
+
+        const V85 = {
+          structureHpMultiplier: 1.45,
+          masonryMultiplier: 1.3,
+          repairPerBuilder: 48,
+          researchPerVillager: 3,
+          towerLightRadius: 218,
+          ratStructureDamageMultiplier: 0.35
+        };
+        let finishWaveBuildersV85 = 0;
+
+        function replaceHotPathHookV85(kind, name, handlers) {
+          const hooks = HOT_PATH_HOOKS_V77 && HOT_PATH_HOOKS_V77[kind] ? HOT_PATH_HOOKS_V77[kind] : [];
+          const hook = hooks.find((entry) => entry && entry.name === name);
+          if (hook) hook.handlers = handlers || {};
+        }
+
+        replaceHotPathHookV85('finishWave', 'v64-builder-repair-split', {
+          pre: function finishWaveV85RepairPre() {
+            finishWaveBuildersV85 = state && state.jobs ? Math.max(0, state.jobs.builders || 0) : 0;
+            if (state && state.jobs) state.jobs.builders = 0;
+          },
+          post: function finishWaveV85RepairPost() {
+            if (state && state.jobs) state.jobs.builders = finishWaveBuildersV85;
+            if (typeof markBuildClickGuardV64 === 'function') markBuildClickGuardV64();
+          }
+        });
+
+        function researchLevelV85(key) {
+          if (typeof researchLevelV65 === 'function') return researchLevelV65(key);
+          return Math.max(0, Math.min(3, (state.v65 && state.v65.researchLevels && state.v65.researchLevels[key]) || 0));
+        }
+
+        function masonryMultiplierV85() {
+          return state && state.research && state.research.masonry ? V85.masonryMultiplier : 1;
+        }
+
+        function liveHousesV85() {
+          return (state.houses || []).filter((house) => house && house.hp > 0);
+        }
+
+        function liveSupportBuildingsV85() {
+          const supportApi = (typeof window !== 'undefined') ? window.__mountedVillageDefenseV69 : null;
+          if (supportApi && typeof supportApi.liveSupportBuildings === 'function') return supportApi.liveSupportBuildings();
+          if (typeof window !== 'undefined' && typeof window.liveSupportBuildingsV69 === 'function') return window.liveSupportBuildingsV69();
+          return []
+            .concat(state.stablesBuildings || [])
+            .concat(state.archeryRangeBuildings || [])
+            .filter((building) => building && building.hp > 0);
+        }
+
+        function allLiveStructuresV85(options = {}) {
+          const items = []
+            .concat(state.barriers || [])
+            .concat(state.towers || [])
+            .concat(liveHousesV85())
+            .concat(liveSupportBuildingsV85())
+            .concat(state.torches || []);
+          if (state.university && state.university.hp > 0) items.push(state.university);
+          if (options.includeBase && state.base && state.base.hp > 0) items.push(state.base);
+          return items.filter((item) => item && item.hp > 0);
+        }
+
+        function baseStructureHpV85(item) {
+          if (!item) return 0;
+          if (item === state.base) return state.base.maxHp || 560;
+          if (Array.isArray(state.towers) && state.towers.includes(item)) {
+            const def = TOWER_TYPES[item.type] || {};
+            return def.durability || 145;
+          }
+          if (Array.isArray(state.barriers) && state.barriers.includes(item)) {
+            return item.kind === 'gate' ? 360 : 340;
+          }
+          if (item.kind === 'house') return 260;
+          if (item.kind === 'university') return 420;
+          if (item.kind === 'stables') return 360;
+          if (item.kind === 'archeryRange') return 340;
+          if (item.kind === 'torch') return 160;
+          return item.maxHp || item.hp || 0;
+        }
+
+        function targetStructureMaxHpV85(item) {
+          const base = baseStructureHpV85(item);
+          if (!Number.isFinite(base) || base <= 0) return 0;
+          if (item === state.base) return Math.round(base);
+          return Math.round(base * V85.structureHpMultiplier * masonryMultiplierV85());
+        }
+
+        function normalizeStructureDurabilityV85() {
+          allLiveStructuresV85().forEach((item) => {
+            const desired = targetStructureMaxHpV85(item);
+            if (!Number.isFinite(desired) || desired <= 0) return;
+            const oldMax = Number.isFinite(item.maxHp) && item.maxHp > 0 ? item.maxHp : desired;
+            const ratio = Number.isFinite(item.hp) && oldMax > 0 ? clamp(item.hp / oldMax, 0, 1) : 1;
+            if (Math.abs(oldMax - desired) > 0.5) {
+              item.maxHp = desired;
+              item.hp = Math.max(1, Math.min(desired, Math.round(desired * ratio)));
+            } else {
+              item.maxHp = desired;
+              if (!Number.isFinite(item.hp)) item.hp = desired;
+            }
+          });
+        }
+
+        getTowerDurability = function getTowerDurabilityV85(typeKey) {
+          const def = TOWER_TYPES[typeKey] || {};
+          return Math.round((def.durability || 145) * V85.structureHpMultiplier * masonryMultiplierV85());
+        };
+
+        function structureDamageMultiplierV85(sourceLabel) {
+          return sourceLabel === 'rat' ? V85.ratStructureDamageMultiplier : 1;
+        }
+
+        function removeDestroyedStructureV85(obstacle) {
+          if (!obstacle) return;
+          if (Array.isArray(state.barriers) && state.barriers.includes(obstacle)) state.barriers = state.barriers.filter((entry) => entry !== obstacle && entry.id !== obstacle.id);
+          else if (Array.isArray(state.towers) && state.towers.includes(obstacle)) state.towers = state.towers.filter((entry) => entry !== obstacle && entry.id !== obstacle.id);
+          else if (Array.isArray(state.houses) && state.houses.includes(obstacle)) state.houses = state.houses.filter((entry) => entry !== obstacle && entry.id !== obstacle.id);
+          else if (Array.isArray(state.stablesBuildings) && state.stablesBuildings.includes(obstacle)) state.stablesBuildings = state.stablesBuildings.filter((entry) => entry !== obstacle && entry.id !== obstacle.id);
+          else if (Array.isArray(state.archeryRangeBuildings) && state.archeryRangeBuildings.includes(obstacle)) state.archeryRangeBuildings = state.archeryRangeBuildings.filter((entry) => entry !== obstacle && entry.id !== obstacle.id);
+          else if (Array.isArray(state.torches) && state.torches.includes(obstacle)) state.torches = state.torches.filter((entry) => entry !== obstacle && entry.id !== obstacle.id);
+          else if (state.university === obstacle) state.university = null;
+          if (typeof rebuildRuntimeMap === 'function') rebuildRuntimeMap(true);
+          if (state.menu && state.menu.targetId && state.menu.targetId === obstacle.id) closeMenu();
+        }
+
+        const damageBuildableObstacleBaseV85 = v43ScopeV85 && typeof v43ScopeV85.damageBuildableObstacle === 'function'
+          ? v43ScopeV85.damageBuildableObstacle
+          : null;
+        function damageBuildableObstacleV85(obstacle, amount, sourceLabel = 'enemy') {
+          if (!obstacle || obstacle.hp <= 0) return false;
+          normalizeStructureDurabilityV85();
+          const applied = Math.max(1, (amount || 1) * structureDamageMultiplierV85(sourceLabel));
+          obstacle.hp = Math.max(0, obstacle.hp - applied);
+          try {
+            if (typeof createFloater === 'function') createFloater('-' + Math.round(applied), obstacle.x, obstacle.y - Math.max(18, obstacle.h ? obstacle.h * 0.35 : (obstacle.radius || obstacle.blockRadius || 18) + 8), '#f0c5bb', 11);
+            if (typeof createRing === 'function') createRing(obstacle.x, obstacle.y, 'rgba(221,114,96,0.42)', 6, Math.max(26, obstacle.radius || obstacle.blockRadius || Math.max(obstacle.w || 0, obstacle.h || 0) * 0.35), 0.22);
+          } catch (_) {}
+          if (obstacle.hp <= 0) {
+            const label = obstacle.label || (TOWER_TYPES[obstacle.type] && TOWER_TYPES[obstacle.type].label) || obstacle.kind || 'Building';
+            removeDestroyedStructureV85(obstacle);
+            logMessage(label + ' destroyed by enemies.', 'bad');
+          }
+          uiDirty = true;
+          return true;
+        }
+        if (v43ScopeV85) v43ScopeV85.damageBuildableObstacle = damageBuildableObstacleV85;
+
+        damageTower = function damageTowerV85(tower, amount, hitInfo = {}) {
+          return damageBuildableObstacleV85(tower, amount, hitInfo.source || hitInfo.sourceLabel || 'enemy');
+        };
+
+        damageBarrier = function damageBarrierV85(barrier, amount, hitInfo = {}) {
+          return damageBuildableObstacleV85(barrier, amount, hitInfo.source || hitInfo.sourceLabel || 'enemy');
+        };
+
+        if (typeof damageUniversityV65 === 'function') {
+          damageUniversityV65 = function damageUniversityV85(amount, sourceLabel = 'enemy') {
+            return damageBuildableObstacleV85(state.university, amount, sourceLabel);
+          };
+        }
+
+        distributeRepairEvenlyV64 = function distributeRepairEvenlyV85(pool) {
+          let remaining = Math.max(0, pool || 0);
+          let items = allLiveStructuresV85({ includeBase: true }).filter((item) => {
+            const desired = item === state.base ? item.maxHp : targetStructureMaxHpV85(item);
+            if (item !== state.base && desired > 0) item.maxHp = desired;
+            return item.hp > 0 && Number.isFinite(item.maxHp) && item.hp < item.maxHp;
+          });
+          let repaired = 0;
+          while (remaining > 0.01 && items.length) {
+            const share = remaining / items.length;
+            const next = [];
+            let spent = 0;
+            items.forEach((item) => {
+              const need = Math.max(0, item.maxHp - item.hp);
+              const amount = Math.min(need, share);
+              item.hp += amount;
+              spent += amount;
+              repaired += amount;
+              if (item.hp < item.maxHp - 0.01) next.push(item);
+            });
+            if (spent <= 0.01) break;
+            remaining -= spent;
+            items = next;
+          }
+          uiDirty = uiDirty || repaired > 0;
+          return repaired;
+        };
+
+        function enemyTargetV85(enemy, target) {
+          return { ...target, dist: distance(enemy.x, enemy.y, target.x, target.y) };
+        }
+
+        function structureTargetV85(item) {
+          return {
+            x: item.x,
+            y: item.y,
+            radius: item.radius || item.blockRadius || Math.max(item.w || GRID_SIZE, item.h || GRID_SIZE) * 0.35,
+            kind: 'structure',
+            ref: item
+          };
+        }
+
+        function allEnemyTargetsV85(enemy) {
+          const targets = [];
+          if (state.player && state.player.alive) targets.push(enemyTargetV85(enemy, { x: state.player.x, y: state.player.y, radius: state.player.radius, kind: 'player' }));
+          if (state.base && state.base.hp > 0) targets.push(enemyTargetV85(enemy, { x: state.base.x, y: state.base.y, radius: state.base.radius, kind: 'base' }));
+          allLiveStructuresV85()
+            .filter((item) => !(item.kind === 'wall' || item.kind === 'gate'))
+            .forEach((item) => targets.push(enemyTargetV85(enemy, structureTargetV85(item))));
+          return targets;
+        }
+
+        function randomRatTargetV85(enemy) {
+          const now = performance.now ? performance.now() : Date.now();
+          if (enemy._v85TargetUntil > now && enemy._v85Target) {
+            const saved = enemy._v85Target;
+            if (saved.kind === 'player' && state.player && state.player.alive) return { x: state.player.x, y: state.player.y, radius: state.player.radius, kind: 'player' };
+            if (saved.kind === 'base') return { x: state.base.x, y: state.base.y, radius: state.base.radius, kind: 'base' };
+            if (saved.ref && saved.ref.hp > 0) return structureTargetV85(saved.ref);
+          }
+          const pool = allEnemyTargetsV85(enemy);
+          const choice = pool[Math.floor(Math.random() * Math.max(1, pool.length))] || { x: state.base.x, y: state.base.y, radius: state.base.radius, kind: 'base' };
+          enemy._v85Target = choice.kind === 'structure' ? { kind: 'structure', ref: choice.ref } : { kind: choice.kind };
+          enemy._v85TargetUntil = now + 1200;
+          return choice;
+        }
+
+        function damageEnemyTargetV85(enemy, target) {
+          if (!target) return;
+          if (target.kind === 'player') return damagePlayer(enemy.damage);
+          if (target.kind === 'base') return damageBase(enemy.damage);
+          if (target.ref) return damageBuildableObstacleV85(target.ref, enemy.damage, enemy.type || 'enemy');
+        }
+
+        function enemyTouchDistanceV85(enemy, targetRadius) {
+          return (enemy.radius || 0) + (targetRadius || 0) + 2;
+        }
+
+        function moveEnemyTowardV85(enemy, target, dt, slowMultiplier, routeMode) {
+          if (typeof moveEnemyPlanned === 'function') {
+            return moveEnemyPlanned(enemy, target.x, target.y, dt, slowMultiplier, {
+              goalRadiusCells: target.kind === 'player' ? 0 : 1,
+              routeMode
+            });
+          }
+          const dir = normalize(target.x - enemy.x, target.y - enemy.y);
+          enemy.facing = Math.atan2(dir.y, dir.x);
+          enemy.x += dir.x * (enemy.speed || 0) * (slowMultiplier || 1) * Math.max(0, dt || 0);
+          enemy.y += dir.y * (enemy.speed || 0) * (slowMultiplier || 1) * Math.max(0, dt || 0);
+          if (typeof resolveEntityAgainstWalls === 'function') resolveEntityAgainstWalls(enemy, 1);
+          enemy.x = clamp(enemy.x, enemy.radius || 8, WORLD_WIDTH - (enemy.radius || 8));
+          enemy.y = clamp(enemy.y, enemy.radius || 8, WORLD_HEIGHT - (enemy.radius || 8));
+          return true;
+        }
+
+        function driveEnemyToTargetV85(enemy, dt, target, routeMode, slowMultiplier = 1) {
+          if (!target) return false;
+          const targetRadius = target.radius || state.base.radius;
+          const dist = distance(enemy.x, enemy.y, target.x, target.y);
+          if (dist > enemyTouchDistanceV85(enemy, targetRadius)) {
+            moveEnemyTowardV85(enemy, target, dt, slowMultiplier, routeMode);
+          } else if (enemy.attackCooldown <= 0) {
+            enemy.attackCooldown = enemy.attackRate;
+            enemy.telegraph = 1;
+            damageEnemyTargetV85(enemy, target);
+          }
+          return true;
+        }
+
+        function tickEnemyBaseV85(enemy, dt) {
+          enemy.attackCooldown = Math.max(0, (enemy.attackCooldown || 0) - Math.max(0, dt || 0));
+          enemy.wobble = (enemy.wobble || 0) + Math.max(0, dt || 0) * 3;
+          enemy.hitFlash = Math.max(0, (enemy.hitFlash || 0) - Math.max(0, dt || 0) * 4);
+          enemy.telegraph = Math.max(0, (enemy.telegraph || 0) - Math.max(0, dt || 0) * 3);
+          enemy.x += (enemy.kbX || 0) * Math.max(0, dt || 0);
+          enemy.y += (enemy.kbY || 0) * Math.max(0, dt || 0);
+          enemy.kbX = (enemy.kbX || 0) * Math.exp(-7 * Math.max(0, dt || 0));
+          enemy.kbY = (enemy.kbY || 0) * Math.exp(-7 * Math.max(0, dt || 0));
+          if (typeof resolveEntityAgainstWalls === 'function') resolveEntityAgainstWalls(enemy, 1);
+          enemy.x = clamp(enemy.x, enemy.radius || 8, WORLD_WIDTH - (enemy.radius || 8));
+          enemy.y = clamp(enemy.y, enemy.radius || 8, WORLD_HEIGHT - (enemy.radius || 8));
+        }
+
+        const updateEnemyBehaviorBaseV85 = updateEnemyBehavior;
+        updateEnemyBehavior = function updateEnemyBehaviorV85(enemy, dt) {
+          const type = enemy && ENEMY_TYPES[enemy.type];
+          if (!enemy || !type) return updateEnemyBehaviorBaseV85(enemy, dt);
+          const player = state.player;
+          const slowMultiplier = state.heroAbilities && state.heroAbilities.slow && state.heroAbilities.slow.active > 0 && player && distance(enemy.x, enemy.y, player.x, player.y) <= 170 ? 0.55 : 1;
+          if (enemy.type === 'raider') {
+            tickEnemyBaseV85(enemy, dt);
+            return driveEnemyToTargetV85(enemy, dt, { x: state.base.x, y: state.base.y, radius: state.base.radius, kind: 'base' }, 'raider-base', slowMultiplier);
+          }
+          if (enemy.type === 'rat') {
+            tickEnemyBaseV85(enemy, dt);
+            return driveEnemyToTargetV85(enemy, dt, randomRatTargetV85(enemy), 'rat-random', slowMultiplier);
+          }
+          if (enemy.type === 'brute' || enemy.type === 'splitter') {
+            tickEnemyBaseV85(enemy, dt);
+            const closest = allEnemyTargetsV85(enemy).sort((a, b) => a.dist - b.dist)[0] || { x: state.base.x, y: state.base.y, radius: state.base.radius, kind: 'base' };
+            return driveEnemyToTargetV85(enemy, dt, closest, enemy.type === 'brute' ? 'brute-closest' : 'packleader-closest', slowMultiplier);
+          }
+          return updateEnemyBehaviorBaseV85(enemy, dt);
+        };
+
+        const drawNightLightingBaseV85 = typeof drawNightLightingV33 === 'function' ? drawNightLightingV33 : null;
+        if (drawNightLightingBaseV85) {
+          drawNightLightingV33 = function drawNightLightingV85() {
+            if (state.phase !== 'wave') return;
+            if (typeof ensureStateV33 === 'function') ensureStateV33();
+            const now = performance.now();
+            const lights = [];
+            const torchLightRadius = (typeof V33 !== 'undefined' && V33 && V33.torchLightRadius) ? V33.torchLightRadius : 320;
+            const knightLightRadius = (typeof V33 !== 'undefined' && V33 && V33.knightLightRadius) ? V33.knightLightRadius : 210;
+            const addLight = (wx, wy, radius, inner, strength, warmth = 0.0, pulsePhase = 0) => {
+              if (!Number.isFinite(wx) || !Number.isFinite(wy)) return;
+              const s = worldToScreen(wx, wy);
+              const r = Math.max(24, radius || 120);
+              if (s.x < -r || s.x > WIDTH + r || s.y < -r || s.y > HEIGHT + r) return;
+              const pulse = 1 + Math.sin(now * 0.012 + pulsePhase) * 0.045;
+              lights.push({ x: s.x, y: s.y, radius: r * pulse, inner: Math.max(2, inner || 16), strength: Math.max(0, Math.min(1, strength ?? 0.98)), warmth });
+            };
+            const townTorchPoints = typeof townTorchLightPointsV34 === 'function' ? townTorchLightPointsV34() : [];
+            addLight(state.base.x, state.base.y, 205, 44, 0.74, 0.10, 0.4);
+            townTorchPoints.forEach((torchPoint, index) => addLight(torchPoint.x, torchPoint.y, 310, 30, 1.0, 0.30, index * 1.7));
+            (state.torches || []).forEach((torch, index) => {
+              if (!torch || torch.hp <= 0) return;
+              addLight(torch.x, torch.y, Math.max(305, torch.lightRadius || torchLightRadius), 28, 1.0, 0.34, index * 2.3 + torch.x * 0.01);
+            });
+            if (state.research && state.research.torchlight && state.player.alive) {
+              addLight(state.player.x, state.player.y, Math.max(210, knightLightRadius), 24, 0.92, 0.12, 6.1);
+            }
+            if (state.research && state.research.towerLanterns) {
+              (state.towers || []).forEach((tower, index) => {
+                if (!tower || tower.hp <= 0) return;
+                const radius = tower.type === 'sniper' ? V85.towerLightRadius + 34 : tower.type === 'ballista' ? V85.towerLightRadius + 16 : V85.towerLightRadius;
+                addLight(tower.x, tower.y, radius, 22, 0.86, 0.16, 8.4 + index * 1.3);
+              });
+            }
+            if (!drawNightLightingV33._layer) {
+              drawNightLightingV33._layer = document.createElement('canvas');
+              drawNightLightingV33._layerCtx = drawNightLightingV33._layer.getContext('2d');
+            }
+            const layer = drawNightLightingV33._layer;
+            const lctx = drawNightLightingV33._layerCtx;
+            if (layer.width !== WIDTH || layer.height !== HEIGHT) {
+              layer.width = WIDTH;
+              layer.height = HEIGHT;
+            }
+            lctx.save();
+            lctx.globalCompositeOperation = 'source-over';
+            lctx.clearRect(0, 0, WIDTH, HEIGHT);
+            lctx.fillStyle = 'rgba(0, 2, 10, 0.97)';
+            lctx.fillRect(0, 0, WIDTH, HEIGHT);
+            lctx.globalCompositeOperation = 'destination-out';
+            lights.forEach((light) => {
+              const grad = lctx.createRadialGradient(light.x, light.y, light.inner, light.x, light.y, light.radius);
+              grad.addColorStop(0, `rgba(0,0,0,${light.strength})`);
+              grad.addColorStop(0.30, `rgba(0,0,0,${Math.min(1, light.strength * 0.94)})`);
+              grad.addColorStop(0.60, 'rgba(0,0,0,0.58)');
+              grad.addColorStop(0.82, 'rgba(0,0,0,0.22)');
+              grad.addColorStop(1, 'rgba(0,0,0,0)');
+              lctx.fillStyle = grad;
+              lctx.beginPath();
+              lctx.arc(light.x, light.y, light.radius, 0, TAU);
+              lctx.fill();
+            });
+            lctx.restore();
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(layer, 0, 0);
+            lights.forEach((light) => {
+              if (!light.warmth) return;
+              const grad = ctx.createRadialGradient(light.x, light.y, 3, light.x, light.y, light.radius * 0.72);
+              grad.addColorStop(0, `rgba(255, 228, 150, ${0.26 * light.warmth})`);
+              grad.addColorStop(0.34, `rgba(255, 168, 70, ${0.13 * light.warmth})`);
+              grad.addColorStop(1, 'rgba(255, 168, 70, 0)');
+              ctx.fillStyle = grad;
+              ctx.beginPath();
+              ctx.arc(light.x, light.y, light.radius * 0.72, 0, TAU);
+              ctx.fill();
+            });
+            ctx.restore();
+          };
+        }
+
+        if (v65ScopeV85 && typeof v65ScopeV85.getRadialDetail === 'function') {
+          const getRadialDetailBaseV85 = v65ScopeV85.getRadialDetail;
+          v65ScopeV85.getRadialDetail = function getRadialDetailV85(option) {
+            const detail = getRadialDetailBaseV85(option);
+            if (option && option.key === 'masonry' && detail) {
+              return {
+                ...detail,
+                short: 'All buildings become sturdier.',
+                detail: 'Increases max HP for towers, walls, gates, houses, support buildings, torches, and the University.'
+              };
+            }
+            return detail;
+          };
+        }
+
+        registerHotPathHookV77('update', 'v85-structure-durability-normalize', {
+          post: function updateV85Post() {
+            normalizeStructureDurabilityV85();
+          }
+        });
+
+        registerHotPathHookV77('finishWave', 'v85-even-repair-and-research-log', {
+          post: function finishWaveV85Post() {
+            const builders = state && state.jobs ? Math.max(0, state.jobs.builders || 0) : 0;
+            const extraRepair = builders * V85.repairPerBuilder;
+            let repaired = 0;
+            if (extraRepair > 0) repaired = distributeRepairEvenlyV64(extraRepair);
+            const researchers = state && state.jobs ? Math.max(0, state.jobs.researchers || 0) : 0;
+            const scribeLevel = researchLevelV85('research');
+            const desiredResearch = researchers * Math.round(V85.researchPerVillager * (1 + scribeLevel * 0.30));
+            const previousResearchGain = state.raidSummary ? Math.max(0, state.raidSummary.researchGain || 0) : desiredResearch;
+            const deltaResearch = desiredResearch - previousResearchGain;
+            if (deltaResearch !== 0) state.researchResource = Math.max(0, (state.researchResource || 0) + deltaResearch);
+            if (state.raidSummary) state.raidSummary.researchGain = desiredResearch;
+            if (state.logs) {
+              state.logs = state.logs.filter((entry) => {
+                const text = entry && entry.text ? entry.text : '';
+                return !/^Researchers produced \d+ research\.$/.test(text)
+                  && !/^Scribe training produced \+\d+ extra research\.$/.test(text)
+                  && !/^Repairers spread \d+ HP across damaged defenses first, then the town\.$/.test(text);
+              });
+            }
+            if (researchers > 0) logMessage('Researchers produced ' + desiredResearch + ' research.', 'good');
+            if (repaired > 0) {
+              if (state.lastTownProductionReport) state.lastTownProductionReport.defenseRepair = (state.lastTownProductionReport.defenseRepair || 0) + Math.round(repaired);
+              if (state.raidSummary) state.raidSummary.defenseRepair = (state.raidSummary.defenseRepair || 0) + Math.round(repaired);
+              logMessage('Repairers spread ' + Math.round(extraRepair) + ' HP evenly across damaged buildings.', 'good');
+            }
+          }
+        });
+
+        window.__mountedVillageDefenseV85 = {
+          applied: true,
+          config: V85,
+          note: 'All structures share stronger HP scaling, enemy damage handling, even repair distribution, corrected scribe logging, and tower lanterns reveal darkness.'
+        };
+      })();
+
+      // === v86: connected-route recovery for enemies and follower archers ===
+      (function applyConnectedRoutingRecoveryV86() {
+        if (window.__mountedVillageDefenseV86 && window.__mountedVillageDefenseV86.applied) return;
+
+        const V86 = {
+          enemyStuckSeconds: 0.95,
+          supportStuckSeconds: 0.85,
+          minProgress: 2.25,
+          searchRadius: GRID_SIZE * 10,
+          searchStep: 8
+        };
+
+        function clearRouteV86(unit) {
+          if (!unit) return;
+          unit.routeKey = null;
+          unit.routeCells = [];
+          unit.routeTimer = 0;
+          unit._v86LastGoalKey = '';
+        }
+
+        function flowDistanceAtV86(x, y) {
+          const flow = state && (state.runtimeFlow || flowField);
+          if (!flow) return Number.POSITIVE_INFINITY;
+          const col = clamp(Math.floor(x / GRID_SIZE), 0, flow.cols - 1);
+          const row = clamp(Math.floor(y / GRID_SIZE), 0, flow.rows - 1);
+          return flow.distanceField && flow.distanceField[row] ? flow.distanceField[row][col] : Number.POSITIVE_INFINITY;
+        }
+
+        function isReachableEnemyPositionV86(x, y, radius) {
+          if (typeof isOpenPosition === 'function' && !isOpenPosition(x, y, radius, { mode: 'unit' })) return false;
+          return Number.isFinite(flowDistanceAtV86(x, y));
+        }
+
+        function isOpenFriendlyPositionV86(x, y, radius) {
+          return typeof isOpenPosition === 'function'
+            ? isOpenPosition(x, y, radius, { friendly: true, mode: 'unit' })
+            : true;
+        }
+
+        function nearestSafePositionV86(x, y, radius, opts = {}) {
+          const friendly = !!opts.friendly;
+          const requireReachable = !friendly && opts.requireReachable !== false;
+          const maxRadius = opts.maxRadius || V86.searchRadius;
+          const validator = (px, py) => friendly
+            ? isOpenFriendlyPositionV86(px, py, radius)
+            : (requireReachable ? isReachableEnemyPositionV86(px, py, radius) : (typeof isOpenPosition !== 'function' || isOpenPosition(px, py, radius, { mode: 'unit' })));
+
+          if (validator(x, y)) return { x, y, cost: 0 };
+
+          let best = null;
+          for (let r = V86.searchStep; r <= maxRadius; r += V86.searchStep) {
+            const samples = Math.max(12, Math.ceil((TAU * r) / 12));
+            for (let i = 0; i < samples; i += 1) {
+              const angle = (i / samples) * TAU;
+              const px = clamp(x + Math.cos(angle) * r, radius, WORLD_WIDTH - radius);
+              const py = clamp(y + Math.sin(angle) * r, radius, WORLD_HEIGHT - radius);
+              if (!validator(px, py)) continue;
+              const flowCost = requireReachable ? flowDistanceAtV86(px, py) * 0.02 : 0;
+              const goalCost = opts.goal ? distance(px, py, opts.goal.x, opts.goal.y) * 0.08 : 0;
+              const cost = r + flowCost + goalCost;
+              if (!best || cost < best.cost) best = { x: px, y: py, cost };
+            }
+            if (best) return best;
+          }
+
+          if (requireReachable) {
+            const flow = state && (state.runtimeFlow || flowField);
+            if (flow && flow.distanceField) {
+              for (let row = 0; row < flow.rows; row += 1) {
+                for (let col = 0; col < flow.cols; col += 1) {
+                  const flowDist = flow.distanceField[row] ? flow.distanceField[row][col] : Number.POSITIVE_INFINITY;
+                  if (!Number.isFinite(flowDist)) continue;
+                  const center = getGridCellCenter(col, row);
+                  const strictOpen = validator(center.x, center.y);
+                  const relaxedOpen = !strictOpen
+                    && (typeof isOpenPosition !== 'function' || isOpenPosition(center.x, center.y, Math.max(2, radius * 0.55), { mode: 'unit' }));
+                  if (!strictOpen && !relaxedOpen) continue;
+                  const currentCost = distance(x, y, center.x, center.y);
+                  const goalCost = opts.goal ? distance(center.x, center.y, opts.goal.x, opts.goal.y) * 0.05 : 0;
+                  const cost = currentCost + flowDist * 0.02 + goalCost + (strictOpen ? 0 : 120);
+                  if (!best || cost < best.cost) best = { x: center.x, y: center.y, cost };
+                }
+              }
+              if (best) return best;
+            }
+          }
+
+          if (typeof searchNearestOpenPosition === 'function') {
+            const fallback = searchNearestOpenPosition(x, y, radius, friendly ? { friendly: true, mode: 'unit' } : { mode: 'unit' });
+            if (fallback && (!requireReachable || Number.isFinite(flowDistanceAtV86(fallback.x, fallback.y)))) return fallback;
+          }
+          return null;
+        }
+
+        function relocateUnitV86(unit, opts = {}) {
+          if (!unit) return false;
+          const radius = Math.max(2, unit.radius || 8);
+          const safe = nearestSafePositionV86(unit.x, unit.y, radius, opts);
+          if (!safe) return false;
+          unit.x = safe.x;
+          unit.y = safe.y;
+          unit.vx = 0;
+          unit.vy = 0;
+          unit.kbX = 0;
+          unit.kbY = 0;
+          unit._lastValidX = safe.x;
+          unit._lastValidY = safe.y;
+          if (typeof resolveEntityAgainstWalls === 'function') {
+            resolveEntityAgainstWalls(unit, 0, opts.friendly ? { friendly: true, mode: 'unit' } : { mode: 'unit' });
+          }
+          unit._v86StuckTime = 0;
+          unit._v86LastX = safe.x;
+          unit._v86LastY = safe.y;
+          clearRouteV86(unit);
+          return true;
+        }
+
+        function trackAndRecoverUnitV86(unit, dt, opts = {}) {
+          if (!unit || unit.dead || unit.hp <= 0) return false;
+          const safeDt = Math.min(Math.max(dt || 0, 0), 0.08);
+          const friendly = !!opts.friendly;
+          const radius = Math.max(2, unit.radius || 8);
+          const open = friendly
+            ? isOpenFriendlyPositionV86(unit.x, unit.y, radius)
+            : isReachableEnemyPositionV86(unit.x, unit.y, radius);
+
+          if (!open) return relocateUnitV86(unit, opts);
+
+          const lastX = Number.isFinite(unit._v86LastX) ? unit._v86LastX : unit.x;
+          const lastY = Number.isFinite(unit._v86LastY) ? unit._v86LastY : unit.y;
+          const moved = distance(unit.x, unit.y, lastX, lastY);
+          unit._v86LastX = unit.x;
+          unit._v86LastY = unit.y;
+
+          const threshold = friendly ? V86.supportStuckSeconds : V86.enemyStuckSeconds;
+          if (moved < V86.minProgress * Math.max(0.35, safeDt * 20)) {
+            unit._v86StuckTime = (unit._v86StuckTime || 0) + safeDt;
+          } else {
+            unit._v86StuckTime = 0;
+          }
+
+          if (unit._v86StuckTime >= threshold) {
+            const goal = opts.goal || (friendly ? state.base : state.base);
+            const safe = nearestSafePositionV86(
+              unit.x + (goal ? Math.sign(goal.x - unit.x) * 10 : 0),
+              unit.y + (goal ? Math.sign(goal.y - unit.y) * 10 : 0),
+              radius,
+              { ...opts, goal }
+            );
+            if (safe) {
+              unit.x = lerp(unit.x, safe.x, 0.75);
+              unit.y = lerp(unit.y, safe.y, 0.75);
+              unit.vx = 0;
+              unit.vy = 0;
+              unit.kbX = 0;
+              unit.kbY = 0;
+              unit._lastValidX = unit.x;
+              unit._lastValidY = unit.y;
+              if (typeof resolveEntityAgainstWalls === 'function') {
+                resolveEntityAgainstWalls(unit, 0, friendly ? { friendly: true, mode: 'unit' } : { mode: 'unit' });
+              }
+              unit._v86StuckTime = 0;
+              clearRouteV86(unit);
+              return true;
+            }
+          }
+          return false;
+        }
+
+        const moveEnemyPlannedBaseV86 = (typeof moveEnemyPlanned === 'function') ? moveEnemyPlanned : null;
+        if (moveEnemyPlannedBaseV86) {
+          moveEnemyPlanned = function moveEnemyPlannedV86(enemy, tx, ty, dt, speedFactor = 1, opts = {}) {
+            if (!enemy) return false;
+            const radius = Math.max(2, enemy.radius || 8);
+            if (!isReachableEnemyPositionV86(enemy.x, enemy.y, radius)) {
+              relocateUnitV86(enemy, { requireReachable: true, goal: { x: tx, y: ty } });
+            }
+            const beforeX = enemy.x;
+            const beforeY = enemy.y;
+            const moved = moveEnemyPlannedBaseV86(enemy, tx, ty, dt, speedFactor, {
+              ...opts,
+              directFallback: opts.directFallback === true ? true : false,
+              repathTime: Math.min(opts.repathTime || 0.35, 0.35)
+            });
+            const progress = distance(enemy.x, enemy.y, beforeX, beforeY);
+            if (!moved || progress < 0.35) {
+              enemy._v86StuckTime = (enemy._v86StuckTime || 0) + Math.min(Math.max(dt || 0, 0), 0.08);
+              clearRouteV86(enemy);
+              trackAndRecoverUnitV86(enemy, dt, { requireReachable: true, goal: { x: tx, y: ty } });
+            } else {
+              enemy._v86StuckTime = 0;
+            }
+            return moved;
+          };
+        }
+
+        const moveFriendlyPlannedBaseV86 = (typeof moveFriendlyPlanned === 'function') ? moveFriendlyPlanned : null;
+        if (moveFriendlyPlannedBaseV86) {
+          moveFriendlyPlanned = function moveFriendlyPlannedV86(unit, tx, ty, dt, speedCap = 228, opts = {}) {
+            if (!unit) return false;
+            const radius = Math.max(2, unit.radius || 8);
+            if (!isOpenFriendlyPositionV86(unit.x, unit.y, radius)) {
+              relocateUnitV86(unit, { friendly: true, goal: { x: tx, y: ty } });
+            }
+            const beforeX = unit.x;
+            const beforeY = unit.y;
+            const moved = moveFriendlyPlannedBaseV86(unit, tx, ty, dt, speedCap, {
+              ...opts,
+              repathTime: Math.min(opts.repathTime || 0.35, 0.35)
+            });
+            if (!moved || distance(unit.x, unit.y, beforeX, beforeY) < 0.35) {
+              unit._v86StuckTime = (unit._v86StuckTime || 0) + Math.min(Math.max(dt || 0, 0), 0.08);
+              clearRouteV86(unit);
+              trackAndRecoverUnitV86(unit, dt, { friendly: true, goal: { x: tx, y: ty } });
+            } else {
+              unit._v86StuckTime = 0;
+            }
+            return moved;
+          };
+        }
+
+        const updateSupportUnitsBaseV86 = (typeof updateSupportUnits === 'function') ? updateSupportUnits : null;
+        if (updateSupportUnitsBaseV86) {
+          updateSupportUnits = function updateSupportUnitsV86(dt) {
+            const before = (state.supportUnits || []).map((unit) => unit ? { unit, x: unit.x, y: unit.y } : null);
+            updateSupportUnitsBaseV86(dt);
+            before.forEach((entry) => {
+              if (!entry || !entry.unit || entry.unit.dead) return;
+              const unit = entry.unit;
+              if (unit.type === 'archer') {
+                trackAndRecoverUnitV86(unit, dt, { friendly: true, goal: state.base });
+              }
+            });
+          };
+        }
+
+        registerHotPathHookV77('update', 'v86-connected-route-recovery', {
+          post: function updateV86Post(dt) {
+            if (!state || (state.phase !== 'wave' && state.phase !== 'build')) return;
+            (state.enemies || []).forEach((enemy) => {
+              if (!enemy || enemy.dead || enemy.hp <= 0) return;
+              trackAndRecoverUnitV86(enemy, dt, { requireReachable: true, goal: state.base });
+            });
+            (state.supportUnits || []).forEach((unit) => {
+              if (!unit || unit.dead) return;
+              trackAndRecoverUnitV86(unit, dt, { friendly: true, goal: state.base });
+            });
+          }
+        });
+
+        window.__mountedVillageDefenseV86 = {
+          applied: true,
+          config: V86,
+          note: 'Enemies must stay on town-connected route cells; enemies and follower archers are repathed or bumped to safe open cells when blocked or stalled.'
+        };
+      })();
+
+      // === v87: mobile viewport and touch-input stabilization ===
+      // The older mobile patches preserve the landscape aspect ratio, which makes
+      // portrait phones render the game as a thin strip. This final mobile layer
+      // fills the usable viewport and provides a direct touch fallback for taps
+      // and joystick movement so radial menus do not depend on duplicate clicks.
+      (function applyMobileViewportAndTouchStabilityV87() {
+        if (window.__mountedVillageDefenseV87 && window.__mountedVillageDefenseV87.applied) return;
+
+        const touchKeysV87 = new Set();
+        const touchStateV87 = {
+          active: false,
+          id: null,
+          startX: 0,
+          startY: 0,
+          clientX: 0,
+          clientY: 0,
+          moved: false,
+          startedAt: 0
+        };
+
+        function coarsePointerV87() {
+          return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+        }
+
+        function addCssV87() {
+          if (document.getElementById('v87-mobile-viewport-input-css')) return;
+          const style = document.createElement('style');
+          style.id = 'v87-mobile-viewport-input-css';
+          style.textContent = `
+            @media (pointer: coarse), (max-width: 900px) {
+              html,
+              body,
+              .shell,
+              .layout,
+              .board-wrap {
+                width: 100vw !important;
+                height: 100dvh !important;
+                min-height: 100dvh !important;
+                max-height: 100dvh !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background: #050805 !important;
+              }
+              body {
+                position: fixed !important;
+                inset: 0 !important;
+                align-items: stretch !important;
+                justify-content: stretch !important;
+                touch-action: none !important;
+              }
+              .shell {
+                border: 0 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+              }
+              .topbar,
+              .sidebar,
+              .canvas-tip {
+                display: none !important;
+              }
+              .board-wrap {
+                display: block !important;
+                background: #050805 !important;
+              }
+              canvas#gameCanvas {
+                display: block !important;
+                width: 100vw !important;
+                height: 100dvh !important;
+                min-width: 100vw !important;
+                min-height: 100dvh !important;
+                max-width: none !important;
+                max-height: none !important;
+                margin: 0 !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                object-fit: fill !important;
+                touch-action: none !important;
+                -webkit-user-select: none !important;
+                user-select: none !important;
+              }
+              #v50FullscreenToggle {
+                right: max(8px, env(safe-area-inset-right)) !important;
+                bottom: max(8px, env(safe-area-inset-bottom)) !important;
+                min-width: 86px !important;
+                min-height: 34px !important;
+                padding: 7px 10px !important;
+                opacity: 0.72 !important;
+              }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        function eventInsideCanvasV87(clientX, clientY) {
+          const rect = canvas.getBoundingClientRect();
+          return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+        }
+
+        function firstTouchV87(event) {
+          if (!event || !event.changedTouches || !event.changedTouches.length) return null;
+          if (touchStateV87.id !== null) {
+            for (let i = 0; i < event.changedTouches.length; i += 1) {
+              if (event.changedTouches[i].identifier === touchStateV87.id) return event.changedTouches[i];
+            }
+            return null;
+          }
+          return event.changedTouches[0];
+        }
+
+        function clearTouchKeysV87() {
+          touchKeysV87.forEach((key) => keys.delete(key));
+          touchKeysV87.clear();
+        }
+
+        function setTouchKeyV87(key, on) {
+          if (on) {
+            keys.add(key);
+            touchKeysV87.add(key);
+          } else {
+            keys.delete(key);
+            touchKeysV87.delete(key);
+          }
+        }
+
+        function updateKeysFromTouchVectorV87(dx, dy) {
+          clearTouchKeysV87();
+          const len = Math.hypot(dx, dy);
+          if (len < 12) return;
+          const nx = dx / len;
+          const ny = dy / len;
+          setTouchKeyV87('d', nx > 0.32);
+          setTouchKeyV87('a', nx < -0.32);
+          setTouchKeyV87('s', ny > 0.32);
+          setTouchKeyV87('w', ny < -0.32);
+        }
+
+        function showJoystickFallbackV87(touch) {
+          const root = document.getElementById('v44Joystick');
+          const knob = document.getElementById('v44JoystickKnob');
+          if (!root || !knob) return;
+          const dx = touch.clientX - touchStateV87.startX;
+          const dy = touch.clientY - touchStateV87.startY;
+          const len = Math.hypot(dx, dy) || 1;
+          const clamped = Math.min(len, 68);
+          root.style.setProperty('--jx', `${touchStateV87.startX}px`);
+          root.style.setProperty('--jy', `${touchStateV87.startY}px`);
+          root.classList.add('active');
+          knob.style.transform = `translate3d(${(dx / len) * clamped}px, ${(dy / len) * clamped}px, 0)`;
+        }
+
+        function hideJoystickFallbackV87() {
+          const root = document.getElementById('v44Joystick');
+          const knob = document.getElementById('v44JoystickKnob');
+          if (root) root.classList.remove('active');
+          if (knob) knob.style.transform = 'translate3d(0, 0, 0)';
+        }
+
+        function syntheticPrimaryEventV87(touch) {
+          return {
+            target: canvas,
+            currentTarget: canvas,
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            screenX: touch.screenX || touch.clientX,
+            screenY: touch.screenY || touch.clientY,
+            button: 0,
+            preventDefault() {},
+            stopPropagation() {},
+            stopImmediatePropagation() {}
+          };
+        }
+
+        function canvasPointFromTouchV87(touch) {
+          const rect = canvas.getBoundingClientRect();
+          const w = rect.width || 1;
+          const h = rect.height || 1;
+          return {
+            x: ((touch.clientX - rect.left) / w) * (canvas.width || WIDTH || 1120),
+            y: ((touch.clientY - rect.top) / h) * (canvas.height || HEIGHT || 504)
+          };
+        }
+
+        function handleBottomHudTapV87(touch) {
+          if (!state || state.phase === 'start' || state.phase === 'mapselect') return false;
+          const p = canvasPointFromTouchV87(touch);
+          const canvasW = canvas.width || WIDTH || 1120;
+          const canvasH = canvas.height || HEIGHT || 504;
+          if (p.y < canvasH - 72) return false;
+          if (state.phase === 'build' && !state.townOpen && p.x >= canvasW - 282 && p.x <= canvasW - 146) {
+            closeMenu();
+            if (typeof openTownScreenForCurrentWave === 'function') openTownScreenForCurrentWave();
+            else state.townOpen = true;
+            uiDirty = true;
+            return true;
+          }
+          if (p.x >= canvasW - 150) {
+            closeMenu();
+            if (state.phase === 'briefing') beginWaveFromBriefing();
+            else if (state.phase === 'build') startWave();
+            uiDirty = true;
+            return true;
+          }
+          return false;
+        }
+
+        function consumeTouchV87(event) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        }
+
+        function resetTouchV87() {
+          touchStateV87.active = false;
+          touchStateV87.id = null;
+          touchStateV87.moved = false;
+          clearTouchKeysV87();
+          hideJoystickFallbackV87();
+        }
+
+        function refreshMobileViewportV87() {
+          addCssV87();
+          pointer.inside = false;
+          if (typeof syncPointerWorld === 'function') syncPointerWorld();
+        }
+
+        canvas.addEventListener('touchstart', (event) => {
+          if (!coarsePointerV87() || touchStateV87.active) return;
+          const touch = firstTouchV87(event);
+          if (!touch || !eventInsideCanvasV87(touch.clientX, touch.clientY)) return;
+          touchStateV87.active = true;
+          touchStateV87.id = touch.identifier;
+          touchStateV87.startX = touch.clientX;
+          touchStateV87.startY = touch.clientY;
+          touchStateV87.clientX = touch.clientX;
+          touchStateV87.clientY = touch.clientY;
+          touchStateV87.moved = false;
+          touchStateV87.startedAt = performance.now();
+          updatePointerFromEvent(syntheticPrimaryEventV87(touch));
+          clearTouchKeysV87();
+          consumeTouchV87(event);
+        }, { capture: true, passive: false });
+
+        canvas.addEventListener('touchmove', (event) => {
+          if (!touchStateV87.active) return;
+          const touch = firstTouchV87(event);
+          if (!touch) return;
+          touchStateV87.clientX = touch.clientX;
+          touchStateV87.clientY = touch.clientY;
+          updatePointerFromEvent(syntheticPrimaryEventV87(touch));
+          const dx = touch.clientX - touchStateV87.startX;
+          const dy = touch.clientY - touchStateV87.startY;
+          if (Math.hypot(dx, dy) >= 14) touchStateV87.moved = true;
+          if (touchStateV87.moved) {
+            updateKeysFromTouchVectorV87(dx, dy);
+            showJoystickFallbackV87(touch);
+          }
+          consumeTouchV87(event);
+        }, { capture: true, passive: false });
+
+        canvas.addEventListener('touchend', (event) => {
+          if (!touchStateV87.active) return;
+          const touch = firstTouchV87(event);
+          if (!touch) return;
+          const wasTap = !touchStateV87.moved && performance.now() - touchStateV87.startedAt < 650;
+          updatePointerFromEvent(syntheticPrimaryEventV87(touch));
+          resetTouchV87();
+          if (wasTap) {
+            window.__mvLastSyntheticCanvasTapV62 = {
+              x: touch.clientX,
+              y: touch.clientY,
+              t: performance.now()
+            };
+            if (state && state.phase === 'briefing') {
+              handlePrimaryCanvasClick(syntheticPrimaryEventV87(touch));
+            } else if (!handleBottomHudTapV87(touch)) {
+              handlePrimaryCanvasClick(syntheticPrimaryEventV87(touch));
+            }
+            uiDirty = true;
+          }
+          consumeTouchV87(event);
+        }, { capture: true, passive: false });
+
+        canvas.addEventListener('touchcancel', (event) => {
+          if (!touchStateV87.active) return;
+          resetTouchV87();
+          consumeTouchV87(event);
+        }, { capture: true, passive: false });
+
+        window.addEventListener('blur', resetTouchV87);
+        window.addEventListener('pagehide', resetTouchV87);
+        window.addEventListener('resize', refreshMobileViewportV87, { passive: true });
+        window.addEventListener('orientationchange', () => window.setTimeout(refreshMobileViewportV87, 120), { passive: true });
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', refreshMobileViewportV87, { passive: true });
+
+        addCssV87();
+        refreshMobileViewportV87();
+
+        window.__mountedVillageDefenseV87 = {
+          applied: true,
+          resetTouch: resetTouchV87,
+          note: 'Mobile viewport fills the phone screen and touch taps/drags directly drive primary canvas actions and movement.'
+        };
+      })();
+
       function collectMountedVillageDefenseModulesV79() {
         const keys = [
           '__mountedVillageDefenseV13',
@@ -25036,7 +26211,11 @@ function handleTownClick(screenX, screenY) {
           '__mountedVillageDefenseV80',
           '__mountedVillageDefenseV81',
           '__mountedVillageDefenseV82',
-          '__mountedVillageDefenseV83'
+          '__mountedVillageDefenseV83',
+          '__mountedVillageDefenseV84',
+          '__mountedVillageDefenseV85',
+          '__mountedVillageDefenseV86',
+          '__mountedVillageDefenseV87'
         ];
         const modules = {};
         keys.forEach((key) => {
