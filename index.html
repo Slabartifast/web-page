@@ -406,6 +406,23 @@
       color: var(--accent-dark);
     }
 
+    .guitar-frame-wrap {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #f7f5f0;
+      box-shadow: 0 18px 48px rgba(23, 32, 51, 0.14);
+    }
+
+    .guitar-frame {
+      display: block;
+      width: 100%;
+      height: min(84vh, 900px);
+      min-height: 620px;
+      border: 0;
+      background: #f7f5f0;
+    }
+
     @media (max-width: 760px) {
       .page-shell { width: min(100% - 20px, 1480px); padding-top: 10px; }
       header { grid-template-columns: 1fr; }
@@ -413,6 +430,7 @@
       nav ul { gap: 8px; }
       nav a { padding: 10px 12px; font-size: 0.93rem; }
       .pdf-frame { min-height: 620px; height: 78vh; }
+      .guitar-frame { min-height: 620px; height: 78vh; }
     }
     .media-card {
   margin-top: 22px;
@@ -462,7 +480,7 @@
           <li><a href="#trening" class="tab-link" data-tab="trening">Treningsprogram</a></li>
           <li><a href="#forskning" class="tab-link" data-tab="forskning">Forskning</a></li>
           <li><a href="#musikk" class="tab-link" data-tab="musikk">Musikk</a></li>
-          <li><a href="gitar/">Gitarlærern</a></li>
+          <li><a href="#gitar" class="tab-link" data-tab="gitar">Gitarlærern</a></li>
           <li><a href="#kontakt" class="tab-link" data-tab="kontakt">Kontakt</a></li>
         </ul>
         <ul class="nav-games" aria-label="Spill">
@@ -497,6 +515,15 @@
         <div class="game-frame-wrap">
           <iframe class="game-frame deferred-frame" src="about:blank" data-src="tower defense/tower_defense_demo_codex.html" title="tower defense 9000" loading="eager" allow="fullscreen; autoplay"></iframe>
         </div>
+      </section>
+
+      <section id="gitar" class="container">
+        <h2>Gitarlærern</h2>
+        <p class="game-note">Et lite gitarkurs med økter, repetisjon og veien mot «Idyll». Hele appen kan brukes her på siden.</p>
+        <div class="guitar-frame-wrap">
+          <iframe class="guitar-frame deferred-frame" src="about:blank" data-src="gitar/" title="Gitarlærern" loading="lazy" allow="autoplay"></iframe>
+        </div>
+        <p class="pdf-fallback"><a href="gitar/">Åpne Gitarlærern i egen fane</a> · Bruk den direkte adressen hvis du vil legge appen på hjemskjermen på telefonen.</p>
       </section>
 
       <section id="doktorgrad" class="container">
