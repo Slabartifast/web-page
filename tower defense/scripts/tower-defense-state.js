@@ -34,6 +34,11 @@
       mapMeta: proceduralMap.gridMeta,
       runtimeFlow,
       runtimeBlockers: [...proceduralMap.naturalWalls],
+      pathing: {
+        mapVersion: 1,
+        flowCache: {},
+        lastInvalidationReason: ""
+      },
       difficultyKey: "normal",
       camera: {
         x: deps.clamp(proceduralMap.base.x - deps.width / 2, 0, deps.worldWidth - deps.width),

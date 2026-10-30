@@ -222,7 +222,7 @@
       { key: "fletching", label: "Fletching", cost: 4, short: "Tower damage, reload, and range improve.", detail: "Adds about +12% tower damage, +8% fire rate, and +8 range via workshop improvements.", icon: "research" },
       { key: "cavalry", label: "Cavalry tack", cost: 5, short: "Knight speed improves.", detail: "Adds a permanent top-speed bonus. Stacks with Horse training.", icon: "horse" },
       { key: "torchlight", label: "Knight torch", cost: 4, short: "The knight carries a night light.", detail: "During waves, the knight reveals a small area around himself.", icon: "torch" },
-      { key: "masonry", label: "Masonry", cost: 5, short: "More base health and stronger palisade.", detail: "Adds +120 max base HP, repairs 120 HP, and adds a village wall level.", icon: "stone" },
+      { key: "masonry", label: "Masonry", cost: 5, short: "All buildings become sturdier.", detail: "Increases max HP for towers, walls, gates, houses, support buildings, torches, and the University.", icon: "stone" },
       { key: "logistics", label: "Logistics", cost: 5, short: "+100 wood, +100 stone, +100 food.", detail: "Repeatable. Each purchase immediately grants 100 wood, 100 stone, and 100 food.", icon: "wood", repeatable: true },
       { key: "cartography", label: "Cartography", cost: 5, short: "Unlocks the minimap.", detail: "Shows the minimap with enemies, towers, torches, town, knight, and camera view.", icon: "map" },
       { key: "towerLanterns", label: "Tower lanterns", cost: 6, short: "Towers shine during night waves.", detail: "Every living tower becomes a small fixed light source at night.", icon: "torch" },

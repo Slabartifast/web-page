@@ -384,6 +384,7 @@
 
   <script src="scripts/tower-defense-content.js"></script>
   <script src="scripts/tower-defense-phases.js"></script>
+  <script src="scripts/tower-defense-pathing.js"></script>
   <script src="scripts/tower-defense-state.js"></script>
   <script>
     (() => {
@@ -9545,6 +9546,12 @@ function handleTownClick(screenX, screenY) {
           set isCellBlockedForProjectiles(value) { isCellBlockedForProjectiles = value; },
           get canPlaceBuildable() { return canPlaceBuildable; },
           set canPlaceBuildable(value) { canPlaceBuildable = value; },
+          get isOpenPosition() { return isOpenPosition; },
+          set isOpenPosition(value) { isOpenPosition = value; },
+          get searchNearestOpenPosition() { return searchNearestOpenPosition; },
+          set searchNearestOpenPosition(value) { searchNearestOpenPosition = value; },
+          get moveEntityWithTileSlide() { return moveEntityWithTileSlide; },
+          set moveEntityWithTileSlide(value) { moveEntityWithTileSlide = value; },
           get supportCounts() { return supportCounts; },
           get getLiveSupportBuildKeys() { return getLiveSupportBuildKeys; },
           set getLiveSupportBuildKeys(value) { getLiveSupportBuildKeys = value; },
@@ -9992,6 +9999,23 @@ function handleTownClick(screenX, screenY) {
           }
           return false;
         }
+
+        window.__mountedVillageDefenseRoutingBridge = {
+          get clearEnemyRoute() { return clearEnemyRoute; },
+          set clearEnemyRoute(value) { clearEnemyRoute = value; },
+          get getFlowDirection() { return getFlowDirection; },
+          set getFlowDirection(value) { getFlowDirection = value; },
+          get getPathDistanceValue() { return getPathDistanceValue; },
+          set getPathDistanceValue(value) { getPathDistanceValue = value; },
+          get moveEnemyPlanned() { return moveEnemyPlanned; },
+          set moveEnemyPlanned(value) { moveEnemyPlanned = value; },
+          get moveEnemyAwayPlanned() { return moveEnemyAwayPlanned; },
+          set moveEnemyAwayPlanned(value) { moveEnemyAwayPlanned = value; },
+          get moveFriendlyPlanned() { return moveFriendlyPlanned; },
+          set moveFriendlyPlanned(value) { moveFriendlyPlanned = value; },
+          get searchNearestOpenPosition() { return CORE_RUNTIME_V6.searchNearestOpenPosition; },
+          set searchNearestOpenPosition(value) { CORE_RUNTIME_V6.searchNearestOpenPosition = value; }
+        };
 
         function tickEnemyBase(enemy, dt) {
           enemy.attackCooldown -= dt;
@@ -10678,7 +10702,7 @@ function handleTownClick(screenX, screenY) {
                 moveEnemyPlanned(enemy, target.x, target.y, dt, slowMultiplier, { goalRadiusCells: 0, routeMode: 'melee-player' });
               }
             } else {
-              const pathDist = typeof getPathDistanceValue === 'function' ? getPathDistanceValue(enemy.x, enemy.y) : Number.POSITIVE_INFINITY;
+              const pathDist = typeof getPathDistanceValue === 'function' ? getPathDistanceValue(enemy.x, enemy.y, enemy.radius || 10) : Number.POSITIVE_INFINITY;
               const towerBlocker = safeNearestTowerTarget(enemy.x, enemy.y, 160);
               const barrier = safeNearestBarrierTarget(enemy.x, enemy.y, 180);
               const blockerTarget = towerBlocker || barrier;
@@ -14133,8 +14157,8 @@ function handleTownClick(screenX, screenY) {
           supportArcherDamageMultiplier: 0.5,
           enemyObstacleSense: 92,
           enemyObstacleAttackPadding: 10,
-          enemyStuckSeconds: 0.75,
-          enemyStuckMoveThreshold: 5,
+          enemyStuckSeconds: 5.0,
+          enemyStuckMoveThresholdPerSecond: 5.5,
           supportCornerPadding: 6
         };
 
@@ -14275,7 +14299,9 @@ function handleTownClick(screenX, screenY) {
           const moved = dV43(enemy.x, enemy.y, enemy._v43LastX, enemy._v43LastY);
           enemy._v43LastX = enemy.x;
           enemy._v43LastY = enemy.y;
-          if (moved < V43.enemyStuckMoveThreshold) enemy._v43StuckTime = (enemy._v43StuckTime || 0) + Math.max(0, dt || 0);
+          const safeDt = Math.max(0, dt || 0);
+          const stillThreshold = Math.max(0.12, V43.enemyStuckMoveThresholdPerSecond * safeDt);
+          if (moved < stillThreshold) enemy._v43StuckTime = (enemy._v43StuckTime || 0) + safeDt;
           else enemy._v43StuckTime = 0;
           return enemy._v43StuckTime >= V43.enemyStuckSeconds;
         }
@@ -14286,7 +14312,10 @@ function handleTownClick(screenX, screenY) {
           const stuck = updateEnemyStuckStateV43(enemy, dt);
           let obstacle = blockingObstacleTowardBaseV43(enemy);
           if (!obstacle && stuck) obstacle = nearestObstacleV43(enemy.x, enemy.y, 128 + (enemy.radius || 12));
-          if (obstacle && (obstacle.kind === 'wall' || obstacle.kind === 'gate') && Number.isFinite(getPathDistanceValue(enemy.x, enemy.y))) {
+          const pathDistance = (typeof getPathDistanceValue === 'function')
+            ? getPathDistanceValue(enemy.x, enemy.y, enemy.radius || 10)
+            : Number.POSITIVE_INFINITY;
+          if (obstacle && (obstacle.kind === 'wall' || obstacle.kind === 'gate') && Number.isFinite(pathDistance)) {
             return false;
           }
           if (!obstacle || !enemyCanHitObstacleV43(enemy, obstacle)) return false;
@@ -14314,88 +14343,90 @@ function handleTownClick(screenX, screenY) {
           return fireProjectileBaseV43(options);
         };
 
-        const updateEnemyBehaviorBaseV43 = updateEnemyBehavior;
-        updateEnemyBehavior = function updateEnemyBehaviorV43(enemy, dt) {
-          if (attackObstacleIfNeededV43(enemy, dt)) return;
-          return updateEnemyBehaviorBaseV43(enemy, dt);
-        };
+        if (!window.__TD_USE_UNIFIED_PATHING) {
+          const updateEnemyBehaviorBaseV43 = updateEnemyBehavior;
+          updateEnemyBehavior = function updateEnemyBehaviorV43(enemy, dt) {
+            if (attackObstacleIfNeededV43(enemy, dt)) return;
+            return updateEnemyBehaviorBaseV43(enemy, dt);
+          };
 
-        function rescueSupportCornersV43(dt) {
-          if (!state || !Array.isArray(state.supportUnits)) return;
-          const obstacles = liveBarriersV43().concat(liveTowersV43());
-          if (!obstacles.length) return;
-          state.supportUnits.forEach((unit, index) => {
-            if (!unit || unit.dead) return;
-            let pushed = false;
-            for (const obstacle of obstacles) {
-              const minDist = (unit.radius || 10) + obstacleRadiusV43(obstacle) + V43.supportCornerPadding;
-              const dx = unit.x - obstacle.x;
-              const dy = unit.y - obstacle.y;
-              const dist = Math.hypot(dx, dy) || 1;
-              if (dist >= minDist) continue;
-              const push = minDist - dist + 1.5;
-              unit.x += (dx / dist) * push;
-              unit.y += (dy / dist) * push;
-              unit.vx = 0;
-              unit.vy = 0;
-              pushed = true;
+          function rescueSupportCornersV43(dt) {
+            if (!state || !Array.isArray(state.supportUnits)) return;
+            const obstacles = liveBarriersV43().concat(liveTowersV43());
+            if (!obstacles.length) return;
+            state.supportUnits.forEach((unit, index) => {
+              if (!unit || unit.dead) return;
+              let pushed = false;
+              for (const obstacle of obstacles) {
+                const minDist = (unit.radius || 10) + obstacleRadiusV43(obstacle) + V43.supportCornerPadding;
+                const dx = unit.x - obstacle.x;
+                const dy = unit.y - obstacle.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                if (dist >= minDist) continue;
+                const push = minDist - dist + 1.5;
+                unit.x += (dx / dist) * push;
+                unit.y += (dy / dist) * push;
+                unit.vx = 0;
+                unit.vy = 0;
+                pushed = true;
+              }
+              const moved = Number.isFinite(unit._v43LastX) ? dV43(unit.x, unit.y, unit._v43LastX, unit._v43LastY) : 999;
+              unit._v43LastX = unit.x;
+              unit._v43LastY = unit.y;
+              if (moved < 2 && state.phase === 'wave') {
+                unit._v43CornerTime = (unit._v43CornerTime || 0) + Math.max(0, dt || 0);
+              } else {
+                unit._v43CornerTime = 0;
+              }
+              if (unit._v43CornerTime > 0.8) {
+                const anchor = unit.type === 'swordsman' ? state.base : (state.player || state.base);
+                const angle = (index / Math.max(1, state.supportUnits.length)) * Math.PI * 2 + ((performance.now() || 0) * 0.00035);
+                const desiredRadius = unit.type === 'archer' ? 96 : 62;
+                const tx = clampV43(anchor.x + Math.cos(angle) * desiredRadius, unit.radius || 10, WORLD_WIDTH - (unit.radius || 10));
+                const ty = clampV43(anchor.y + Math.sin(angle) * desiredRadius, unit.radius || 10, WORLD_HEIGHT - (unit.radius || 10));
+                const dx = tx - unit.x;
+                const dy = ty - unit.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const step = Math.min(dist, 240 * Math.max(0, dt || 0));
+                unit.x += (dx / dist) * step;
+                unit.y += (dy / dist) * step;
+                unit.routeCells = [];
+                unit.routeKey = null;
+                unit.routeTimer = 0;
+                pushed = true;
+                if (dist < 8) unit._v43CornerTime = 0;
+              }
+              if (pushed) {
+                unit.x = clampV43(unit.x, unit.radius || 10, WORLD_WIDTH - (unit.radius || 10));
+                unit.y = clampV43(unit.y, unit.radius || 10, WORLD_HEIGHT - (unit.radius || 10));
+              }
+            });
+          }
+
+          registerHotPathHookV77('update', 'v43-support-corner-rescue', {
+            post: function updateV43Post(dt) {
+              rescueSupportCornersV43(dt);
             }
-            const moved = Number.isFinite(unit._v43LastX) ? dV43(unit.x, unit.y, unit._v43LastX, unit._v43LastY) : 999;
-            unit._v43LastX = unit.x;
-            unit._v43LastY = unit.y;
-            if (moved < 2 && state.phase === 'wave') {
-              unit._v43CornerTime = (unit._v43CornerTime || 0) + Math.max(0, dt || 0);
-            } else {
-              unit._v43CornerTime = 0;
-            }
-            if (unit._v43CornerTime > 0.8) {
-              const anchor = unit.type === 'swordsman' ? state.base : (state.player || state.base);
-              const angle = (index / Math.max(1, state.supportUnits.length)) * Math.PI * 2 + ((performance.now() || 0) * 0.00035);
-              const desiredRadius = unit.type === 'archer' ? 96 : 62;
-              const tx = clampV43(anchor.x + Math.cos(angle) * desiredRadius, unit.radius || 10, WORLD_WIDTH - (unit.radius || 10));
-              const ty = clampV43(anchor.y + Math.sin(angle) * desiredRadius, unit.radius || 10, WORLD_HEIGHT - (unit.radius || 10));
-              const dx = tx - unit.x;
-              const dy = ty - unit.y;
-              const dist = Math.hypot(dx, dy) || 1;
-              const step = Math.min(dist, 240 * Math.max(0, dt || 0));
-              unit.x += (dx / dist) * step;
-              unit.y += (dy / dist) * step;
-              unit.routeCells = [];
-              unit.routeKey = null;
-              unit.routeTimer = 0;
-              pushed = true;
-              if (dist < 8) unit._v43CornerTime = 0;
-            }
-            if (pushed) {
-              unit.x = clampV43(unit.x, unit.radius || 10, WORLD_WIDTH - (unit.radius || 10));
-              unit.y = clampV43(unit.y, unit.radius || 10, WORLD_HEIGHT - (unit.radius || 10));
+          });
+
+          const startWaveBaseV43 = startWave;
+          startWave = function startWaveV43() {
+            rebuildDynamicRoutesV43();
+            return startWaveBaseV43();
+          };
+
+          const beginWaveFromBriefingBaseV43 = beginWaveFromBriefing;
+          beginWaveFromBriefing = function beginWaveFromBriefingV43() {
+            rebuildDynamicRoutesV43();
+            return beginWaveFromBriefingBaseV43();
+          };
+
+          registerHotPathHookV77('launchWave', 'v43-dynamic-route-prep', {
+            pre: function launchWaveV43Pre(index = state.nextWave) {
+              rebuildDynamicRoutesV43();
             }
           });
         }
-
-        registerHotPathHookV77('update', 'v43-support-corner-rescue', {
-          post: function updateV43Post(dt) {
-            rescueSupportCornersV43(dt);
-          }
-        });
-
-        const startWaveBaseV43 = startWave;
-        startWave = function startWaveV43() {
-          rebuildDynamicRoutesV43();
-          return startWaveBaseV43();
-        };
-
-        const beginWaveFromBriefingBaseV43 = beginWaveFromBriefing;
-        beginWaveFromBriefing = function beginWaveFromBriefingV43() {
-          rebuildDynamicRoutesV43();
-          return beginWaveFromBriefingBaseV43();
-        };
-
-        registerHotPathHookV77('launchWave', 'v43-dynamic-route-prep', {
-          pre: function launchWaveV43Pre(index = state.nextWave) {
-            rebuildDynamicRoutesV43();
-          }
-        });
 
         window.__mountedVillageDefenseV43 = {
           version: '43.0-stable-v41-pathing-balance',
@@ -20444,6 +20475,14 @@ function handleTownClick(screenX, screenY) {
       // === v68: university footprint click fix, hard housing cap visuals, and clearance-aware enemy routing ===
       (function applyRoutingAndPopulationFixesV68() {
         if (window.__mountedVillageDefenseV68 && window.__mountedVillageDefenseV68.applied) return;
+        if (window.__TD_USE_UNIFIED_PATHING) {
+          window.__mountedVillageDefenseV68 = {
+            applied: false,
+            skipped: true,
+            note: 'Unified pathing replaced the legacy v68 clearance-routing layer.'
+          };
+          return;
+        }
 
         function ensureV68State() {
           if (!state) return;
@@ -20662,13 +20701,21 @@ function handleTownClick(screenX, screenY) {
           enemy._v68RouteFailTime = 0;
         }
 
+        function isFlowReachablePositionV68(flow, x, y) {
+          if (!flow || !flow.distanceField) return true;
+          const col = clamp(Math.floor(x / GRID_SIZE), 0, flow.cols - 1);
+          const row = clamp(Math.floor(y / GRID_SIZE), 0, flow.rows - 1);
+          if (flow.blocked && flow.blocked[row] && flow.blocked[row][col]) return false;
+          return !!(flow.distanceField[row] && Number.isFinite(flow.distanceField[row][col]));
+        }
+
         function recoverLargeEnemyRouteV68(enemy, flow, tx, ty, dt, speedFactor = 1) {
           if (!enemy) return false;
           const isLarge = !!(enemy.boss || (enemy.radius || 0) >= 18 || enemy.type === 'brute' || enemy.type === 'warlord' || enemy.type === 'siegeking');
           enemy._v68RouteFailTime = (enemy._v68RouteFailTime || 0) + Math.max(0, dt || 0);
           enemy.routeTimer = 0;
-          const probeDelay = isLarge ? 0.34 : 0.20;
-          const ejectDelay = isLarge ? 1.05 : 0.62;
+          const probeDelay = isLarge ? 0.85 : 0.65;
+          const ejectDelay = 5.0;
           if (enemy._v68RouteFailTime < probeDelay) return false;
 
           const targetDir = normalize(tx - enemy.x, ty - enemy.y);
@@ -20714,6 +20761,7 @@ function handleTownClick(screenX, screenY) {
                 { mode: 'unit' }
               );
               if (!open) continue;
+              if (!isFlowReachablePositionV68(flow, open.x, open.y)) continue;
               enemy.x = open.x;
               enemy.y = open.y;
               clearEnemyRoute(enemy);
@@ -24181,6 +24229,8 @@ function handleTownClick(screenX, screenY) {
         };
 
         if (
+          !window.__TD_USE_UNIFIED_PATHING
+          &&
           typeof attackObstacleIfNeededV43 === 'function'
           && typeof updateEnemyStuckStateV43 === 'function'
           && typeof blockingObstacleTowardBaseV43 === 'function'
@@ -24193,7 +24243,10 @@ function handleTownClick(screenX, screenY) {
             let obstacle = blockingObstacleTowardBaseV43(enemy);
             if (!obstacle && stuck) obstacle = nearestObstacleV43(enemy.x, enemy.y, 128 + (enemy.radius || 12));
             if (!obstacle) return false;
-            if (V78.softBarrierKinds.has(obstacle.kind) && Number.isFinite(getPathDistanceValue(enemy.x, enemy.y))) {
+            const pathDistance = (typeof getPathDistanceValue === 'function')
+              ? getPathDistanceValue(enemy.x, enemy.y, enemy.radius || 10)
+              : Number.POSITIVE_INFINITY;
+            if (V78.softBarrierKinds.has(obstacle.kind) && Number.isFinite(pathDistance)) {
               return false;
             }
             return attackObstacleBaseV78(enemy, dt);
@@ -24236,8 +24289,9 @@ function handleTownClick(screenX, screenY) {
             (state.enemies || []).forEach((enemy) => {
               if (!enemy || enemy.dead) return;
               const open = isOpenPositionV78(enemy.x, enemy.y, Math.max(2, enemy.radius || 0), { mode: 'unit' });
-              const stuckTime = Math.max(enemy._v43StuckTime || 0, enemy._v64Stuck || 0, enemy._v68RouteFailTime || 0);
-              if (!open || stuckTime >= 1.15) expelEntityFromStructuresV78(enemy, { friendly: false });
+              const stuckTime = Math.max(enemy._pathingStallTime || 0, enemy._v43StuckTime || 0, enemy._v64Stuck || 0, enemy._v68RouteFailTime || 0);
+              const shouldExpelForStall = !window.__TD_USE_UNIFIED_PATHING && stuckTime >= 1.15;
+              if (!open || shouldExpelForStall) expelEntityFromStructuresV78(enemy, { friendly: false });
             });
           }
         });
@@ -25625,11 +25679,20 @@ function handleTownClick(screenX, screenY) {
       // === v86: connected-route recovery for enemies and follower archers ===
       (function applyConnectedRoutingRecoveryV86() {
         if (window.__mountedVillageDefenseV86 && window.__mountedVillageDefenseV86.applied) return;
+        if (window.__TD_USE_UNIFIED_PATHING) {
+          window.__mountedVillageDefenseV86 = {
+            applied: false,
+            skipped: true,
+            note: 'Unified pathing replaced the legacy v86 recovery watchdog.'
+          };
+          return;
+        }
 
         const V86 = {
-          enemyStuckSeconds: 0.95,
-          supportStuckSeconds: 0.85,
-          minProgress: 2.25,
+          enemyStuckSeconds: 5.0,
+          enemyUnreachableSeconds: 5.0,
+          supportStuckSeconds: 2.5,
+          minProgressPerSecond: 6,
           searchRadius: GRID_SIZE * 10,
           searchStep: 8
         };
@@ -25655,21 +25718,60 @@ function handleTownClick(screenX, screenY) {
           return Number.isFinite(flowDistanceAtV86(x, y));
         }
 
+        function isPhysicallyOpenEnemyPositionV86(x, y, radius) {
+          return typeof isOpenPosition !== 'function' || isOpenPosition(x, y, radius, { mode: 'unit' });
+        }
+
         function isOpenFriendlyPositionV86(x, y, radius) {
           return typeof isOpenPosition === 'function'
             ? isOpenPosition(x, y, radius, { friendly: true, mode: 'unit' })
             : true;
         }
 
+        function targetRadiusV86(target) {
+          if (!target) return 18;
+          if (Number.isFinite(target.radius)) return target.radius;
+          if (Number.isFinite(target.blockRadius)) return target.blockRadius;
+          if (Number.isFinite(target.w) || Number.isFinite(target.h)) return Math.max(target.w || 0, target.h || 0) * 0.5;
+          return 18;
+        }
+
+        function enemyEngagedV86(enemy) {
+          if (!enemy || enemy.dead || enemy.hp <= 0) return false;
+          const type = ENEMY_TYPES[enemy.type] || {};
+          const radius = enemy.radius || type.radius || 10;
+          const meleePad = radius + 28;
+          if (state.base && distance(enemy.x, enemy.y, state.base.x, state.base.y) <= radius + targetRadiusV86(state.base) + 28) return true;
+          if (state.player && state.player.alive && distance(enemy.x, enemy.y, state.player.x, state.player.y) <= radius + targetRadiusV86(state.player) + 24) return true;
+          const saved = enemy._v85Target;
+          if (saved && saved.kind === 'base' && state.base) {
+            if (distance(enemy.x, enemy.y, state.base.x, state.base.y) <= radius + targetRadiusV86(state.base) + 28) return true;
+          }
+          if (saved && saved.kind === 'player' && state.player && state.player.alive) {
+            if (distance(enemy.x, enemy.y, state.player.x, state.player.y) <= radius + targetRadiusV86(state.player) + 24) return true;
+          }
+          if (saved && saved.kind === 'structure' && saved.ref && saved.ref.hp > 0) {
+            if (distance(enemy.x, enemy.y, saved.ref.x, saved.ref.y) <= radius + targetRadiusV86(saved.ref) + 24) return true;
+          }
+          if (Number.isFinite(type.attackRange) && type.attackRange > 72) {
+            const range = type.attackRange + 28;
+            if (state.player && state.player.alive && distance(enemy.x, enemy.y, state.player.x, state.player.y) <= range) return true;
+            if (state.base && distance(enemy.x, enemy.y, state.base.x, state.base.y) <= range) return true;
+          }
+          return false;
+        }
+
         function nearestSafePositionV86(x, y, radius, opts = {}) {
           const friendly = !!opts.friendly;
           const requireReachable = !friendly && opts.requireReachable !== false;
           const maxRadius = opts.maxRadius || V86.searchRadius;
+          const forceProgress = !!opts.forceProgress;
+          const currentFlow = requireReachable ? flowDistanceAtV86(x, y) : Number.POSITIVE_INFINITY;
           const validator = (px, py) => friendly
             ? isOpenFriendlyPositionV86(px, py, radius)
             : (requireReachable ? isReachableEnemyPositionV86(px, py, radius) : (typeof isOpenPosition !== 'function' || isOpenPosition(px, py, radius, { mode: 'unit' })));
 
-          if (validator(x, y)) return { x, y, cost: 0 };
+          if (!forceProgress && validator(x, y)) return { x, y, cost: 0 };
 
           let best = null;
           for (let r = V86.searchStep; r <= maxRadius; r += V86.searchStep) {
@@ -25679,6 +25781,8 @@ function handleTownClick(screenX, screenY) {
               const px = clamp(x + Math.cos(angle) * r, radius, WORLD_WIDTH - radius);
               const py = clamp(y + Math.sin(angle) * r, radius, WORLD_HEIGHT - radius);
               if (!validator(px, py)) continue;
+              const flowAtSample = requireReachable ? flowDistanceAtV86(px, py) : Number.POSITIVE_INFINITY;
+              if (forceProgress && Number.isFinite(currentFlow) && Number.isFinite(flowAtSample) && flowAtSample >= currentFlow - 1) continue;
               const flowCost = requireReachable ? flowDistanceAtV86(px, py) * 0.02 : 0;
               const goalCost = opts.goal ? distance(px, py, opts.goal.x, opts.goal.y) * 0.08 : 0;
               const cost = r + flowCost + goalCost;
@@ -25699,6 +25803,7 @@ function handleTownClick(screenX, screenY) {
                   const relaxedOpen = !strictOpen
                     && (typeof isOpenPosition !== 'function' || isOpenPosition(center.x, center.y, Math.max(2, radius * 0.55), { mode: 'unit' }));
                   if (!strictOpen && !relaxedOpen) continue;
+                  if (forceProgress && Number.isFinite(currentFlow) && flowDist >= currentFlow - 1) continue;
                   const currentCost = distance(x, y, center.x, center.y);
                   const goalCost = opts.goal ? distance(center.x, center.y, opts.goal.x, opts.goal.y) * 0.05 : 0;
                   const cost = currentCost + flowDist * 0.02 + goalCost + (strictOpen ? 0 : 120);
@@ -25711,7 +25816,9 @@ function handleTownClick(screenX, screenY) {
 
           if (typeof searchNearestOpenPosition === 'function') {
             const fallback = searchNearestOpenPosition(x, y, radius, friendly ? { friendly: true, mode: 'unit' } : { mode: 'unit' });
-            if (fallback && (!requireReachable || Number.isFinite(flowDistanceAtV86(fallback.x, fallback.y)))) return fallback;
+            if (fallback && (!requireReachable || Number.isFinite(flowDistanceAtV86(fallback.x, fallback.y)))) {
+              if (!forceProgress || !Number.isFinite(currentFlow) || flowDistanceAtV86(fallback.x, fallback.y) < currentFlow - 1) return fallback;
+            }
           }
           return null;
         }
@@ -25744,11 +25851,27 @@ function handleTownClick(screenX, screenY) {
           const safeDt = Math.min(Math.max(dt || 0, 0), 0.08);
           const friendly = !!opts.friendly;
           const radius = Math.max(2, unit.radius || 8);
-          const open = friendly
+          const physicallyOpen = friendly
             ? isOpenFriendlyPositionV86(unit.x, unit.y, radius)
-            : isReachableEnemyPositionV86(unit.x, unit.y, radius);
+            : isPhysicallyOpenEnemyPositionV86(unit.x, unit.y, radius);
+          const reachable = friendly || Number.isFinite(flowDistanceAtV86(unit.x, unit.y));
 
-          if (!open) return relocateUnitV86(unit, opts);
+          if (!physicallyOpen) return relocateUnitV86(unit, opts);
+          if (!friendly && enemyEngagedV86(unit)) {
+            unit._v86StuckTime = 0;
+            unit._v86UnreachableTime = 0;
+            unit._v86LastFlow = flowDistanceAtV86(unit.x, unit.y);
+            unit._v86LastGoalDist = opts.goal ? distance(unit.x, unit.y, opts.goal.x, opts.goal.y) : 0;
+            return false;
+          }
+          if (!friendly && !reachable) {
+            unit._v86UnreachableTime = (unit._v86UnreachableTime || 0) + safeDt;
+            if (unit._v86UnreachableTime >= V86.enemyUnreachableSeconds) {
+              return relocateUnitV86(unit, { ...opts, forceProgress: true, goal: opts.goal || state.base });
+            }
+            return false;
+          }
+          unit._v86UnreachableTime = 0;
 
           const lastX = Number.isFinite(unit._v86LastX) ? unit._v86LastX : unit.x;
           const lastY = Number.isFinite(unit._v86LastY) ? unit._v86LastY : unit.y;
@@ -25757,29 +25880,42 @@ function handleTownClick(screenX, screenY) {
           unit._v86LastY = unit.y;
 
           const threshold = friendly ? V86.supportStuckSeconds : V86.enemyStuckSeconds;
-          if (moved < V86.minProgress * Math.max(0.35, safeDt * 20)) {
-            unit._v86StuckTime = (unit._v86StuckTime || 0) + safeDt;
-          } else {
+          const moveThreshold = Math.max(0.12, V86.minProgressPerSecond * safeDt);
+          const goal = opts.goal || state.base;
+          const goalDist = goal ? distance(unit.x, unit.y, goal.x, goal.y) : Number.POSITIVE_INFINITY;
+          const flowNow = friendly ? Number.POSITIVE_INFINITY : flowDistanceAtV86(unit.x, unit.y);
+          const lastGoalDist = Number.isFinite(unit._v86LastGoalDist) ? unit._v86LastGoalDist : goalDist;
+          const lastFlow = Number.isFinite(unit._v86LastFlow) ? unit._v86LastFlow : flowNow;
+          const movedEnough = moved >= moveThreshold;
+          const improvedGoal = Number.isFinite(goalDist) && Number.isFinite(lastGoalDist) && goalDist < lastGoalDist - 2.5;
+          const improvedFlow = !friendly && Number.isFinite(flowNow) && Number.isFinite(lastFlow) && flowNow < lastFlow - 0.25;
+          const meaningfulProgress = friendly ? movedEnough : (improvedGoal || improvedFlow);
+          if (meaningfulProgress) {
             unit._v86StuckTime = 0;
+            unit._v86LastGoalDist = goalDist;
+            unit._v86LastFlow = flowNow;
+          } else {
+            unit._v86StuckTime = (unit._v86StuckTime || 0) + safeDt;
           }
 
           if (unit._v86StuckTime >= threshold) {
-            const goal = opts.goal || (friendly ? state.base : state.base);
             const safe = nearestSafePositionV86(
               unit.x + (goal ? Math.sign(goal.x - unit.x) * 10 : 0),
               unit.y + (goal ? Math.sign(goal.y - unit.y) * 10 : 0),
               radius,
-              { ...opts, goal }
+              { ...opts, forceProgress: !friendly, goal }
             );
             if (safe) {
-              unit.x = lerp(unit.x, safe.x, 0.75);
-              unit.y = lerp(unit.y, safe.y, 0.75);
+              unit.x = safe.x;
+              unit.y = safe.y;
               unit.vx = 0;
               unit.vy = 0;
               unit.kbX = 0;
               unit.kbY = 0;
               unit._lastValidX = unit.x;
               unit._lastValidY = unit.y;
+              unit._v86LastGoalDist = goal ? distance(unit.x, unit.y, goal.x, goal.y) : 0;
+              unit._v86LastFlow = friendly ? Number.POSITIVE_INFINITY : flowDistanceAtV86(unit.x, unit.y);
               if (typeof resolveEntityAgainstWalls === 'function') {
                 resolveEntityAgainstWalls(unit, 0, friendly ? { friendly: true, mode: 'unit' } : { mode: 'unit' });
               }
@@ -25796,23 +25932,16 @@ function handleTownClick(screenX, screenY) {
           moveEnemyPlanned = function moveEnemyPlannedV86(enemy, tx, ty, dt, speedFactor = 1, opts = {}) {
             if (!enemy) return false;
             const radius = Math.max(2, enemy.radius || 8);
-            if (!isReachableEnemyPositionV86(enemy.x, enemy.y, radius)) {
+            if (!isPhysicallyOpenEnemyPositionV86(enemy.x, enemy.y, radius)) {
               relocateUnitV86(enemy, { requireReachable: true, goal: { x: tx, y: ty } });
             }
-            const beforeX = enemy.x;
-            const beforeY = enemy.y;
             const moved = moveEnemyPlannedBaseV86(enemy, tx, ty, dt, speedFactor, {
               ...opts,
               directFallback: opts.directFallback === true ? true : false,
               repathTime: Math.min(opts.repathTime || 0.35, 0.35)
             });
-            const progress = distance(enemy.x, enemy.y, beforeX, beforeY);
-            if (!moved || progress < 0.35) {
-              enemy._v86StuckTime = (enemy._v86StuckTime || 0) + Math.min(Math.max(dt || 0, 0), 0.08);
-              clearRouteV86(enemy);
-              trackAndRecoverUnitV86(enemy, dt, { requireReachable: true, goal: { x: tx, y: ty } });
-            } else {
-              enemy._v86StuckTime = 0;
+            if (!moved) {
+              enemy.routeTimer = 0;
             }
             return moved;
           };
@@ -25826,18 +25955,12 @@ function handleTownClick(screenX, screenY) {
             if (!isOpenFriendlyPositionV86(unit.x, unit.y, radius)) {
               relocateUnitV86(unit, { friendly: true, goal: { x: tx, y: ty } });
             }
-            const beforeX = unit.x;
-            const beforeY = unit.y;
             const moved = moveFriendlyPlannedBaseV86(unit, tx, ty, dt, speedCap, {
               ...opts,
               repathTime: Math.min(opts.repathTime || 0.35, 0.35)
             });
-            if (!moved || distance(unit.x, unit.y, beforeX, beforeY) < 0.35) {
-              unit._v86StuckTime = (unit._v86StuckTime || 0) + Math.min(Math.max(dt || 0, 0), 0.08);
-              clearRouteV86(unit);
-              trackAndRecoverUnitV86(unit, dt, { friendly: true, goal: { x: tx, y: ty } });
-            } else {
-              unit._v86StuckTime = 0;
+            if (!moved) {
+              unit.routeTimer = 0;
             }
             return moved;
           };
@@ -26185,6 +26308,1183 @@ function handleTownClick(screenX, screenY) {
         };
       })();
 
+      // === v88: gameplay menu, diagnostics, persistence, and feedback pass ===
+      (function applyGameMenuDiagnosticsAndFeedbackV88() {
+        if (window.__mountedVillageDefenseV88 && window.__mountedVillageDefenseV88.applied) return;
+
+        const PROGRESS_KEY_V88 = 'mountedVillageDefenseProgressV88';
+        const SURVIVAL_SCORE_KEY_V88 = 'mountedVillageDefenseSurvivalHighScoresV41';
+        const ACHIEVEMENT_KEY_V88 = 'mountedVillageDefenseAchievementsV70';
+        const MENU_BUTTON_V88 = { x: WIDTH - 178, y: 8, w: 34, h: 28 };
+        const NOTICE_SECONDS_V88 = 2.4;
+        const STUCK_PING_SECONDS_V88 = 5.2;
+
+        function nowSecV88() {
+          return ((typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now()) * 0.001;
+        }
+
+        function ensureV88State() {
+          if (!state.v88) state.v88 = {};
+          if (typeof state.v88.menuOpen !== 'boolean') state.v88.menuOpen = false;
+          if (typeof state.v88.paused !== 'boolean') state.v88.paused = false;
+          if (typeof state.v88.debugPathing !== 'boolean') state.v88.debugPathing = false;
+          if (!state.v88.placementNotice) state.v88.placementNotice = null;
+          if (!state.v88.progressStatus) state.v88.progressStatus = '';
+          if (!state.v88.confirmClearUntil) state.v88.confirmClearUntil = 0;
+          if (!state.v88.records) state.v88.records = {};
+          if (!state.v88.soundThrottle) state.v88.soundThrottle = {};
+          return state.v88;
+        }
+
+        function isGameScreenV88() {
+          return !!state
+            && state.phase !== 'start'
+            && state.phase !== 'mapselect'
+            && !state.townOpen
+            && !state.v33ResearchOpen
+            && !state.v33IdlePrompt
+            && state.phase !== 'briefing'
+            && state.phase !== 'summary'
+            && state.phase !== 'townPlacement';
+        }
+
+        function roundRectPathV88(x, y, w, h, r) {
+          const rr = Math.max(0, Math.min(r || 0, Math.min(w, h) / 2));
+          ctx.beginPath();
+          ctx.moveTo(x + rr, y);
+          ctx.lineTo(x + w - rr, y);
+          ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+          ctx.lineTo(x + w, y + h - rr);
+          ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+          ctx.lineTo(x + rr, y + h);
+          ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+          ctx.lineTo(x, y + rr);
+          ctx.quadraticCurveTo(x, y, x + rr, y);
+          ctx.closePath();
+        }
+
+        function pointInRectV88(px, py, rect) {
+          return !!rect && px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
+        }
+
+        function consumeEventV88(event) {
+          if (!event) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+        }
+
+        function setGameMenuOpenV88(open) {
+          ensureV88State();
+          if (open && !isGameScreenV88()) open = false;
+          state.v88.menuOpen = !!open;
+          state.v88.paused = !!open && state.phase === 'wave';
+          if (!open) state.v88.confirmClearUntil = 0;
+          uiDirty = true;
+        }
+
+        function toggleGameMenuV88() {
+          ensureV88State();
+          setGameMenuOpenV88(!state.v88.menuOpen);
+          if (state.v88.menuOpen) playSfx('menu');
+        }
+
+        function costTextV88(costs) {
+          if (typeof costText === 'function') return costText(costs || {});
+          const parts = [];
+          Object.entries(costs || {}).forEach(([key, value]) => {
+            if (value) parts.push(value + ' ' + key);
+          });
+          return parts.join(', ') || 'free';
+        }
+
+        function canAffordV88(costs) {
+          if (typeof canAfford === 'function') return canAfford(costs || {});
+          return Object.entries(costs || {}).every(([key, value]) => (state[key] || 0) >= value);
+        }
+
+        function buildOptionForV88(key, x, y) {
+          const v6Scope = window.__mountedVillageDefenseV6Scope || null;
+          if (v6Scope && typeof v6Scope.buildMenuOptionFromKey === 'function') {
+            return v6Scope.buildMenuOptionFromKey(key, x, y);
+          }
+          if (typeof buildMenuOptionFromKey === 'function') return buildMenuOptionFromKey(key, x, y);
+          return null;
+        }
+
+        function footprintForKeyV88(key, x, y) {
+          if (typeof towerPlacementV67 === 'function' && TOWER_TYPES[key]) return towerPlacementV67(x, y, key);
+          const snapped = snapWorldToGrid(x, y);
+          let cols = 1;
+          let rows = 1;
+          if (key === 'house') { cols = 2; rows = 2; }
+          else if (key === 'university') { cols = 2; rows = 3; }
+          else if (key === 'archeryRange' || key === 'stables') { cols = 3; rows = 2; }
+          else if (key === 'bombard') { cols = 2; rows = 2; }
+          else if (key === 'sniper') { cols = 1; rows = 2; }
+          const rect = {
+            x: snapped.col * GRID_SIZE,
+            y: snapped.row * GRID_SIZE,
+            w: cols * GRID_SIZE,
+            h: rows * GRID_SIZE
+          };
+          return {
+            snapped,
+            gridCol: snapped.col,
+            gridRow: snapped.row,
+            footprintCols: cols,
+            footprintRows: rows,
+            rect,
+            centerX: rect.x + rect.w / 2,
+            centerY: rect.y + rect.h / 2
+          };
+        }
+
+        function cellOccupiedReasonV88(col, row) {
+          if (typeof getTowerAtCell === 'function' && getTowerAtCell(col, row)) return 'Occupied by a tower.';
+          if (typeof getBarrierAtCell === 'function' && getBarrierAtCell(col, row)) return 'Occupied by a wall or gate.';
+          if ((state.houses || []).some((house) => house && house.hp > 0
+            && col >= house.gridCol && col < house.gridCol + (house.footprintCols || 2)
+            && row >= house.gridRow && row < house.gridRow + (house.footprintRows || 2))) return 'Occupied by a house.';
+          if (state.university && state.university.hp > 0
+            && col >= state.university.gridCol && col < state.university.gridCol + (state.university.footprintCols || 2)
+            && row >= state.university.gridRow && row < state.university.gridRow + (state.university.footprintRows || 3)) return 'Occupied by the University.';
+          const supportApi = window.__mountedVillageDefenseV69 || null;
+          if (supportApi && typeof supportApi.getSupportBuildingAtCell === 'function' && supportApi.getSupportBuildingAtCell(col, row)) return 'Occupied by a support building.';
+          if ((state.torches || []).some((torch) => torch && torch.hp > 0 && torch.gridCol === col && torch.gridRow === row)) return 'Occupied by a torch.';
+          return '';
+        }
+
+        function inspectPlacementV88(key, x, y) {
+          const buildable = BUILDABLES && BUILDABLES[key] ? BUILDABLES[key] : null;
+          const placement = footprintForKeyV88(key, x, y);
+          const result = { ok: false, reason: '', placement };
+          if (!key || String(key).startsWith('cat_')) return { ...result, reason: '' };
+          if (!buildable && !TOWER_TYPES[key]) return { ...result, reason: 'Unknown build choice.' };
+          const costs = buildable && buildable.costs ? buildable.costs : {};
+          if (!canAffordV88(costs)) return { ...result, reason: 'Need ' + costTextV88(costs) + '.', placement };
+          const researchKey = TOWER_TYPES[key] && typeof getTowerResearchKey === 'function' ? getTowerResearchKey(key) : '';
+          if (researchKey && typeof isTowerUnlocked === 'function' && !isTowerUnlocked(key)) {
+            return { ...result, reason: 'Research this tower first.', placement };
+          }
+          const grid = state && state.map ? state.map.gridMeta : null;
+          if (!grid) return { ...result, reason: 'Map grid is not ready.', placement };
+          const rect = placement.rect;
+          if (rect.x < 0 || rect.y < 0 || rect.x + rect.w > WORLD_WIDTH || rect.y + rect.h > WORLD_HEIGHT) {
+            return { ...result, reason: 'Outside the map edge.', placement };
+          }
+          for (let row = placement.gridRow; row < placement.gridRow + placement.footprintRows; row += 1) {
+            for (let col = placement.gridCol; col < placement.gridCol + placement.footprintCols; col += 1) {
+              if (col < 0 || row < 0 || col >= grid.cols || row >= grid.rows) return { ...result, reason: 'Outside the map edge.', placement };
+              if (typeof cellBlockedByTownCore === 'function' && cellBlockedByTownCore(col, row, 2)) return { ...result, reason: 'The town footprint is here.', placement };
+              if (!grid.noBuild[row] || grid.noBuild[row][col]) return { ...result, reason: 'Blocked by forest, rock, or terrain.', placement };
+              const occupied = cellOccupiedReasonV88(col, row);
+              if (occupied) return { ...result, reason: occupied, placement };
+              if (typeof cellOnEnemyRoute === 'function' && cellOnEnemyRoute(col, row)) return { ...result, reason: 'Enemy spawn routes must stay open.', placement };
+            }
+          }
+          if ((key === 'wall' || key === 'gate') && typeof isBlockedByCamp === 'function' && isBlockedByCamp(placement.centerX, placement.centerY)) {
+            return { ...result, reason: 'Too close to an enemy camp.', placement };
+          }
+          const knightGap = (key === 'wall' || key === 'gate' || key === 'torch') ? 36 : 52;
+          if (state.player && distance(placement.centerX, placement.centerY, state.player.x, state.player.y) < knightGap) {
+            return { ...result, reason: 'Too close to the knight.', placement };
+          }
+          return { ...result, ok: true, reason: '', placement };
+        }
+
+        function setPlacementNoticeV88(text, key, x, y) {
+          if (!text) return;
+          ensureV88State();
+          const check = inspectPlacementV88(key, x, y);
+          const placement = check && check.placement ? check.placement : footprintForKeyV88(key, x, y);
+          state.v88.placementNotice = {
+            text,
+            key,
+            x: placement.centerX,
+            y: placement.centerY,
+            rect: placement.rect,
+            until: nowSecV88() + NOTICE_SECONDS_V88
+          };
+          playSfx('denied');
+          uiDirty = true;
+        }
+
+        function placementReasonV88(option, check) {
+          const liveReason = check && !check.ok ? (check.reason || '') : '';
+          if (liveReason) return liveReason;
+          if (!option || !option.disabled) return '';
+          const fallback = option.disabledReason || '';
+          if (!fallback) return '';
+          if (
+            fallback === 'That placement is blocked.'
+            || fallback === 'Blocked by forest, rock, or terrain.'
+            || fallback.startsWith('Grid cell blocked')
+          ) {
+            return '';
+          }
+          return fallback;
+        }
+
+        function getCurrentPlacementIssueV88() {
+          if (!state || !state.menu || state.menu.kind !== 'build') return null;
+          const menu = buildRadialMenu(state.menu);
+          if (!menu) return null;
+          const option = (typeof getResolvedRadialOptionV67 === 'function')
+            ? getResolvedRadialOptionV67(state.menu, null)
+            : getHoveredMenuOption(state.menu);
+          if (!option || String(option.key || '').startsWith('cat_')) return null;
+          const check = inspectPlacementV88(option.key, state.menu.anchorX, state.menu.anchorY);
+          const reason = placementReasonV88(option, check);
+          if (!reason) return null;
+          return {
+            text: reason,
+            rect: check.placement && check.placement.rect,
+            x: check.placement ? check.placement.centerX : state.menu.anchorX,
+            y: check.placement ? check.placement.centerY : state.menu.anchorY
+          };
+        }
+
+        function drawPlacementIssueV88(issue) {
+          if (!issue || !issue.text) return;
+          const rect = issue.rect || { x: issue.x - 16, y: issue.y - 16, w: 32, h: 32 };
+          const tl = worldToScreen(rect.x, rect.y);
+          const center = worldToScreen(issue.x, issue.y);
+          ctx.save();
+          ctx.fillStyle = 'rgba(221, 94, 75, 0.18)';
+          ctx.strokeStyle = 'rgba(255, 166, 132, 0.92)';
+          ctx.lineWidth = 2;
+          ctx.fillRect(tl.x + 1, tl.y + 1, rect.w - 2, rect.h - 2);
+          ctx.strokeRect(tl.x + 1, tl.y + 1, rect.w - 2, rect.h - 2);
+          ctx.font = '800 12px Inter, sans-serif';
+          const w = Math.min(330, Math.max(170, ctx.measureText(issue.text).width + 26));
+          const bx = clamp(center.x - w / 2, 8, WIDTH - w - 8);
+          const by = clamp(tl.y - 42, 68, HEIGHT - 54);
+          roundRectPathV88(bx, by, w, 30, 10);
+          ctx.fillStyle = 'rgba(14, 18, 11, 0.96)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 166, 132, 0.55)';
+          ctx.stroke();
+          ctx.fillStyle = '#ffb39c';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(issue.text, bx + w / 2, by + 15);
+          ctx.restore();
+        }
+
+        function samePlacementIssueV88(a, b) {
+          if (!a || !b) return false;
+          const ar = a.rect || null;
+          const br = b.rect || null;
+          return a.text === b.text
+            && Math.round(a.x || 0) === Math.round(b.x || 0)
+            && Math.round(a.y || 0) === Math.round(b.y || 0)
+            && !!ar === !!br
+            && (!ar || (
+              Math.round(ar.x) === Math.round(br.x)
+              && Math.round(ar.y) === Math.round(br.y)
+              && Math.round(ar.w) === Math.round(br.w)
+              && Math.round(ar.h) === Math.round(br.h)
+            ));
+        }
+
+        function loadStoredProgressV88() {
+          try {
+            const raw = localStorage.getItem(PROGRESS_KEY_V88);
+            const parsed = raw ? JSON.parse(raw) : null;
+            return parsed && typeof parsed === 'object' ? parsed : null;
+          } catch (err) {
+            return null;
+          }
+        }
+
+        function serializeProgressV88() {
+          ensureV88State();
+          return {
+            version: 1,
+            savedAt: Date.now(),
+            research: { ...(state.research || {}) },
+            researchLevels: { ...((state.v65 && state.v65.researchLevels) || {}) },
+            difficultyRecords: { ...(state.v88.records || {}) },
+            highScores: (() => { try { return localStorage.getItem(HIGH_SCORE_STORAGE_KEY) || ''; } catch (err) { return ''; } })(),
+            survivalHighScores: (() => { try { return localStorage.getItem(SURVIVAL_SCORE_KEY_V88) || ''; } catch (err) { return ''; } })(),
+            achievements: (() => { try { return localStorage.getItem(ACHIEVEMENT_KEY_V88) || ''; } catch (err) { return ''; } })()
+          };
+        }
+
+        function saveProgressV88(status = 'Browser progression saved.') {
+          ensureV88State();
+          updateDifficultyRecordV88();
+          try {
+            localStorage.setItem(PROGRESS_KEY_V88, JSON.stringify(serializeProgressV88()));
+            state.v88.progressStatus = status;
+          } catch (err) {
+            state.v88.progressStatus = 'Could not save progression.';
+          }
+          uiDirty = true;
+        }
+
+        function clearEnemyPingsV88() {
+          if (!state || !Array.isArray(state.enemies)) return;
+          state.enemies.forEach((enemy) => {
+            if (!enemy) return;
+            enemy._v88StillTime = 0;
+            enemy._v88PingUntil = 0;
+            enemy._v88PingLogged = 0;
+            enemy._v88LastX = enemy.x;
+            enemy._v88LastY = enemy.y;
+          });
+        }
+
+        function applyProgressV88(progress = loadStoredProgressV88(), status = 'Browser progression loaded.') {
+          ensureV88State();
+          if (!progress) {
+            state.v88.progressStatus = 'No saved progression found.';
+            uiDirty = true;
+            return false;
+          }
+          if (!state.research) state.research = {};
+          Object.assign(state.research, progress.research || {});
+          if (!state.v65) state.v65 = {};
+          if (!state.v65.researchLevels) state.v65.researchLevels = {};
+          Object.assign(state.v65.researchLevels, progress.researchLevels || {});
+          state.v88.records = { ...(progress.difficultyRecords || {}) };
+          try {
+            if (progress.highScores) localStorage.setItem(HIGH_SCORE_STORAGE_KEY, progress.highScores);
+            if (progress.survivalHighScores) localStorage.setItem(SURVIVAL_SCORE_KEY_V88, progress.survivalHighScores);
+            if (progress.achievements) localStorage.setItem(ACHIEVEMENT_KEY_V88, progress.achievements);
+          } catch (err) {}
+          state.v88.progressStatus = status;
+          uiDirty = true;
+          return true;
+        }
+
+        function clearProgressV88() {
+          ensureV88State();
+          try { localStorage.removeItem(PROGRESS_KEY_V88); } catch (err) {}
+          state.v88.records = {};
+          state.v88.progressStatus = 'Browser progression cleared.';
+          state.v88.confirmClearUntil = 0;
+          uiDirty = true;
+        }
+
+        function updateDifficultyRecordV88() {
+          if (!state) return;
+          ensureV88State();
+          const key = state.difficultyKey || 'normal';
+          const record = state.v88.records[key] || { bestWave: 0, bestScore: 0 };
+          const activeWave = state.activeWave && state.activeWave.waveNumber ? state.activeWave.waveNumber : 0;
+          const wave = Math.max(record.bestWave || 0, state.highestWaveReached || 0, activeWave, state.nextWave || 0);
+          const score = Math.max(record.bestScore || 0, state.score ? (state.score.best || state.score.final || 0) : 0);
+          state.v88.records[key] = { bestWave: wave, bestScore: Math.round(score), updatedAt: Date.now() };
+        }
+
+        function progressSignatureV88() {
+          const levels = (state.v65 && state.v65.researchLevels) || {};
+          return JSON.stringify({ r: state.research || {}, l: levels, d: state.difficultyKey || 'normal' });
+        }
+
+        const playSfxBaseV88 = playSfx;
+        playSfx = function playSfxV88(type) {
+          if (!state || !state.audio || !state.audio.enabled || !state.audio.unlocked || !state.audio.ctx) return playSfxBaseV88.apply(this, arguments);
+          const now = state.audio.ctx.currentTime;
+          ensureV88State();
+          const throttle = { denied: 0.18, buildingDamage: 0.16, repair: 0.35, wave: 0.4, menu: 0.16 }[type] || 0;
+          if (throttle) {
+            const last = state.v88.soundThrottle[type] || 0;
+            if (now - last < throttle) return;
+            state.v88.soundThrottle[type] = now;
+          }
+          const ctxAudio = state.audio.ctx;
+          function tone(wave, freqA, freqB, dur, gainValue, delay = 0) {
+            const start = ctxAudio.currentTime + delay;
+            const osc = ctxAudio.createOscillator();
+            const gain = ctxAudio.createGain();
+            osc.type = wave;
+            osc.frequency.setValueAtTime(freqA, start);
+            osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqB), start + dur);
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(gainValue, start + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+            osc.connect(gain).connect(ctxAudio.destination);
+            osc.start(start);
+            osc.stop(start + dur + 0.03);
+          }
+          if (type === 'denied') return tone('square', 150, 78, 0.08, 0.018);
+          if (type === 'buildingDamage') return tone('sawtooth', 115, 58, 0.10, 0.018);
+          if (type === 'repair') { tone('triangle', 360, 520, 0.08, 0.014); return tone('triangle', 520, 760, 0.08, 0.012, 0.06); }
+          if (type === 'wave') { tone('sawtooth', 180, 260, 0.11, 0.02); return tone('triangle', 300, 430, 0.12, 0.016, 0.08); }
+          if (type === 'menu') return tone('triangle', 420, 620, 0.045, 0.012);
+          return playSfxBaseV88.apply(this, arguments);
+        };
+
+        function markStructureDamageV88(item, amount) {
+          if (!item) return;
+          item._v88DamageFlash = 0.82;
+          item._v88LastDamage = Math.round(Math.max(1, amount || 1));
+          item._v88DamageUntil = nowSecV88() + 0.7;
+          playSfx('buildingDamage');
+        }
+
+        const v43ScopeV88 = window.__mountedVillageDefenseV43Scope || null;
+        if (v43ScopeV88 && typeof v43ScopeV88.damageBuildableObstacle === 'function') {
+          const damageBuildableObstacleBaseV88 = v43ScopeV88.damageBuildableObstacle;
+          v43ScopeV88.damageBuildableObstacle = function damageBuildableObstacleV88(obstacle, amount, sourceLabel) {
+            markStructureDamageV88(obstacle, amount);
+            return damageBuildableObstacleBaseV88.apply(this, arguments);
+          };
+        }
+        if (typeof damageTower === 'function') {
+          const damageTowerBaseV88 = damageTower;
+          damageTower = function damageTowerV88(tower, amount, hitInfo) {
+            markStructureDamageV88(tower, amount);
+            return damageTowerBaseV88.apply(this, arguments);
+          };
+        }
+        if (typeof damageBarrier === 'function') {
+          const damageBarrierBaseV88 = damageBarrier;
+          damageBarrier = function damageBarrierV88(barrier, amount, hitInfo) {
+            markStructureDamageV88(barrier, amount);
+            return damageBarrierBaseV88.apply(this, arguments);
+          };
+        }
+
+        function liveStructuresV88() {
+          return []
+            .concat(state.barriers || [])
+            .concat(state.towers || [])
+            .concat(state.houses || [])
+            .concat(state.stablesBuildings || [])
+            .concat(state.archeryRangeBuildings || [])
+            .concat(state.torches || [])
+            .concat(state.university && state.university.hp > 0 ? [state.university] : [])
+            .filter((item) => item && item.hp > 0 && Number.isFinite(item.hp) && Number.isFinite(item.maxHp));
+        }
+
+        function structureRectV88(item) {
+          if (!item) return null;
+          if (Number.isFinite(item.w) && Number.isFinite(item.h)) return { x: item.x - item.w / 2, y: item.y - item.h / 2, w: item.w, h: item.h };
+          if (Number.isFinite(item.gridCol) && Number.isFinite(item.gridRow)) {
+            const cols = item.footprintCols || 1;
+            const rows = item.footprintRows || 1;
+            return { x: item.gridCol * GRID_SIZE, y: item.gridRow * GRID_SIZE, w: cols * GRID_SIZE, h: rows * GRID_SIZE };
+          }
+          const r = item.radius || item.blockRadius || 18;
+          return { x: item.x - r, y: item.y - r, w: r * 2, h: r * 2 };
+        }
+
+        function drawStructureHealthOverlaysV88() {
+          if (!isGameScreenV88()) return;
+          const t = nowSecV88();
+          liveStructuresV88().forEach((item) => {
+            const flash = Math.max(0, item._v88DamageFlash || 0);
+            if (item.hp >= item.maxHp && flash <= 0) return;
+            const rect = structureRectV88(item);
+            if (!rect) return;
+            const top = worldToScreen(rect.x + rect.w / 2, rect.y);
+            if (top.x < -80 || top.x > WIDTH + 80 || top.y < 54 || top.y > HEIGHT + 80) return;
+            const w = clamp(rect.w * 0.72, 28, 72);
+            const x = top.x - w / 2;
+            const y = top.y - 13;
+            ctx.save();
+            if (flash > 0) {
+              ctx.strokeStyle = 'rgba(255, 176, 122, ' + clamp(flash, 0, 1).toFixed(2) + ')';
+              ctx.lineWidth = 2.2;
+              ctx.strokeRect(x - 3, y - 3, w + 6, 10);
+            }
+            ctx.fillStyle = 'rgba(6, 9, 5, 0.78)';
+            ctx.fillRect(x, y, w, 5);
+            ctx.fillStyle = item.hp / item.maxHp > 0.45 ? '#9fe0a2' : '#e68166';
+            ctx.fillRect(x, y, w * clamp(item.hp / item.maxHp, 0, 1), 5);
+            ctx.strokeStyle = 'rgba(237,242,221,0.28)';
+            ctx.strokeRect(x, y, w, 5);
+            if (item._v88DamageUntil && t < item._v88DamageUntil && item._v88LastDamage) {
+              ctx.fillStyle = '#ffb39c';
+              ctx.font = '800 10px Inter, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('-' + item._v88LastDamage, top.x, y - 3);
+            }
+            ctx.restore();
+          });
+        }
+
+        function updateEnemyPingStateV88(dt) {
+          if (!state || state.phase !== 'wave') return;
+          ensureV88State();
+          if (!state.v88.debugPathing) {
+            clearEnemyPingsV88();
+            return;
+          }
+          const t = nowSecV88();
+          (state.enemies || []).forEach((enemy) => {
+            if (!enemy || enemy.dead || enemy.hp <= 0) return;
+            if (enemyEngagedForPingV88(enemy)) {
+              enemy._v88StillTime = 0;
+              enemy._v88PingUntil = 0;
+              enemy._v88LastX = enemy.x;
+              enemy._v88LastY = enemy.y;
+              return;
+            }
+            const moved = Number.isFinite(enemy._v88LastX) ? distance(enemy.x, enemy.y, enemy._v88LastX, enemy._v88LastY) : 999;
+            enemy._v88LastX = enemy.x;
+            enemy._v88LastY = enemy.y;
+            if (moved < Math.max(0.12, 5.5 * Math.max(0, dt || 0))) enemy._v88StillTime = (enemy._v88StillTime || 0) + Math.max(0, dt || 0);
+            else enemy._v88StillTime = 0;
+            const routedStall = Math.max(enemy._pathingStallTime || 0, enemy._v86StuckTime || 0);
+            if (enemy._v88StillTime > STUCK_PING_SECONDS_V88 || routedStall > 4.6) {
+              enemy._v88PingUntil = Math.max(enemy._v88PingUntil || 0, t + 4.2);
+              if (!state.v88.lastPingLogAt || t - state.v88.lastPingLogAt > 10) {
+                state.v88.lastPingLogAt = t;
+                enemy._v88PingLogged = t;
+                logMessage('A truly stalled enemy has been pinged on the field.', 'bad');
+              }
+            }
+          });
+        }
+
+        function pingTargetRadiusV88(target) {
+          if (!target) return 18;
+          if (Number.isFinite(target.radius)) return target.radius;
+          if (Number.isFinite(target.blockRadius)) return target.blockRadius;
+          if (Number.isFinite(target.w) || Number.isFinite(target.h)) return Math.max(target.w || 0, target.h || 0) * 0.5;
+          return 18;
+        }
+
+        function enemyEngagedForPingV88(enemy) {
+          if (!enemy) return false;
+          const type = ENEMY_TYPES[enemy.type] || {};
+          const radius = enemy.radius || type.radius || 10;
+          if (state.base && distance(enemy.x, enemy.y, state.base.x, state.base.y) <= radius + pingTargetRadiusV88(state.base) + 30) return true;
+          if (state.player && state.player.alive && distance(enemy.x, enemy.y, state.player.x, state.player.y) <= radius + pingTargetRadiusV88(state.player) + 26) return true;
+          const saved = enemy._v85Target;
+          if (saved && saved.kind === 'structure' && saved.ref && saved.ref.hp > 0) {
+            if (distance(enemy.x, enemy.y, saved.ref.x, saved.ref.y) <= radius + pingTargetRadiusV88(saved.ref) + 26) return true;
+          }
+          if (Number.isFinite(type.attackRange) && type.attackRange > 72) {
+            const range = type.attackRange + 30;
+            if (state.player && state.player.alive && distance(enemy.x, enemy.y, state.player.x, state.player.y) <= range) return true;
+            if (state.base && distance(enemy.x, enemy.y, state.base.x, state.base.y) <= range) return true;
+          }
+          return false;
+        }
+
+        function drawEnemyPingsV88() {
+          if (!state || !Array.isArray(state.enemies) || !state.v88 || !state.v88.debugPathing) return;
+          const t = nowSecV88();
+          ctx.save();
+          state.enemies.forEach((enemy) => {
+            if (!enemy || enemy.dead || enemy.hp <= 0 || !enemy._v88PingUntil || t > enemy._v88PingUntil) return;
+            const p = worldToScreen(enemy.x, enemy.y);
+            const onScreen = p.x >= 12 && p.x <= WIDTH - 12 && p.y >= 68 && p.y <= HEIGHT - 12;
+            const pulse = 0.5 + Math.sin(t * 9) * 0.5;
+            if (onScreen) {
+              ctx.strokeStyle = 'rgba(255, 202, 93, ' + (0.62 + pulse * 0.28).toFixed(2) + ')';
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, (enemy.radius || 12) + 18 + pulse * 8, 0, TAU);
+              ctx.stroke();
+              ctx.fillStyle = '#ffd97a';
+              ctx.font = '900 11px Inter, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText('STUCK?', p.x, p.y - (enemy.radius || 12) - 24);
+            } else {
+              const cx = clamp(p.x, 28, WIDTH - 28);
+              const cy = clamp(p.y, 76, HEIGHT - 28);
+              ctx.fillStyle = 'rgba(255, 202, 93, 0.92)';
+              ctx.beginPath();
+              ctx.arc(cx, cy, 12 + pulse * 3, 0, TAU);
+              ctx.fill();
+              ctx.fillStyle = '#160e05';
+              ctx.font = '900 10px Inter, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('!', cx, cy + 0.5);
+            }
+          });
+          ctx.restore();
+        }
+
+        function drawPathingDebugV88() {
+          ensureV88State();
+          if (!state.v88.debugPathing || !isGameScreenV88()) return;
+          const flow = state.runtimeFlow || flowField;
+          const grid = state.map && state.map.gridMeta;
+          if (!flow || !flow.distanceField) return;
+          ctx.save();
+          for (let row = 0; row < flow.rows; row += 1) {
+            for (let col = 0; col < flow.cols; col += 1) {
+              const sx = col * GRID_SIZE - state.camera.x;
+              const sy = row * GRID_SIZE - state.camera.y;
+              if (sx > WIDTH || sy > HEIGHT || sx + GRID_SIZE < 0 || sy + GRID_SIZE < 64) continue;
+              const blocked = !!(flow.blocked && flow.blocked[row] && flow.blocked[row][col]);
+              const buildBlocked = !!(grid && grid.noBuild && grid.noBuild[row] && grid.noBuild[row][col]);
+              const reachable = flow.distanceField[row] && Number.isFinite(flow.distanceField[row][col]);
+              if (blocked) ctx.fillStyle = 'rgba(221, 94, 75, 0.26)';
+              else if (!reachable) ctx.fillStyle = 'rgba(159, 120, 255, 0.24)';
+              else if (buildBlocked) ctx.fillStyle = 'rgba(240, 205, 115, 0.14)';
+              else ctx.fillStyle = 'rgba(121, 201, 140, 0.055)';
+              ctx.fillRect(sx, sy, GRID_SIZE, GRID_SIZE);
+              if (reachable && !blocked && row % 3 === 0 && col % 3 === 0) {
+                ctx.fillStyle = 'rgba(237,242,221,0.38)';
+                ctx.font = '8px Inter, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(String(Math.round(flow.distanceField[row][col])), sx + GRID_SIZE / 2, sy + 12);
+              }
+            }
+          }
+          (state.enemies || []).forEach((enemy) => {
+            if (!enemy || enemy.dead) return;
+            const p = worldToScreen(enemy.x, enemy.y);
+            if (p.x < -40 || p.x > WIDTH + 40 || p.y < 50 || p.y > HEIGHT + 40) return;
+            const routedStall = Math.max(enemy._pathingStallTime || 0, enemy._v86StuckTime || 0);
+            ctx.strokeStyle = routedStall > 1 ? 'rgba(255, 97, 73, 0.95)' : 'rgba(255, 230, 112, 0.82)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, (enemy.radius || 12) + 6, 0, TAU);
+            ctx.stroke();
+          });
+          roundRectPathV88(12, 72, 244, 70, 12);
+          ctx.fillStyle = 'rgba(6, 9, 5, 0.84)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(159,209,255,0.36)';
+          ctx.stroke();
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 12px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText('Pathing debug', 26, 92);
+          ctx.font = '10px Inter, sans-serif';
+          ctx.fillStyle = '#ffb39c';
+          ctx.fillText('red: blocked route', 26, 110);
+          ctx.fillStyle = '#c4a8ff';
+          ctx.fillText('purple: unreachable pocket', 26, 124);
+          ctx.fillStyle = '#f0cd73';
+          ctx.fillText('gold: blocked build cell', 146, 110);
+          ctx.restore();
+        }
+
+        function gameMenuLayoutV88() {
+          const w = 348;
+          const h = 354;
+          const x = WIDTH - w - 18;
+          const y = 62;
+          const rows = [
+            ['resume', 'Resume game', 'Close this menu and continue.'],
+            ['debug', 'Pathing debug: ' + (state.v88 && state.v88.debugPathing ? 'on' : 'off'), 'Show routes, blockers, and unreachable pockets.'],
+            ['save', 'Save browser progression', 'Stores research and records in this browser on this device.'],
+            ['load', 'Load browser progression', 'Loads the saved browser progression into the current run.'],
+            ['audio', 'Audio: ' + (state.audio && state.audio.enabled ? 'on' : 'off'), 'Toggle lightweight feedback sounds.'],
+            ['clear', 'Clear browser progression', 'Tap twice to erase the browser-stored research/records save.']
+          ];
+          return {
+            x, y, w, h,
+            buttons: rows.map((row, index) => ({
+              key: row[0],
+              label: row[1],
+              note: row[2],
+              rect: { x: x + 18, y: y + 58 + index * 44, w: w - 36, h: 36 }
+            }))
+          };
+        }
+
+        function drawGameMenuButtonV88() {
+          if (!isGameScreenV88()) return;
+          ensureV88State();
+          const r = MENU_BUTTON_V88;
+          ctx.save();
+          roundRectPathV88(r.x, r.y, r.w, r.h, 9);
+          ctx.fillStyle = state.v88.menuOpen ? 'rgba(240,205,115,0.95)' : 'rgba(14, 18, 11, 0.94)';
+          ctx.fill();
+          ctx.strokeStyle = state.v88.menuOpen ? 'rgba(255,255,255,0.28)' : 'rgba(131,153,110,0.32)';
+          ctx.stroke();
+          ctx.fillStyle = state.v88.menuOpen ? '#10160d' : '#dfe8ca';
+          ctx.font = '900 15px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('...', r.x + r.w / 2, r.y + r.h / 2 - 1);
+          ctx.restore();
+        }
+
+        function drawGameMenuV88() {
+          ensureV88State();
+          if (!state.v88.menuOpen || !isGameScreenV88()) return;
+          const layout = gameMenuLayoutV88();
+          ctx.save();
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+          ctx.fillRect(0, 64, WIDTH, HEIGHT - 64);
+          roundRectPathV88(layout.x, layout.y, layout.w, layout.h, 16);
+          ctx.fillStyle = 'rgba(13, 18, 10, 0.985)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(159,209,255,0.28)';
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+          ctx.fillStyle = '#edf2dd';
+          ctx.font = '900 19px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(state.phase === 'wave' ? 'Paused' : 'Game menu', layout.x + 18, layout.y + 28);
+          ctx.fillStyle = '#b8c3a3';
+          ctx.font = '12px Inter, sans-serif';
+          ctx.fillText('Diagnostics, save/load, and feedback controls.', layout.x + 18, layout.y + 48);
+          layout.buttons.forEach((button) => {
+            const armedClear = button.key === 'clear' && state.v88.confirmClearUntil > nowSecV88();
+            roundRectPathV88(button.rect.x, button.rect.y, button.rect.w, button.rect.h, 10);
+            ctx.fillStyle = armedClear ? 'rgba(221,114,96,0.88)' : 'rgba(24,33,20,0.96)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(131,153,110,0.28)';
+            ctx.stroke();
+            ctx.fillStyle = armedClear ? '#1a0d0a' : '#edf2dd';
+            ctx.font = '800 13px Inter, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(armedClear ? 'Confirm clear progression' : button.label, button.rect.x + 13, button.rect.y + 15);
+            ctx.fillStyle = armedClear ? '#321711' : '#b8c3a3';
+            ctx.font = '10px Inter, sans-serif';
+            ctx.fillText(button.note, button.rect.x + 13, button.rect.y + 29);
+          });
+          const status = state.v88.progressStatus || 'Browser progression autosaves when research or records change.';
+          ctx.fillStyle = '#9fd1ff';
+          ctx.font = '11px Inter, sans-serif';
+          ctx.fillText(status, layout.x + 18, layout.y + layout.h - 18);
+          ctx.restore();
+        }
+
+        function handleGameMenuActionV88(key) {
+          ensureV88State();
+          if (key === 'resume') return setGameMenuOpenV88(false);
+          if (key === 'debug') {
+            state.v88.debugPathing = !state.v88.debugPathing;
+            if (!state.v88.debugPathing) clearEnemyPingsV88();
+            state.v88.progressStatus = state.v88.debugPathing ? 'Pathing debug overlay enabled.' : 'Pathing debug overlay disabled.';
+            uiDirty = true;
+            return;
+          }
+          if (key === 'save') return saveProgressV88('Browser progression saved from menu.');
+          if (key === 'load') return applyProgressV88(loadStoredProgressV88(), 'Browser progression loaded into this run.');
+          if (key === 'audio') {
+            state.audio.enabled = !state.audio.enabled;
+            state.v88.progressStatus = state.audio.enabled ? 'Audio feedback enabled.' : 'Audio feedback muted.';
+            if (state.audio.enabled) unlockAudio();
+            uiDirty = true;
+            return;
+          }
+          if (key === 'clear') {
+            const t = nowSecV88();
+            if (state.v88.confirmClearUntil > t) return clearProgressV88();
+            state.v88.confirmClearUntil = t + 4;
+            state.v88.progressStatus = 'Tap Clear again to confirm.';
+            uiDirty = true;
+          }
+        }
+
+        function handleGameMenuClickV88(screenX, screenY) {
+          if (!isGameScreenV88()) return false;
+          ensureV88State();
+          if (pointInRectV88(screenX, screenY, MENU_BUTTON_V88)) {
+            toggleGameMenuV88();
+            return true;
+          }
+          if (!state.v88.menuOpen) return false;
+          const layout = gameMenuLayoutV88();
+          for (const button of layout.buttons) {
+            if (pointInRectV88(screenX, screenY, button.rect)) {
+              handleGameMenuActionV88(button.key);
+              return true;
+            }
+          }
+          if (!pointInRectV88(screenX, screenY, layout)) setGameMenuOpenV88(false);
+          return true;
+        }
+
+        const handlePrimaryCanvasClickBaseV88 = handlePrimaryCanvasClick;
+        handlePrimaryCanvasClick = function handlePrimaryCanvasClickV88(event) {
+          updatePointerFromEvent(event);
+          if (handleGameMenuClickV88(pointer.screenX, pointer.screenY)) return true;
+          if (state && state.v88 && state.v88.menuOpen) return true;
+          return handlePrimaryCanvasClickBaseV88.apply(this, arguments);
+        };
+
+        canvas.addEventListener('click', (event) => {
+          if (!isGameScreenV88()) return;
+          updatePointerFromEvent(event);
+          if (!handleGameMenuClickV88(pointer.screenX, pointer.screenY)) return;
+          consumeEventV88(event);
+        }, true);
+
+        window.addEventListener('keydown', (event) => {
+          if (!isGameScreenV88()) return;
+          if (event.key === 'Escape' && state.v88 && state.v88.menuOpen) {
+            setGameMenuOpenV88(false);
+            consumeEventV88(event);
+          }
+        }, true);
+
+        const handleMenuSelectionBaseV88 = handleMenuSelection;
+        handleMenuSelection = function handleMenuSelectionV88(option) {
+          if (state && state.menu && state.menu.kind === 'build' && option && option.disabled) {
+            const check = inspectPlacementV88(option.key, state.menu.anchorX, state.menu.anchorY);
+            const reason = placementReasonV88(option, check);
+            if (!reason) return handleMenuSelectionBaseV88.apply(this, arguments);
+            setPlacementNoticeV88(reason, option.key, state.menu.anchorX, state.menu.anchorY);
+            logMessage(reason, 'bad');
+            return;
+          }
+          return handleMenuSelectionBaseV88.apply(this, arguments);
+        };
+
+        const buildTowerAtBaseV88 = buildTowerAt;
+        buildTowerAt = function buildTowerAtV88(typeKey, x, y) {
+          const option = buildOptionForV88(typeKey, x, y);
+          const check = inspectPlacementV88(typeKey, x, y);
+          if ((option && option.disabled) || !check.ok) {
+            const reason = placementReasonV88(option, check) || 'That placement is blocked.';
+            if (reason) setPlacementNoticeV88(reason, typeKey, x, y);
+          }
+          return buildTowerAtBaseV88.apply(this, arguments);
+        };
+
+        const updateBaseV88 = update;
+        update = function updatePausedAwareV88(dt) {
+          ensureV88State();
+          if (state.v88.menuOpen && state.phase === 'wave') {
+            state.v88.paused = true;
+            syncPointerWorld();
+            uiDirty = true;
+            return;
+          }
+          if (state.v88.menuOpen && !isGameScreenV88()) {
+            state.v88.menuOpen = false;
+            state.v88.paused = false;
+          }
+          state.v88.paused = false;
+          return updateBaseV88.apply(this, arguments);
+        };
+
+        if (typeof beginRunFromMapSelect === 'function') {
+          const beginRunFromMapSelectBaseV88 = beginRunFromMapSelect;
+          beginRunFromMapSelect = function beginRunFromMapSelectV88() {
+            const result = beginRunFromMapSelectBaseV88.apply(this, arguments);
+            ensureV88State();
+            applyProgressV88(loadStoredProgressV88(), 'Browser progression loaded.');
+            state.v88.progressStatus = state.v88.progressStatus || 'Browser progression ready.';
+            return result;
+          };
+        }
+
+        registerHotPathHookV77('update', 'v88-diagnostics-and-save', {
+          post: function updateV88Post(dt) {
+            ensureV88State();
+            updateEnemyPingStateV88(dt);
+            liveStructuresV88().forEach((item) => {
+              item._v88DamageFlash = Math.max(0, (item._v88DamageFlash || 0) - Math.max(0, dt || 0) * 2.2);
+            });
+            const sig = progressSignatureV88();
+            if (sig !== state.v88.lastProgressSignature && nowSecV88() > (state.v88.nextAutoSaveAt || 0)) {
+              state.v88.lastProgressSignature = sig;
+              state.v88.nextAutoSaveAt = nowSecV88() + 4;
+              saveProgressV88('Browser progression autosaved.');
+            }
+          }
+        });
+
+        registerHotPathHookV77('draw', 'v88-debug-menu-and-feedback', {
+          post: function drawV88Post() {
+            ensureV88State();
+            drawPathingDebugV88();
+            drawEnemyPingsV88();
+            drawStructureHealthOverlaysV88();
+            const liveIssue = getCurrentPlacementIssueV88();
+            const notice = state.v88.placementNotice;
+            if (notice && state.menu && state.menu.kind === 'build' && !samePlacementIssueV88(notice, liveIssue)) {
+              state.v88.placementNotice = null;
+            }
+            const activeNotice = state.v88.placementNotice;
+            if (activeNotice && nowSecV88() < activeNotice.until) drawPlacementIssueV88(activeNotice);
+            else if (activeNotice) state.v88.placementNotice = null;
+            if (!state.v88.placementNotice) drawPlacementIssueV88(liveIssue);
+            drawGameMenuButtonV88();
+            drawGameMenuV88();
+          }
+        });
+
+        registerHotPathHookV77('launchWave', 'v88-wave-sound-and-records', {
+          post: function launchWaveV88Post() {
+            ensureV88State();
+            updateDifficultyRecordV88();
+            playSfx('wave');
+            saveProgressV88('Wave record saved.');
+          }
+        });
+
+        registerHotPathHookV77('finishWave', 'v88-repair-sound-and-records', {
+          post: function finishWaveV88Post() {
+            ensureV88State();
+            updateDifficultyRecordV88();
+            const repaired = (state.raidSummary && (state.raidSummary.defenseRepair || state.raidSummary.baseHeal)) || (state.lastTownProductionReport && state.lastTownProductionReport.defenseRepair) || 0;
+            if (repaired > 0) playSfx('repair');
+            saveProgressV88('Wave progress saved.');
+          }
+        });
+
+        registerHotPathHookV77('resetGame', 'v88-reset-state', {
+          post: function resetGameV88Post() {
+            ensureV88State();
+            state.v88.menuOpen = false;
+            state.v88.paused = false;
+            state.v88.placementNotice = null;
+            applyProgressV88(loadStoredProgressV88(), 'Browser progression loaded.');
+          }
+        });
+
+        ensureV88State();
+        applyProgressV88(loadStoredProgressV88(), 'Browser progression loaded.');
+
+        window.__mountedVillageDefenseV88 = {
+          applied: true,
+          saveProgress: saveProgressV88,
+          loadProgress: () => applyProgressV88(loadStoredProgressV88(), 'Browser progression loaded into this run.'),
+          inspectPlacement: inspectPlacementV88,
+          note: 'Gameplay menu, pause, pathing overlay, progression save/load, placement reasons, stuck pings, structure HP flashes, and expanded audio feedback.'
+        };
+      })();
+
+      (function applyUnifiedPathingV89() {
+        if (window.__mountedVillageDefenseV89 && window.__mountedVillageDefenseV89.applied) return;
+        if (!window.__TD_USE_UNIFIED_PATHING || !window.TowerDefensePathing || typeof window.TowerDefensePathing.createRouter !== 'function') return;
+        const routingBridgeV89 = window.__mountedVillageDefenseRoutingBridge || null;
+        if (!CORE_RUNTIME_V6 || !CORE_RUNTIME_V6.rebuildRuntimeMap || !CORE_RUNTIME_V6.isOpenPosition || !CORE_RUNTIME_V6.moveEntityWithTileSlide || !routingBridgeV89) return;
+
+        const router = window.TowerDefensePathing.createRouter({
+          getState: () => state,
+          gridSize: GRID_SIZE,
+          worldWidth: WORLD_WIDTH,
+          worldHeight: WORLD_HEIGHT,
+          clamp,
+          distance,
+          normalize,
+          getGridCellAtWorld,
+          getGridCellCenter,
+          isOpenPosition: (x, y, radius, opts = {}) => CORE_RUNTIME_V6.isOpenPosition(x, y, radius, opts),
+          searchNearestOpenPosition: routingBridgeV89.searchNearestOpenPosition || null,
+          moveEntityWithTileSlide: CORE_RUNTIME_V6.moveEntityWithTileSlide
+        });
+
+        const rebuildRuntimeMapBaseV89 = CORE_RUNTIME_V6.rebuildRuntimeMap;
+        CORE_RUNTIME_V6.rebuildRuntimeMap = function rebuildRuntimeMapV89(force = false) {
+          const result = rebuildRuntimeMapBaseV89.apply(this, arguments);
+          router.invalidate('runtime-map');
+          return result;
+        };
+
+        const clearEnemyRouteBaseV89 = routingBridgeV89.clearEnemyRoute || null;
+        routingBridgeV89.clearEnemyRoute = function clearEnemyRouteV89(enemy) {
+          router.clearRouteState(enemy);
+          if (clearEnemyRouteBaseV89) clearEnemyRouteBaseV89.apply(this, arguments);
+        };
+
+        routingBridgeV89.getPathDistanceValue = function getPathDistanceValueV89(x, y, radius = 10) {
+          return router.getDistanceValue(x, y, radius);
+        };
+
+        routingBridgeV89.getFlowDirection = function getFlowDirectionV89(x, y) {
+          return router.getFlowDirection(x, y, 10, false);
+        };
+
+        routingBridgeV89.moveEnemyPlanned = function moveEnemyPlannedV89(enemy, tx, ty, dt, speedFactor = 1, opts = {}) {
+          if (!enemy) return false;
+          return router.moveEnemy(enemy, tx, ty, dt, speedFactor, {
+            goalRadiusCells: opts.goalRadiusCells == null ? 1 : opts.goalRadiusCells,
+            routeMode: opts.routeMode || 'move',
+            repathTime: Math.min(Math.max(opts.repathTime || 0.38, 0.24), 0.8)
+          });
+        };
+
+        routingBridgeV89.moveFriendlyPlanned = function moveFriendlyPlannedV89(unit, tx, ty, dt, speedCap = 228, opts = {}) {
+          if (!unit) return false;
+          return router.moveFriendly(unit, tx, ty, dt, speedCap, {
+            goalRadiusCells: opts.goalRadiusCells == null ? 0 : opts.goalRadiusCells,
+            routeMode: opts.routeMode || 'friendly',
+            repathTime: Math.min(Math.max(opts.repathTime || 0.34, 0.2), 0.75)
+          });
+        };
+
+        routingBridgeV89.moveEnemyAwayPlanned = function moveEnemyAwayPlannedV89(enemy, fromX, fromY, dt, speedFactor = 1, retreatDistance = 84) {
+          if (!enemy) return false;
+          return router.moveEnemyAway(enemy, fromX, fromY, dt, speedFactor, retreatDistance, {
+            routeMode: 'retreat',
+            repathTime: 0.28
+          });
+        };
+
+        registerHotPathHookV77('launchWave', 'v89-pathing-wave-reset', {
+          pre: function launchWaveV89Pre() {
+            router.invalidate('wave-launch');
+            (state.enemies || []).forEach((enemy) => router.clearRouteState(enemy));
+            (state.supportUnits || []).forEach((unit) => router.clearRouteState(unit));
+          }
+        });
+
+        registerHotPathHookV77('resetGame', 'v89-pathing-reset', {
+          post: function resetGameV89Post() {
+            router.invalidate('reset');
+          }
+        });
+
+        if (state) router.invalidate('install');
+
+        window.__mountedVillageDefenseV89 = {
+          applied: true,
+          router,
+          note: 'Unified A* pathing replaces the stacked v43/v68/v86 movement wrappers and clearance hacks.'
+        };
+      })();
+
+      (function applyKnightBuildingExpelV90() {
+        if (window.__mountedVillageDefenseV90 && window.__mountedVillageDefenseV90.applied) return;
+
+        function rectContainsKnightBufferV90(rect, player, extra = 2) {
+          if (!rect || !player) return false;
+          const pad = Math.max(0, (player.radius || 0) + extra);
+          return player.x + pad > rect.x
+            && player.x - pad < rect.x + rect.w
+            && player.y + pad > rect.y
+            && player.y - pad < rect.y + rect.h;
+        }
+
+        function circleContainsKnightBufferV90(target, player, extra = 2) {
+          if (!target || !player || !Number.isFinite(target.x) || !Number.isFinite(target.y)) return false;
+          const blockRadius = Number.isFinite(target.blockRadius) ? target.blockRadius : target.radius;
+          if (!Number.isFinite(blockRadius)) return false;
+          return distance(player.x, player.y, target.x, target.y) <= blockRadius + (player.radius || 0) + extra;
+        }
+
+        function collectKnightBlockersV90() {
+          const blockers = [];
+          if (state && state.base && state.base.radius > 0) {
+            blockers.push({ label: 'town', circle: state.base });
+          }
+          if (state && state.university && state.university.hp > 0 && typeof universityRectV65 === 'function') {
+            blockers.push({ label: 'university', rect: universityRectV65(state.university), circle: state.university });
+          }
+          for (const house of (state.houses || [])) {
+            if (!house || house.hp <= 0 || typeof syncHouseGeometryV66 !== 'function') continue;
+            blockers.push({ label: 'house', rect: syncHouseGeometryV66(house), circle: house });
+          }
+          if (typeof window.liveSupportBuildingsV69 === 'function' && typeof syncSupportBuildingGeometryV69 === 'function') {
+            for (const building of window.liveSupportBuildingsV69()) {
+              if (!building || building.hp <= 0) continue;
+              blockers.push({ label: building.kind === 'archeryRange' ? 'archery range' : (building.kind || 'building'), rect: syncSupportBuildingGeometryV69(building), circle: building });
+            }
+          }
+          return blockers;
+        }
+
+        function findKnightBuildingOverlapV90(player) {
+          if (!player || !player.alive) return null;
+          const blockers = collectKnightBlockersV90();
+          for (const blocker of blockers) {
+            if (blocker.rect && rectContainsKnightBufferV90(blocker.rect, player)) return blocker;
+            if (blocker.circle && circleContainsKnightBufferV90(blocker.circle, player)) return blocker;
+          }
+          return null;
+        }
+
+        function ejectKnightFromBuildingsV90(reason = 'building', opts = {}) {
+          if (!state || !state.player || !state.player.alive) return false;
+          const player = state.player;
+          const overlap = findKnightBuildingOverlapV90(player);
+          if (!overlap) return false;
+          let safe = typeof searchNearestOpenPosition === 'function'
+            ? searchNearestOpenPosition(player.x, player.y, player.radius, { friendly: true, mode: 'unit' })
+            : null;
+          if (!safe && overlap.rect && typeof searchNearestOpenPosition === 'function') {
+            const samplePoints = [
+              { x: overlap.rect.x + overlap.rect.w * 0.5, y: overlap.rect.y - player.radius - 18 },
+              { x: overlap.rect.x + overlap.rect.w + player.radius + 18, y: overlap.rect.y + overlap.rect.h * 0.5 },
+              { x: overlap.rect.x + overlap.rect.w * 0.5, y: overlap.rect.y + overlap.rect.h + player.radius + 18 },
+              { x: overlap.rect.x - player.radius - 18, y: overlap.rect.y + overlap.rect.h * 0.5 }
+            ];
+            for (const point of samplePoints) {
+              safe = searchNearestOpenPosition(point.x, point.y, player.radius, { friendly: true, mode: 'unit' });
+              if (safe) break;
+            }
+          }
+          if (!safe && state.base && typeof searchNearestOpenPosition === 'function') {
+            safe = searchNearestOpenPosition(
+              state.base.x,
+              state.base.y + Math.max((state.base.radius || 0) + player.radius + 20, 84),
+              player.radius,
+              { friendly: true, mode: 'unit' }
+            );
+          }
+          if (!safe) return false;
+          player.x = safe.x;
+          player.y = safe.y;
+          player.vx = 0;
+          player.vy = 0;
+          player.kbX = 0;
+          player.kbY = 0;
+          player._lastValidX = player.x;
+          player._lastValidY = player.y;
+          if (!opts.silent) {
+            createRing(player.x, player.y, 'rgba(159,209,255,0.42)', 7, 28, 0.2, 2);
+            logMessage('The knight is pushed clear of the ' + (reason || overlap.label || 'building') + '.', 'good');
+          }
+          return true;
+        }
+
+        const updatePlayerBaseV90 = updatePlayer;
+        updatePlayer = function updatePlayerV90(dt) {
+          const result = updatePlayerBaseV90.apply(this, arguments);
+          if (state && state.player && state.player.alive) ejectKnightFromBuildingsV90('', { silent: true });
+          return result;
+        };
+
+        if (typeof buildHouseAtV66 === 'function') {
+          const buildHouseAtBaseV90 = buildHouseAtV66;
+          buildHouseAtV66 = function buildHouseAtV90(x, y) {
+            const result = buildHouseAtBaseV90.apply(this, arguments);
+            if (state && state.player && state.player.alive) ejectKnightFromBuildingsV90('new house');
+            return result;
+          };
+        }
+
+        if (typeof buildSupportBuildingAtV69 === 'function') {
+          const buildSupportBuildingBaseV90 = buildSupportBuildingAtV69;
+          buildSupportBuildingAtV69 = function buildSupportBuildingAtV90(key, x, y) {
+            const result = buildSupportBuildingBaseV90.apply(this, arguments);
+            if (state && state.player && state.player.alive) {
+              const label = key === 'archeryRange' ? 'new archery range' : key === 'stables' ? 'new stables' : 'new building';
+              ejectKnightFromBuildingsV90(label);
+            }
+            return result;
+          };
+        }
+
+        if (typeof buildUniversityAtV65 === 'function') {
+          const buildUniversityAtBaseV90 = buildUniversityAtV65;
+          buildUniversityAtV65 = function buildUniversityAtV90(x, y) {
+            const result = buildUniversityAtBaseV90.apply(this, arguments);
+            if (state && state.player && state.player.alive) ejectKnightFromBuildingsV90('new university');
+            return result;
+          };
+        }
+
+        if (typeof placeTownAt === 'function') {
+          const placeTownAtBaseV90 = placeTownAt;
+          placeTownAt = function placeTownAtV90(x, y) {
+            const result = placeTownAtBaseV90.apply(this, arguments);
+            if (result && state && state.player && state.player.alive) ejectKnightFromBuildingsV90('new town');
+            return result;
+          };
+          if (typeof registerTownPlacementAction === 'function') registerTownPlacementAction(placeTownAt);
+        }
+
+        window.__mountedVillageDefenseV90 = {
+          applied: true,
+          ejectKnightFromBuildings: ejectKnightFromBuildingsV90,
+          note: 'Knight is pushed out of building blocker radius both after construction and during normal updates.'
+        };
+      })();
+
       function collectMountedVillageDefenseModulesV79() {
         const keys = [
           '__mountedVillageDefenseV13',
@@ -26215,7 +27515,10 @@ function handleTownClick(screenX, screenY) {
           '__mountedVillageDefenseV84',
           '__mountedVillageDefenseV85',
           '__mountedVillageDefenseV86',
-          '__mountedVillageDefenseV87'
+          '__mountedVillageDefenseV87',
+          '__mountedVillageDefenseV88',
+          '__mountedVillageDefenseV89',
+          '__mountedVillageDefenseV90'
         ];
         const modules = {};
         keys.forEach((key) => {
@@ -26285,6 +27588,9 @@ function handleTownClick(screenX, screenY) {
         const mapLabel = MAP_THEME_CONFIG_V22[selectedMapKeyV22].label;
         createBanner(`${mapLabel} selected · ${getDifficulty().label}`, getDifficulty().tint);
         logMessage(`${mapLabel} selected. Run begins on ${getDifficulty().label.toLowerCase()} difficulty.`, 'good');
+        if (window.__mountedVillageDefenseV88 && typeof window.__mountedVillageDefenseV88.loadProgress === 'function') {
+          window.__mountedVillageDefenseV88.loadProgress();
+        }
         uiDirty = true;
       }
 
