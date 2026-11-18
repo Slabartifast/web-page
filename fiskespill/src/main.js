@@ -236,6 +236,12 @@
       ctx.stroke();
     });
 
+    ctx.beginPath();
+    map.waterBodies.forEach((body) => {
+      if (body.type === "rect") ctx.rect(body.x, body.y, body.w, body.h);
+      else ctx.ellipse(body.x, body.y, body.rx, body.ry, 0, 0, Math.PI * 2);
+    });
+    ctx.clip();
     ctx.globalAlpha = 0.14;
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
@@ -451,9 +457,11 @@
     App.ensurePlayerOnValidGround(state);
 
     if (map && state.phase === "day") {
-      App.updatePlayer(state, game.input, deltaSeconds);
-      App.handleFishingInput(state, map, game.input);
-      App.updateFishing(state, game.input, deltaSeconds, map);
+      if (!state.pendingCatch) {
+        App.updatePlayer(state, game.input, deltaSeconds);
+        App.handleFishingInput(state, map, game.input);
+        App.updateFishing(state, game.input, deltaSeconds, map);
+      }
     } else if (game.input.virtualJoystick.active) {
       game.input.virtualJoystick.active = false;
       game.input.virtualJoystick.pointerId = null;
@@ -575,6 +583,12 @@
         }
         App.renderUI(game);
       },
+      resolveCatch(action, replaceId) {
+        if (App.resolvePendingCatch(game.state, action, replaceId)) {
+          App.saveGame(game.state, true);
+          App.renderUI(game);
+        }
+      },
       togglePanel(panelId) {
         if (game.state.phase !== "day") {
           return;
@@ -615,3 +629,4 @@
     window.requestAnimationFrame((timeMs) => frame(timeMs, game));
   });
 })();
+
