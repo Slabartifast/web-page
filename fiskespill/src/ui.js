@@ -9,6 +9,11 @@
     const refs = {
       moneyValue: byId("moneyValue"),
       caughtValue: byId("caughtValue"),
+      catchOverlay: byId("catchOverlay"),
+      catchTitle: byId("catchTitle"),
+      catchDetails: byId("catchDetails"),
+      catchBagStatus: byId("catchBagStatus"),
+      catchActions: byId("catchActions"),
       rodValue: byId("rodValue"),
       baitValue: byId("baitValue"),
       demandValue: byId("demandValue"),
@@ -45,6 +50,8 @@
       actionMeterValue: byId("actionMeterValue"),
       actionMeterFill: byId("actionMeterFill"),
       minigameTrack: byId("minigameTrack"),
+      tensionWrap: byId("tensionWrap"),
+      tensionFill: byId("tensionFill"),
       targetZone: byId("targetZone"),
       marker: byId("marker"),
       touchControls: byId("touchControls"),
@@ -62,6 +69,10 @@
     refs.nextDayButton.addEventListener("click", () => game.actions.nextDay());
     refs.endDayButton.addEventListener("click", () => game.actions.endDay());
     refs.toggleLogButton.addEventListener("click", () => game.actions.toggleLog());
+    refs.catchActions.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-catch-action]");
+      if (button) game.actions.resolveCatch(button.dataset.catchAction, button.dataset.replaceId);
+    });
     refs.navButtons.forEach((button) => {
       button.addEventListener("click", () => game.actions.togglePanel(button.dataset.panel));
     });
@@ -191,10 +202,11 @@
       return [
         `Sjansen for sjeldne arter øker med ${formatPercent(item.rareBonus)}.`,
         `Fartsbonus: ${item.speedBonus}.`,
-        item.cargoBonus ? `Plass til ${item.cargoBonus} ekstra historier om storfangst.` : "Ingen ekstra sjøbein ennå.",
+        item.cargoBonus ? `${item.cargoBonus} ekstra fisk i bagen.` : "Ingen ekstra bagplass.",
         item.note,
       ];
     }
+    if (type === "bag") return [`Kapasitet: ${item.capacity} fisk.`, item.note];
     if (type === "restaurant") {
       return [
         `Kveldsprisen på fisk ganges med ${item.saleMultiplier.toFixed(2)}.`,
@@ -278,6 +290,8 @@
     const lineNext = App.getLineData(state.equipment.lineLevel + 1);
     const boatCurrent = App.getBoatData(state.equipment.boatLevel);
     const boatNext = App.getBoatData(state.equipment.boatLevel + 1);
+    const bagCurrent = App.getBagData(state.equipment.bagLevel);
+    const bagNext = App.BAGS.find((item) => item.level === state.equipment.bagLevel + 1);
     const restaurantCurrent = App.getRestaurantData(state.equipment.restaurantLevel);
     const restaurantNext = App.getRestaurantData(state.equipment.restaurantLevel + 1);
 
@@ -286,6 +300,7 @@
       ${renderUpgradeCard("Snelle", reelCurrent, reelNext, "reel")}
       ${renderUpgradeCard("Snøre", lineCurrent, lineNext, "line")}
       ${renderUpgradeCard("Båt", boatCurrent, boatNext, "boat")}
+      ${renderUpgradeCard("Fiskebag", bagCurrent, bagNext, "bag")}
       ${renderUpgradeCard("Restaurant", restaurantCurrent, restaurantNext, "restaurant")}
       ${renderBaitCards(game)}
     `;
@@ -453,7 +468,20 @@
     const phase = state.phase;
 
     refs.moneyValue.textContent = App.utils.formatKr(state.money);
-    refs.caughtValue.textContent = String(state.dayStats.caughtCount);
+    refs.caughtValue.textContent = `${state.dayStats.caughtCount} / ${state.inventory.length} av ${App.getBagCapacity(state)}`;
+    refs.catchOverlay.classList.toggle("hidden", phase !== "day" || !state.pendingCatch);
+    if (state.pendingCatch) {
+      const fish = state.pendingCatch;
+      const capacity = App.getBagCapacity(state);
+      const full = state.inventory.length >= capacity;
+      refs.catchTitle.textContent = fish.name;
+      refs.catchDetails.textContent = `${fish.weightKg.toFixed(1)} kg · ${fish.qualityLabel} · ca. ${fish.baseSaleValue} kr`;
+      refs.catchBagStatus.textContent = `Fiskebag: ${state.inventory.length}/${capacity}${full ? " — full!" : ""}`;
+      refs.catchActions.innerHTML = `
+        <button class="secondary-button" type="button" data-catch-action="release">Slipp ut</button>
+        ${full ? state.inventory.map((entry) => `<button class="primary-button" type="button" data-catch-action="replace" data-replace-id="${entry.id}">Bytt ut ${entry.name} (${entry.weightKg.toFixed(1)} kg)</button>`).join("") : '<button class="primary-button" type="button" data-catch-action="keep">Behold</button>'}
+      `;
+    }
     refs.rodValue.textContent = App.getRodData(state.equipment.rodLevel).name;
     refs.baitValue.textContent = activeBait.name;
     refs.demandValue.textContent = demandFish ? demandFish.name : "Ingen";
@@ -508,12 +536,14 @@
       panel.classList.toggle("active", panel.id === `panel-${activePanel}`);
     });
 
-    refs.endDayButton.disabled = phase !== "day";
+    refs.endDayButton.disabled = phase !== "day" || !!state.pendingCatch;
     refs.touchControls.classList.toggle("hidden", phase !== "day");
     refs.logDock.classList.toggle("hidden", phase !== "day");
 
     refs.fishingHud.classList.toggle("hidden", phase !== "day" || fishing.mode === "idle");
     refs.minigameTrack.classList.toggle("hidden", fishing.mode !== "reeling");
+    refs.tensionWrap.classList.toggle("hidden", fishing.mode !== "reeling");
+    refs.tensionFill.style.width = `${Math.round(fishing.tension * 100)}%`;
 
     const showMeter = ["charging", "casting", "reeling"].includes(fishing.mode);
     refs.actionMeterWrap.classList.toggle("hidden", !showMeter);
@@ -544,3 +574,4 @@
       fishing.mode === "bite" ? "Napp!" : fishing.mode === "reeling" ? "Sveiv" : "Kast";
   };
 })();
+
