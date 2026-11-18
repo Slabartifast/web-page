@@ -90,6 +90,7 @@ canvas {
 
 .top-banner,
 .phase-overlay,
+.catch-overlay,
 .panel-drawer,
 .fishing-hud,
 .touch-controls,
@@ -155,6 +156,32 @@ canvas {
 .hidden {
   display: none !important;
 }
+
+.catch-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(16, 33, 40, 0.56);
+  backdrop-filter: blur(4px);
+}
+
+.catch-card {
+  width: min(92%, 430px);
+  max-height: 85%;
+  overflow: auto;
+  padding: 24px;
+  border-radius: 24px;
+  background: #fffaf0;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.catch-card h2 { margin: 6px 0; font-size: 2rem; }
+.catch-card p { margin: 8px 0; }
+.catch-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
 
 .phase-card {
   width: min(92%, 880px);
@@ -455,6 +482,9 @@ canvas {
   background: linear-gradient(90deg, #de9f46 0%, #efc86e 100%);
 }
 
+#tensionFill { height: 100%; width: 0%; background: linear-gradient(90deg, #edb35b, #c95a4b); }
+.tension-wrap { font-size: 0.72rem; }
+
 .quest-progress > div {
   background: linear-gradient(90deg, #5d9f64 0%, #7cc582 100%);
 }
@@ -698,3 +728,4 @@ canvas {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
