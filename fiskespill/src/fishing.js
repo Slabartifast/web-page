@@ -31,9 +31,9 @@
       .filter(Boolean);
   }
 
-  function buildCatch(state, map, reactionScore, reelScore, castStrength) {
+  function buildCatch(state, map, reactionScore, reelScore, castStrength, hookedFishId) {
     const choices = getEligibleFish(state, map);
-    const picked = weightedPick(choices, (entry) => entry.weight);
+    const picked = choices.find((entry) => entry.fish.id === hookedFishId);
     if (!picked) {
       return null;
     }
@@ -141,8 +141,10 @@
       0.54
     );
     fishing.targetVelocity = 0.075 + difficulty * 0.032;
-    fishing.message = "Fisken er på kroken.";
-    fishing.hint = "Hold inne for høyre, slipp for venstre. Hold markøren i grønt.";
+    fishing.tension = 0.18;
+    fishing.burstTimer = 0;
+    fishing.message = `${preview ? preview.fish.name : "Fisk"} på kroken!`;
+    fishing.hint = "Hold space: høyre. Slipp: venstre. Følg grønt felt.";
   }
 
   App.handleFishingInput = function handleFishingInput(state, map, input) {
@@ -174,8 +176,8 @@
       if (input.interactHeld) {
         fishing.charge = clamp(fishing.charge + deltaSeconds * chargeSpeed, 0, 1);
         fishing.castPower = fishing.charge;
-        fishing.message = `Kastestyrke ${Math.round(fishing.castPower * 100)}%.`;
-        fishing.hint = "Bedre stang og ferdighet gir lengre kast.";
+        fishing.message = `Kast ${Math.round(fishing.castPower * 100)}%`;
+        fishing.hint = "Slipp space for å kaste.";
       }
       if (input.interactReleased || fishing.charge >= 1) {
         const castContext = App.getCastContext(state, map, fishing.castPower);
@@ -189,14 +191,13 @@
         fishing.castStrength = fishing.castPower;
         fishing.castPoint = castContext.castPoint;
         fishing.message = "Snøret flyr ut.";
-        fishing.hint = "Sånn ja. Nå venter vi.";
+        fishing.hint = "Vent på napp.";
       }
       return;
     }
 
-    fishing.timer += deltaSeconds;
-
     if (fishing.mode === "casting") {
+      fishing.timer += deltaSeconds;
       if (fishing.timer >= 0.35) {
         const instincts = App.getSkillLevel(state, "instincts");
         fishing.mode = "waiting";
@@ -207,12 +208,13 @@
           7.8
         );
         fishing.message = "Snøret ligger ute.";
-        fishing.hint = "Vent rolig. Nappet kommer når det passer fisken.";
+        fishing.hint = "Vent på napp.";
       }
       return;
     }
 
     if (fishing.mode === "waiting") {
+      fishing.timer += deltaSeconds;
       if (fishing.timer >= fishing.waitTime) {
         const instincts = App.getSkillLevel(state, "instincts");
         fishing.mode = "bite";
@@ -220,7 +222,7 @@
         fishing.timer = fishing.biteWindow;
         fishing.exclamationTimer = fishing.biteWindow;
         fishing.message = "Napp!";
-        fishing.hint = "Trykk raskt mens utropstegnet er oppe.";
+        fishing.hint = "Trykk på space!";
       }
       return;
     }
@@ -229,7 +231,7 @@
       fishing.timer -= deltaSeconds;
       if (fishing.timer <= 0) {
         state.fishing = App.createEmptyFishingState();
-        App.addMessage(state, "Fisken tok en titt, lo litt og svømte videre.");
+        App.addMessage(state, "For sent! Fisken slapp unna.");
       }
       return;
     }
@@ -240,10 +242,12 @@
       const reelingSkill = App.getSkillLevel(state, "reeling");
       fishing.elapsed += deltaSeconds;
 
-      if (Math.random() < 0.005 + map.difficulty * 0.0015) {
+      if (Math.random() < (0.28 + map.difficulty * 0.08) * deltaSeconds) {
         fishing.targetVelocity *= -1;
+        fishing.burstTimer = 0.55 + Math.random() * 0.5;
       }
-      fishing.targetCenter += fishing.targetVelocity * deltaSeconds;
+      fishing.burstTimer = Math.max(0, fishing.burstTimer - deltaSeconds);
+      fishing.targetCenter += fishing.targetVelocity * (fishing.burstTimer > 0 ? 1.9 : 1) * deltaSeconds;
       if (
         fishing.targetCenter < fishing.targetWidth / 2 ||
         fishing.targetCenter > 1 - fishing.targetWidth / 2
@@ -258,16 +262,18 @@
 
       const push = input.interactHeld ? 2.15 + reelData.controlBonus * 1.8 : -1.55;
       fishing.markerVelocity += push * deltaSeconds;
-      fishing.markerVelocity *= 0.89;
+      fishing.markerVelocity *= Math.exp(-7 * deltaSeconds);
       fishing.marker = clamp(fishing.marker + fishing.markerVelocity * deltaSeconds, 0, 1);
 
       const inTarget =
         Math.abs(fishing.marker - fishing.targetCenter) <= fishing.targetWidth / 2;
       if (inTarget) {
+        fishing.tension = Math.max(0, fishing.tension - 0.28 * deltaSeconds);
         fishing.progress +=
           (0.31 + rodData.easeBonus * 0.22 + reelData.controlBonus * 0.22 + reelingSkill * 0.027) *
           deltaSeconds;
       } else {
+        fishing.tension = Math.min(1, fishing.tension + (input.interactHeld ? 0.21 : 0.09) * deltaSeconds);
         fishing.progress -= clamp(
           0.135 - reelData.controlBonus * 0.04 - reelingSkill * 0.012,
           0.05,
@@ -275,6 +281,12 @@
         ) * deltaSeconds;
       }
       fishing.progress = clamp(fishing.progress, 0, 1);
+      fishing.message = fishing.tension > 0.72 ? "Snøret er stramt! Slipp space." : "Sveiv inn fisken";
+      if (fishing.tension >= 1) {
+        state.fishing = App.createEmptyFishingState();
+        App.addMessage(state, "Snøret røyk. Slipp opp når det strammer seg!");
+        return;
+      }
 
       if (fishing.progress >= 1) {
         const reelScore = clamp(0.72 + (1 - fishing.elapsed / 20) * 0.18, 0.55, 1);
@@ -283,14 +295,15 @@
           map,
           fishing.reactionScore,
           reelScore,
-          fishing.castStrength
+          fishing.castStrength,
+          fishing.hookedFishId
         );
         state.fishing = App.createEmptyFishingState();
         if (!catchData) {
           App.addMessage(state, "Det ble bare rusk på kroken denne gangen.");
           return;
         }
-        state.inventory.push(catchData);
+        state.pendingCatch = catchData;
         state.dayStats.caughtCount += 1;
         state.dayStats.catches.unshift(catchData);
         state.dayStats.catches = state.dayStats.catches.slice(0, 8);
@@ -304,10 +317,7 @@
           Math.round(10 + catchData.weightKg * 2 + catchData.qualityMultiplier * 5),
           `Du fikk ${catchData.name}`
         );
-        App.addMessage(
-          state,
-          `${catchData.name} på ${catchData.weightKg.toFixed(1)} kg (${catchData.qualityLabel}) havnet i kassen.`
-        );
+        App.addMessage(state, `${catchData.name}, ${catchData.weightKg.toFixed(1)} kg!`);
         App.syncQuests(state);
         return;
       }
@@ -318,4 +328,24 @@
       }
     }
   };
+
+  App.resolvePendingCatch = function resolvePendingCatch(state, action, replaceId) {
+    const catchData = state.pendingCatch;
+    if (!catchData || state.phase !== "day") return false;
+    if (action === "release") {
+      App.addMessage(state, `${catchData.name} svømte videre.`);
+    } else if (action === "keep") {
+      if (state.inventory.length >= App.getBagCapacity(state)) return false;
+      state.inventory.push(catchData);
+      App.addMessage(state, `${catchData.name} i bagen.`);
+    } else if (action === "replace") {
+      const index = state.inventory.findIndex((fish) => fish.id === replaceId);
+      if (index < 0) return false;
+      const released = state.inventory.splice(index, 1, catchData)[0];
+      App.addMessage(state, `${catchData.name} inn, ${released.name} ut.`);
+    } else return false;
+    state.pendingCatch = null;
+    return true;
+  };
 })();
+
