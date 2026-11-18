@@ -69,6 +69,13 @@
     { level: 2, name: "Påhengsmotor", cost: 6200, rareBonus: 0.22, speedBonus: 34, cargoBonus: 5, note: "Mer rekkevidde, mer fart og mer nabomisunnelse." },
   ];
 
+  App.BAGS = [
+    { level: 1, name: "Liten fiskebag", cost: 0, capacity: 3, note: "Plass til 3 fisk." },
+    { level: 2, name: "Romslig fiskebag", cost: 300, capacity: 5, note: "Plass til 5 fisk." },
+    { level: 3, name: "Stor fiskebag", cost: 850, capacity: 8, note: "Plass til 8 fisk." },
+    { level: 4, name: "Kjølekasse", cost: 1900, capacity: 12, note: "Plass til 12 fisk." },
+  ];
+
   App.RESTAURANT_UPGRADES = [
     { level: 1, name: "Liten takeaway", cost: 0, saleMultiplier: 1.0, note: "En stekepanne, en kurv og stor selvtillit." },
     { level: 2, name: "Bedre frityr", cost: 420, saleMultiplier: 1.08, note: "Mindre søl, mer margin og færre triste poteter." },
@@ -145,6 +152,15 @@
     return App.BOATS.find((item) => item.level === level) || null;
   };
 
+  App.getBagData = function getBagData(level) {
+    return App.BAGS.find((item) => item.level === level) || App.BAGS[0];
+  };
+
+  App.getBagCapacity = function getBagCapacity(state) {
+    return App.getBagData(state.equipment.bagLevel).capacity +
+      (App.getBoatData(state.equipment.boatLevel)?.cargoBonus || 0);
+  };
+
   App.getRestaurantData = function getRestaurantData(level) {
     return App.RESTAURANT_UPGRADES.find((item) => item.level === level) || null;
   };
@@ -195,6 +211,7 @@
       reel: { key: "reelLevel", items: App.REELS },
       line: { key: "lineLevel", items: App.LINES },
       boat: { key: "boatLevel", items: App.BOATS },
+      bag: { key: "bagLevel", items: App.BAGS },
       restaurant: { key: "restaurantLevel", items: App.RESTAURANT_UPGRADES },
     };
 
@@ -222,3 +239,4 @@
     return { ok: true, message: `${nextItem.name} er nå i bruk.` };
   };
 })();
+
