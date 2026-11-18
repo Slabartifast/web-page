@@ -477,10 +477,16 @@
       refs.catchTitle.textContent = fish.name;
       refs.catchDetails.textContent = `${fish.weightKg.toFixed(1)} kg · ${fish.qualityLabel} · ca. ${fish.baseSaleValue} kr`;
       refs.catchBagStatus.textContent = `Fiskebag: ${state.inventory.length}/${capacity}${full ? " — full!" : ""}`;
-      refs.catchActions.innerHTML = `
-        <button class="secondary-button" type="button" data-catch-action="release">Slipp ut</button>
-        ${full ? state.inventory.map((entry) => `<button class="primary-button" type="button" data-catch-action="replace" data-replace-id="${entry.id}">Bytt ut ${entry.name} (${entry.weightKg.toFixed(1)} kg)</button>`).join("") : '<button class="primary-button" type="button" data-catch-action="keep">Behold</button>'}
-      `;
+      const actionKey = `${fish.id}|${capacity}|${state.inventory.map((entry) => entry.id).join("|")}`;
+      if (refs.catchActions.dataset.renderKey !== actionKey) {
+        refs.catchActions.innerHTML = `
+          <button class="secondary-button" type="button" data-catch-action="release">Slipp ut</button>
+          ${full ? state.inventory.map((entry) => `<button class="primary-button" type="button" data-catch-action="replace" data-replace-id="${entry.id}">Bytt ut ${entry.name} (${entry.weightKg.toFixed(1)} kg)</button>`).join("") : '<button class="primary-button" type="button" data-catch-action="keep">Behold</button>'}
+        `;
+        refs.catchActions.dataset.renderKey = actionKey;
+      }
+    } else {
+      delete refs.catchActions.dataset.renderKey;
     }
     refs.rodValue.textContent = App.getRodData(state.equipment.rodLevel).name;
     refs.baitValue.textContent = activeBait.name;
