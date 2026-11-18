@@ -9,10 +9,10 @@
       waterType: "ferskvann",
       unlockRequirement: { type: "start" },
       fishPool: [
+        { fishId: "laue", weight: 42 },
         { fishId: "mort", weight: 36 },
-        { fishId: "abbor", weight: 34 },
-        { fishId: "orret", weight: 18 },
-        { fishId: "roye", weight: 5 },
+        { fishId: "abbor", weight: 20 },
+        { fishId: "orret", weight: 2 },
       ],
       difficulty: 1,
       requiresBoat: false,
@@ -46,29 +46,23 @@
       waterType: "ferskvann",
       unlockRequirement: { type: "level", amount: 2 },
       fishPool: [
-        { fishId: "abbor", weight: 10 },
-        { fishId: "orret", weight: 22 },
-        { fishId: "harr", weight: 24 },
-        { fishId: "gjedde", weight: 18 },
-        { fishId: "laks", weight: 5 },
+        { fishId: "laue", weight: 12 },
+        { fishId: "orret", weight: 32 },
+        { fishId: "harr", weight: 34 },
+        { fishId: "gjedde", weight: 14 },
+        { fishId: "laks", weight: 8 },
       ],
       difficulty: 2,
       requiresBoat: false,
       size: { width: 1680, height: 960 },
-      spawn: { x: 188, y: 292 },
+      spawn: { x: 188, y: 440 },
       palette: {
         land: "#8faf69",
         landAlt: "#76925d",
         water: "#4f97af",
         waterDeep: "#2d6881",
       },
-      waterBodies: [
-        { type: "ellipse", x: 250, y: 170, rx: 145, ry: 100 },
-        { type: "ellipse", x: 520, y: 332, rx: 190, ry: 112 },
-        { type: "ellipse", x: 840, y: 482, rx: 210, ry: 118 },
-        { type: "ellipse", x: 1180, y: 620, rx: 225, ry: 126 },
-        { type: "ellipse", x: 1460, y: 768, rx: 180, ry: 114 },
-      ],
+      waterBodies: [{ type: "rect", x: 230, y: 355, w: 1340, h: 170 }],
       decor: [
         { type: "tree", x: 110, y: 478, scale: 1.16 },
         { type: "tree", x: 244, y: 840, scale: 1.06 },
@@ -100,14 +94,14 @@
       difficulty: 3,
       requiresBoat: false,
       size: { width: 1860, height: 980 },
-      spawn: { x: 594, y: 238 },
+      spawn: { x: 195, y: 490 },
       palette: {
         land: "#aca57c",
         landAlt: "#8f896a",
         water: "#5599b8",
         waterDeep: "#2b5f79",
       },
-      waterBodies: [{ type: "rect", x: 640, y: 58, w: 1120, h: 860 }],
+      waterBodies: [{ type: "rect", x: 230, y: 0, w: 1630, h: 980 }],
       decor: [
         { type: "dock", x: 540, y: 204, scale: 1.0 },
         { type: "dock", x: 584, y: 418, scale: 1.08 },
@@ -136,14 +130,14 @@
       difficulty: 4,
       requiresBoat: true,
       size: { width: 2120, height: 1180 },
-      spawn: { x: 280, y: 590 },
+      spawn: { x: 340, y: 590 },
       palette: {
         land: "#8a8e7e",
         landAlt: "#768072",
         water: "#4a87a5",
         waterDeep: "#224b66",
       },
-      waterBodies: [{ type: "rect", x: 0, y: 0, w: 2120, h: 1180 }],
+      waterBodies: [{ type: "rect", x: 230, y: 0, w: 1890, h: 1180 }],
       decor: [
         { type: "island", x: 302, y: 214, scale: 1.12 },
         { type: "island", x: 862, y: 330, scale: 0.98 },
@@ -195,6 +189,25 @@
       bonusText: "Stor horisont, store penger og fisk som ser på budsjettet ditt som et forslag.",
     },
   ];
+
+  App.MAPS.splice(2, 0, {
+    ...App.MAPS[0], id: "fjellvann", name: "Fjellvann",
+    unlockRequirement: { type: "level", amount: 2 }, difficulty: 2,
+    fishPool: [
+      { fishId: "orret", weight: 55 }, { fishId: "roye", weight: 22 },
+      { fishId: "abbor", weight: 15 }, { fishId: "mort", weight: 8 },
+    ],
+    size: { width: 1700, height: 1050 }, spawn: { x: 300, y: 540 },
+    waterBodies: [{ type: "ellipse", x: 900, y: 525, rx: 560, ry: 365 }],
+    palette: { land: "#7e9b73", landAlt: "#63836b", water: "#669eb3", waterDeep: "#326c84" },
+    decor: [
+      { type: "tree", x: 130, y: 220, scale: 1.1 },
+      { type: "tree", x: 240, y: 760, scale: 1.15 },
+      { type: "rock", x: 330, y: 300, scale: 1.2 },
+      { type: "rock", x: 1490, y: 790, scale: 1.2 },
+    ],
+    bonusText: "Kaldt vann, mer ørret og røye.",
+  });
 
   App.getMapById = function getMapById(mapId) {
     return App.MAPS.find((map) => map.id === mapId);
@@ -273,7 +286,7 @@
       if (!bestPoint) {
         return { ok: false, reason: "Kastet fant ikke åpent vann." };
       }
-      return { ok: true, castPoint: bestPoint, castDistance: maxDistance };
+      return { ok: true, castPoint: bestPoint, castDistance: maxDistance, waterDepth: maxDistance };
     }
 
     let firstWaterPoint = null;
@@ -305,6 +318,7 @@
       ok: true,
       castPoint: lastWaterPoint || firstWaterPoint,
       castDistance: firstWaterDistance,
+      waterDepth: Math.max(0, Math.hypot(lastWaterPoint.x - firstWaterPoint.x, lastWaterPoint.y - firstWaterPoint.y)),
     };
   };
 
@@ -334,3 +348,4 @@
     return true;
   };
 })();
+
