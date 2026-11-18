@@ -192,7 +192,10 @@
       charge: 0,
       castPower: 0,
       castStrength: 0,
+      waterDepth: 0,
       waitTime: 0,
+      jigCooldown: 0,
+      jigCount: 0,
       biteWindow: 0,
       marker: 0.5,
       markerVelocity: 0,
@@ -226,6 +229,7 @@
   App.createEmptyStateTemplate = function createEmptyStateTemplate() {
     return {
       day: 1,
+      dayTimeRemaining: 180,
       phase: "welcome",
       money: 180,
       xp: 0,
@@ -303,6 +307,8 @@
     const merged = App.utils.deepMerge(App.createEmptyStateTemplate(), rawState || {});
     merged.money = Number.isFinite(merged.money) ? merged.money : 0;
     merged.day = Math.max(1, merged.day || 1);
+    merged.dayTimeRemaining = Number.isFinite(merged.dayTimeRemaining)
+      ? App.utils.clamp(merged.dayTimeRemaining, 0, 180) : 180;
     merged.xp = Math.max(0, merged.xp || 0);
     merged.level = App.getLevelFromXp(merged.xp);
     merged.skillPoints = Number.isFinite(merged.skillPoints)
@@ -588,6 +594,7 @@
 
   App.advanceToNextDay = function advanceToNextDay(state) {
     state.day += 1;
+    state.dayTimeRemaining = 180;
     App.resetDayStats(state);
     App.rollDailyDemand(state);
     state.phase = "mapSelect";
