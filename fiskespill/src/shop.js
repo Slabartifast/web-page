@@ -90,14 +90,14 @@
       name: "Mark",
       cost: 0,
       description: "Klassikeren. Litt slim, mye arbeidsglede.",
-      bonusSpecies: ["mort", "abbor", "orret", "harr", "roye"],
+      bonusSpecies: ["laue", "mort", "abbor", "orret", "harr", "roye"],
     },
     mais: {
       id: "mais",
       name: "Mais",
       cost: 90,
       description: "Rolige ferskvannsfisk elsker det. Nakne kroker blir bare flaue.",
-      bonusSpecies: ["mort", "abbor"],
+      bonusSpecies: ["laue", "mort", "abbor"],
     },
     sluk: {
       id: "sluk",
@@ -174,7 +174,8 @@
     if (!bait) {
       return 1;
     }
-    return bait.bonusSpecies.includes(fish.id) ? 1.35 : 1;
+    if (bait.bonusSpecies.includes(fish.id)) return 1.65;
+    return fish.preferredBaits.includes(baitId) ? 1.25 : 0.8;
   };
 
   App.setActiveBait = function setActiveBait(state, baitId) {
