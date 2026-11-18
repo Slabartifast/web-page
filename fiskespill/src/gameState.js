@@ -200,6 +200,8 @@
       targetWidth: 0.3,
       targetVelocity: 0.14,
       progress: 0.3,
+      tension: 0.18,
+      burstTimer: 0,
       message: "",
       hint: "",
       castPoint: null,
@@ -243,12 +245,14 @@
         lineLevel: 1,
         restaurantLevel: 1,
         boatLevel: 0,
+        bagLevel: 1,
       },
       ownedBaits: {
         mark: true,
       },
       activeBaitId: "mark",
       inventory: [],
+      pendingCatch: null,
       catchLog: [],
       messageLog: [],
       lastDaySummary: null,
@@ -305,6 +309,9 @@
       ? merged.skillPoints
       : Math.max(0, merged.level - 1);
     merged.inventory = Array.isArray(merged.inventory) ? merged.inventory : [];
+    merged.equipment.bagLevel = App.getBagData(merged.equipment.bagLevel).level;
+    merged.pendingCatch = merged.pendingCatch && App.getFishById(merged.pendingCatch.fishId)
+      ? merged.pendingCatch : null;
     merged.catchLog = Array.isArray(merged.catchLog) ? merged.catchLog.slice(0, 16) : [];
     merged.messageLog = Array.isArray(merged.messageLog) ? merged.messageLog.slice(0, 16) : [];
     merged.unlockedMapIds = Array.isArray(merged.unlockedMapIds)
@@ -589,3 +596,4 @@
     App.addMessage(state, `Dag ${state.day} starter. Velg dagens fiskeplass.`);
   };
 })();
+
