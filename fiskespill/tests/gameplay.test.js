@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 
 const context = vm.createContext({ window: {}, console, Math, Date });
-for (const file of ["gameState", "fishData", "maps", "shop", "player", "fishing"]) {
+for (const file of ["gameState", "spriteData", "fishData", "maps", "shop", "player", "fishing"]) {
   vm.runInContext(fs.readFileSync(`src/${file}.js`, "utf8"), context, { filename: file });
 }
 const App = context.window.FjordFritert;
@@ -47,5 +47,20 @@ assert.equal(App.purchaseItem(state, "bag").ok, true);
 assert.equal(App.getBagCapacity(state), 5);
 const hydrated = App.hydrateState(JSON.parse(JSON.stringify(state)));
 assert.equal(App.getBagCapacity(hydrated), 5);
+for (const destination of App.MAPS) {
+  const traveler = App.createInitialState();
+  traveler.phase = "mapSelect";
+  traveler.unlockedMapIds.push(destination.id);
+  assert.equal(App.changeMap(traveler, destination.id), true);
+  assert.equal(App.canOccupyPoint(destination, traveler, traveler.player.x, traveler.player.y), true,
+    `${destination.name}: startpunktet må være gyldig`);
+  assert.equal(App.getCastContext(traveler, destination, 0.7).ok, true,
+    `${destination.name}: første kast må nå vann`);
+  assert.ok(destination.fishPool.every(({ fishId }) => App.getFishById(fishId)),
+    `${destination.name}: alle arter må finnes`);
+}
+assert.equal(App.MAPS.find((map) => map.id === "skogstjern").fishPool.some((entry) => entry.fishId === "laue"), true);
+assert.match(App.getFishSprite("abbor"), /^data:image\/png;base64,/);
+assert.match(App.getFishSprite("orret"), /^data:image\/svg\+xml,/);
 console.log("Gameplay checks passed");
 
