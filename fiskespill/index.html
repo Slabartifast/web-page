@@ -34,6 +34,7 @@
                 <span class="label">Dagens ønskefisk</span>
                 <strong id="demandValue">Abbor</strong>
               </div>
+              <div class="banner-stat"><span class="label">Tid igjen</span><strong id="timeValue">3:00</strong></div>
             </header>
 
             <section class="phase-overlay hidden" id="phaseOverlay">
@@ -175,6 +176,7 @@
 
             <section class="panel-drawer" id="panelDrawer">
               <div class="panel-header">
+                <button class="secondary-button hidden" id="backMenuButton" type="button">← Meny</button>
                 <div>
                   <h2 id="panelTitle">Panel</h2>
                   <p class="panel-meta" id="panelMeta"></p>
@@ -200,6 +202,8 @@
               <div class="panel-body" id="panel-menu">
                 <div id="menuPanel"></div>
               </div>
+              <div class="panel-body" id="panel-focus"><div id="focusPanel"></div></div>
+              <div class="panel-body" id="panel-quests"><div id="questsPanel"></div></div>
             </section>
 
             <section class="fishing-hud hidden" id="fishingHud">
@@ -232,6 +236,8 @@
                 <h2 id="catchTitle"></h2>
                 <p id="catchDetails"></p>
                 <p id="catchBagStatus"></p>
+                <img id="catchSprite" class="fish-sprite" alt="" />
+                <p id="catchAdvice"></p>
                 <div class="catch-actions" id="catchActions"></div>
               </article>
             </section>
@@ -256,10 +262,9 @@
             </section>
 
             <nav class="bottom-nav">
-              <button class="nav-button" data-panel="maps" type="button">Kart</button>
+              <button class="nav-button" data-panel="focus" type="button">Dagens fokus</button>
+              <button class="nav-button" data-panel="quests" type="button">Oppdrag</button>
               <button class="nav-button" data-panel="shop" type="button">Utstyr</button>
-              <button class="nav-button" data-panel="skills" type="button">Ferdigheter</button>
-              <button class="nav-button" data-panel="journal" type="button">Dagbok</button>
               <button class="nav-button" data-panel="menu" type="button">Meny</button>
               <button class="nav-button nav-end-day" id="endDayButton" type="button">Avslutt dagen</button>
             </nav>
@@ -269,6 +274,7 @@
     </div>
 
     <script src="./src/gameState.js"></script>
+    <script src="./src/spriteData.js"></script>
     <script src="./src/fishData.js"></script>
     <script src="./src/maps.js"></script>
     <script src="./src/shop.js"></script>
