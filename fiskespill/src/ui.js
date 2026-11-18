@@ -4,6 +4,13 @@
   function byId(id) {
     return document.getElementById(id);
   }
+  const renderedHtml = new WeakMap();
+  function setHtml(element, html) {
+    if (renderedHtml.get(element) !== html) {
+      element.innerHTML = html;
+      renderedHtml.set(element, html);
+    }
+  }
 
   App.initializeUI = function initializeUI(game) {
     const refs = {
@@ -14,9 +21,12 @@
       catchDetails: byId("catchDetails"),
       catchBagStatus: byId("catchBagStatus"),
       catchActions: byId("catchActions"),
+      catchSprite: byId("catchSprite"),
+      catchAdvice: byId("catchAdvice"),
       rodValue: byId("rodValue"),
       baitValue: byId("baitValue"),
       demandValue: byId("demandValue"),
+      timeValue: byId("timeValue"),
       phaseOverlay: byId("phaseOverlay"),
       welcomeScreen: byId("welcomeScreen"),
       mapSelectScreen: byId("mapSelectScreen"),
@@ -31,6 +41,7 @@
       summaryWish: byId("summaryWish"),
       summaryLines: byId("summaryLines"),
       panelDrawer: byId("panelDrawer"),
+      backMenuButton: byId("backMenuButton"),
       panelTitle: byId("panelTitle"),
       panelMeta: byId("panelMeta"),
       mapPanel: byId("mapPanel"),
@@ -38,6 +49,8 @@
       skillsPanel: byId("skillsPanel"),
       journalPanel: byId("journalPanel"),
       menuPanel: byId("menuPanel"),
+      focusPanel: byId("focusPanel"),
+      questsPanel: byId("questsPanel"),
       catchLog: byId("catchLog"),
       logDock: byId("logDock"),
       toggleLogButton: byId("toggleLogButton"),
@@ -69,6 +82,7 @@
     refs.nextDayButton.addEventListener("click", () => game.actions.nextDay());
     refs.endDayButton.addEventListener("click", () => game.actions.endDay());
     refs.toggleLogButton.addEventListener("click", () => game.actions.toggleLog());
+    refs.backMenuButton.addEventListener("click", () => game.actions.togglePanel("menu"));
     refs.catchActions.addEventListener("click", (event) => {
       const button = event.target.closest("[data-catch-action]");
       if (button) game.actions.resolveCatch(button.dataset.catchAction, button.dataset.replaceId);
@@ -115,6 +129,7 @@
       if (button.dataset.action === "save") {
         game.actions.save(false);
       }
+      if (button.dataset.action === "panel") game.actions.togglePanel(button.dataset.panel);
       if (button.dataset.action === "load") {
         game.actions.load();
       }
@@ -138,6 +153,8 @@
       skills: { title: "Ferdigheter", meta: "Bruk erfaringspoeng på fordeler som faktisk merkes." },
       journal: { title: "Dagbok", meta: "Her bor rekordene og alle fiskene du skrøt av." },
       menu: { title: "Meny", meta: "Oppdrag, lagring og en liten huskelapp." },
+      focus: { title: "Dagens fokus", meta: "Ønskefisken gir bedre pris i kveld." },
+      quests: { title: "Oppdrag", meta: "Mål som gir penger og erfaring." },
     };
     return configs[panelId] || { title: "Panel", meta: "" };
   }
@@ -363,6 +380,7 @@
         if (!entry) {
           return `
             <article class="journal-card">
+              <img class="fish-sprite undiscovered" src="${App.getFishSprite(fish.id)}" alt="Uoppdaget fisk" />
               <div class="card-head">
                 <h3>???</h3>
                 <span class="tag">Uoppdaget</span>
@@ -373,6 +391,7 @@
         }
         return `
           <article class="journal-card">
+            <img class="fish-sprite" src="${App.getFishSprite(fish.id)}" alt="${fish.name}" />
             <div class="card-head">
               <h3>${fish.name}</h3>
               <span class="quality-pill">${entry.bestQualityLabel}</span>
@@ -416,20 +435,8 @@
 
   function renderMenu(game) {
     return `
-      <article class="menu-card">
-        <div class="card-head">
-          <h3>Dagens fokus</h3>
-          <span class="tag">${game.state.dailyDemand ? App.getFishById(game.state.dailyDemand.fishId).name : "Fangst"}</span>
-        </div>
-        <p class="journal-meta">${game.state.dailyDemand ? game.state.dailyDemand.text : "Finn noe som får tavernen til å summe i kveld."}</p>
-      </article>
-      <article class="menu-card">
-        <div class="card-head">
-          <h3>Oppdrag</h3>
-          <span class="small-note">aktive mål</span>
-        </div>
-        ${renderQuests(game)}
-      </article>
+      <article class="menu-card"><button class="secondary-button" type="button" data-action="panel" data-panel="skills">Ferdigheter</button>
+      <button class="secondary-button" type="button" data-action="panel" data-panel="journal">Dagbok</button></article>
       <article class="menu-card">
         <div class="card-head">
           <h3>Lagring og hjelp</h3>
@@ -475,13 +482,17 @@
       const capacity = App.getBagCapacity(state);
       const full = state.inventory.length >= capacity;
       refs.catchTitle.textContent = fish.name;
+      refs.catchSprite.src = App.getFishSprite(fish.fishId);
+      refs.catchSprite.alt = fish.name;
       refs.catchDetails.textContent = `${fish.weightKg.toFixed(1)} kg · ${fish.qualityLabel} · ca. ${fish.baseSaleValue} kr`;
+      const best = state.journal[fish.fishId]?.bestWeight || 0;
+      refs.catchAdvice.textContent = `${demandFish && demandFish.id === fish.fishId ? "Dagens ønskefisk! " : ""}${fish.weightKg >= best ? "Ny vekt­rekord. " : ""}Velg hva som skal i bagen.`;
       refs.catchBagStatus.textContent = `Fiskebag: ${state.inventory.length}/${capacity}${full ? " — full!" : ""}`;
       const actionKey = `${fish.id}|${capacity}|${state.inventory.map((entry) => entry.id).join("|")}`;
       if (refs.catchActions.dataset.renderKey !== actionKey) {
         refs.catchActions.innerHTML = `
           <button class="secondary-button" type="button" data-catch-action="release">Slipp ut</button>
-          ${full ? state.inventory.map((entry) => `<button class="primary-button" type="button" data-catch-action="replace" data-replace-id="${entry.id}">Bytt ut ${entry.name} (${entry.weightKg.toFixed(1)} kg)</button>`).join("") : '<button class="primary-button" type="button" data-catch-action="keep">Behold</button>'}
+          ${full ? [...state.inventory].sort((a,b) => a.baseSaleValue - b.baseSaleValue).map((entry) => `<button class="primary-button" type="button" data-catch-action="replace" data-replace-id="${entry.id}">Bytt ut ${entry.name} (${entry.weightKg.toFixed(1)} kg · ${entry.baseSaleValue} kr)</button>`).join("") : '<button class="primary-button" type="button" data-catch-action="keep">Behold</button>'}
         `;
         refs.catchActions.dataset.renderKey = actionKey;
       }
@@ -491,14 +502,18 @@
     refs.rodValue.textContent = App.getRodData(state.equipment.rodLevel).name;
     refs.baitValue.textContent = activeBait.name;
     refs.demandValue.textContent = demandFish ? demandFish.name : "Ingen";
+    const seconds = Math.ceil(state.dayTimeRemaining);
+    refs.timeValue.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
-    refs.mapPanel.innerHTML = phase === "day" ? renderMapCards(game, "Reis hit") : "";
-    refs.shopPanel.innerHTML = renderShop(game);
-    refs.skillsPanel.innerHTML = renderSkills(game);
-    refs.journalPanel.innerHTML = renderJournal(game);
-    refs.menuPanel.innerHTML = renderMenu(game);
-    refs.mapSelectPanel.innerHTML = renderMapCards(game, "Fisk her i dag");
-    refs.catchLog.innerHTML = renderLogs(game);
+    setHtml(refs.mapPanel, "");
+    setHtml(refs.focusPanel, `<article class="menu-card"><h3>${demandFish ? demandFish.name : "Fangst"}</h3><p>${state.dailyDemand ? state.dailyDemand.text : "Velg fiskeplass."}</p></article>`);
+    setHtml(refs.questsPanel, renderQuests(game));
+    setHtml(refs.shopPanel, renderShop(game));
+    setHtml(refs.skillsPanel, renderSkills(game));
+    setHtml(refs.journalPanel, renderJournal(game));
+    setHtml(refs.menuPanel, renderMenu(game));
+    setHtml(refs.mapSelectPanel, renderMapCards(game, "Fisk her i dag"));
+    setHtml(refs.catchLog, renderLogs(game));
 
     const levelProgress = App.getLevelProgress(state);
     const xpFill = refs.skillsPanel.querySelector("#xpBarFill");
@@ -532,6 +547,7 @@
       : "";
 
     refs.panelDrawer.classList.toggle("active", phase === "day" && !!activePanel);
+    refs.backMenuButton.classList.toggle("hidden", !["skills", "journal"].includes(activePanel));
     const panelConfig = getPanelConfig(activePanel);
     refs.panelTitle.textContent = panelConfig.title;
     refs.panelMeta.textContent = panelConfig.meta;
