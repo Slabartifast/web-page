@@ -1,6 +1,8 @@
 (function () {
   const App = (window.FjordFritert = window.FjordFritert || {});
   const { clamp } = App.utils;
+  const fishermanSprite = new Image();
+  fishermanSprite.src = App.SPRITES.fisherman;
 
   function createInputState() {
     return {
@@ -334,6 +336,10 @@
       ctx.closePath();
       ctx.fill();
     }
+    if (fishermanSprite.complete && fishermanSprite.naturalWidth) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(fishermanSprite, player.x - 23, player.y - 46, 46, 56);
+    } else {
     ctx.fillStyle = "#24414f";
     ctx.beginPath();
     ctx.arc(player.x, player.y, 12, 0, Math.PI * 2);
@@ -350,6 +356,7 @@
     ctx.moveTo(player.x + 7, player.y - 8);
     ctx.lineTo(player.x + 18 + player.facingX * 8, player.y - 24 + player.facingY * 10);
     ctx.stroke();
+    }
 
     if (state.fishing.mode === "bite" || state.fishing.exclamationTimer > 0) {
       ctx.fillStyle = "#fff4de";
@@ -457,7 +464,12 @@
     App.ensurePlayerOnValidGround(state);
 
     if (map && state.phase === "day") {
-      if (!state.pendingCatch) {
+      state.dayTimeRemaining = Math.max(0, state.dayTimeRemaining - deltaSeconds);
+      if (state.dayTimeRemaining <= 0 && !state.pendingCatch) {
+        App.endDay(state);
+        App.saveGame(state, true);
+      }
+      if (state.phase === "day" && !state.pendingCatch) {
         App.updatePlayer(state, game.input, deltaSeconds);
         App.handleFishingInput(state, map, game.input);
         App.updateFishing(state, game.input, deltaSeconds, map);
@@ -499,6 +511,7 @@
       input: createInputState(),
       lastFrameTime: 0,
       lastUiRender: 0,
+      lastAutosave: 0,
       refs: null,
       camera: { x: 0, y: 0 },
       actions: {},
@@ -549,6 +562,7 @@
         App.renderUI(game);
       },
       changeMap(mapId) {
+        if (game.state.phase !== "mapSelect") return;
         if (App.changeMap(game.state, mapId)) {
           App.saveGame(game.state, true);
         }
@@ -585,6 +599,7 @@
       },
       resolveCatch(action, replaceId) {
         if (App.resolvePendingCatch(game.state, action, replaceId)) {
+          if (game.state.dayTimeRemaining <= 0) App.endDay(game.state);
           App.saveGame(game.state, true);
           App.renderUI(game);
         }
@@ -615,6 +630,10 @@
     if (!game.lastUiRender || timeMs - game.lastUiRender > 100) {
       App.renderUI(game);
       game.lastUiRender = timeMs;
+    }
+    if (game.state.phase === "day" && timeMs - game.lastAutosave > 5000) {
+      App.saveGame(game.state, true);
+      game.lastAutosave = timeMs;
     }
     window.requestAnimationFrame((nextTime) => frame(nextTime, game));
   }
