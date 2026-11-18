@@ -19,8 +19,8 @@
                 <strong id="moneyValue">0 kr</strong>
               </div>
               <div class="banner-stat">
-                <span class="label">Fanget i dag</span>
-                <strong id="caughtValue">0</strong>
+                <span class="label">Fanget / bag</span>
+                <strong id="caughtValue">0 / 3</strong>
               </div>
               <div class="banner-stat">
                 <span class="label">Stang</span>
@@ -49,7 +49,8 @@
                   <div class="welcome-points">
                     <p><strong>Bevegelse:</strong> piltaster, WASD eller touch-knapper.</p>
                     <p><strong>Kast:</strong> hold inne kast-knappen lenger for lengre kast.</p>
-                    <p><strong>Napp:</strong> vent på utropstegnet over hodet ditt og trykk raskt.</p>
+                    <p><strong>Napp:</strong> trykk på space!</p>
+                    <p><strong>Sveiv:</strong> hold og slipp space for å følge grønt felt.</p>
                     <p><strong>Kveld:</strong> selg fisken, tjen XP og bruk ferdighetspoeng smart.</p>
                   </div>
                   <div class="phase-button" style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -219,6 +220,20 @@
                 <div class="target-zone" id="targetZone"></div>
                 <div class="marker" id="marker"></div>
               </div>
+              <div class="tension-wrap hidden" id="tensionWrap">
+                <span>Snørebelastning</span>
+                <div class="fishing-progress-bar"><div id="tensionFill"></div></div>
+              </div>
+            </section>
+
+            <section class="catch-overlay hidden" id="catchOverlay" role="dialog" aria-modal="true" aria-labelledby="catchTitle">
+              <article class="catch-card">
+                <p class="phase-kicker">Fangstrapport</p>
+                <h2 id="catchTitle"></h2>
+                <p id="catchDetails"></p>
+                <p id="catchBagStatus"></p>
+                <div class="catch-actions" id="catchActions"></div>
+              </article>
             </section>
 
             <div class="virtual-joystick hidden" id="virtualJoystick" aria-hidden="true">
@@ -265,3 +280,4 @@
     <script src="./src/main.js"></script>
   </body>
 </html>
+
