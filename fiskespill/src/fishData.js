@@ -23,6 +23,12 @@
       preferredBaits: ["mais", "mark"],
       description: "Småblank og vanlig. Perfekt startfisk.",
     },
+    laue: {
+      id: "laue", name: "Laue", waterType: "ferskvann", rarity: "common",
+      basePrice: 10, qualityTier: 1, minRodLevel: 1,
+      weightRangeKg: [0.08, 0.35], baseDifficulty: 0.8,
+      preferredBaits: ["mark", "mais"], description: "Liten, rask og sølvblank.",
+    },
     abbor: {
       id: "abbor",
       name: "Abbor",
@@ -243,6 +249,16 @@
     return App.FISH[fishId];
   };
 
+  const drawnSprites = new Set(["mort", "laue", "abbor", "gjedde"]);
+  App.getFishSprite = function getFishSprite(fishId) {
+    if (drawnSprites.has(fishId)) return App.SPRITES[fishId];
+    const fish = App.getFishById(fishId);
+    const name = fish ? fish.name : "Fisk";
+    const color = fish?.waterType === "saltvann" ? "#5599b8" : "#83a76c";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><path d="M24 44 5 25v38z" fill="${color}" stroke="#24414f" stroke-width="3"/><ellipse cx="87" cy="44" rx="65" ry="30" fill="${color}" stroke="#24414f" stroke-width="3"/><path d="M70 16 83 3l18 14" fill="${color}" stroke="#24414f" stroke-width="3"/><circle cx="126" cy="37" r="4" fill="#17313a"/><text x="80" y="82" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#17313a">${name}</text></svg>`;
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  };
+
   App.getQualityInfo = function getQualityInfo(score) {
     let selected = App.QUALITY_CLASSES[0];
     for (let i = 0; i < App.QUALITY_CLASSES.length; i += 1) {
@@ -253,3 +269,4 @@
     return selected;
   };
 })();
+
