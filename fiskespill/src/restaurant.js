@@ -33,7 +33,7 @@
   };
 
   App.endDay = function endDay(state) {
-    if (state.phase !== "day") {
+    if (state.phase !== "day" || state.pendingCatch) {
       return false;
     }
     if (!state.dailyDemand) {
@@ -112,3 +112,4 @@
     return true;
   };
 })();
+
