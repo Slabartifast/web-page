@@ -182,6 +182,7 @@ canvas {
 .catch-card h2 { margin: 6px 0; font-size: 2rem; }
 .catch-card p { margin: 8px 0; }
 .catch-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+.catch-actions button:hover { transform: none; }
 
 .phase-card {
   width: min(92%, 880px);
