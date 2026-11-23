@@ -529,7 +529,7 @@
       <section id="gaming" class="container game-container">
         <h2>Gaming</h2>
         <p class="game-note">Nylig spilt på Steam. Fullt spillmuseum kommer etter hvert.</p>
-        <div class="guitar-frame-wrap"><iframe class="guitar-frame deferred-frame" style="min-height:720px;height:80vh;background:#f8fbfc" src="about:blank" data-src="gaming/" title="Steam spilloversikt" loading="lazy"></iframe></div>
+        <div class="guitar-frame-wrap"><iframe id="gaming-frame" class="guitar-frame deferred-frame" style="min-height:400px;height:600px;background:#f8fbfc;overflow:hidden" src="about:blank" data-src="gaming/" title="Steam spilloversikt" loading="lazy" scrolling="no"></iframe></div>
         <p class="pdf-fallback"><a href="gaming/" target="_blank" rel="noopener">Åpne spilloversikten i egen fane</a></p>
       </section>
 
@@ -710,8 +710,8 @@
 
   <script>
     window.addEventListener('message', event => {
-      if (event.origin !== window.location.origin || event.data?.type !== 'chess-resize') return;
-      const frame = document.getElementById('chess-frame');
+      if (event.origin !== window.location.origin || !['chess-resize', 'gaming-resize'].includes(event.data?.type)) return;
+      const frame = document.getElementById(event.data.type === 'chess-resize' ? 'chess-frame' : 'gaming-frame');
       if (!frame || event.source !== frame.contentWindow) return;
       const height = Number(event.data.height);
       if (Number.isFinite(height) && height > 300 && height < 20000) {
