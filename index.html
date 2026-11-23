@@ -480,6 +480,7 @@
           <li><a href="#trening" class="tab-link" data-tab="trening">Treningsprogram</a></li>
           <li><a href="#forskning" class="tab-link" data-tab="forskning">Forskning</a></li>
           <li><a href="#musikk" class="tab-link" data-tab="musikk">Musikk</a></li>
+          <li><a href="#spotify" class="tab-link" data-tab="spotify">Spotify-topplister</a></li>
           <li><a href="#gitar" class="tab-link" data-tab="gitar">Gitarlærern</a></li>
           <li><a href="#sjakk" class="tab-link" data-tab="sjakk">♟ Sjakk</a></li>
           <li><a href="#gaming" class="tab-link" data-tab="gaming">🎮 Gaming</a></li>
@@ -546,9 +547,9 @@
         <h2>Doktorgrad</h2>
         <p class="game-note">Doktoravhandlingen ble levert 17. desember 2025 og forsvart 28. mai 2026. Her kan du lese avhandlingen nedenfor og finne mer informasjon om disputasen på <a href="https://www.sv.uio.no/psi/forskning/aktuelt/arrangementer/disputaser/2026/aasvik" target="_blank" rel="noopener">UiOs disputasside</a>.</p>
         <div class="pdf-frame-wrap">
-          <iframe class="pdf-frame" src="doktorgrad.pdf" title="Doktorgrad PDF" loading="lazy"></iframe>
+          <iframe class="pdf-frame" src="filer/doktorgrad.pdf" title="Doktorgrad PDF" loading="lazy"></iframe>
         </div>
-        <p class="pdf-fallback"><a href="doktorgrad.pdf" target="_blank" rel="noopener">Åpne doktorgrad.pdf i ny fane</a> · <a href="https://www.sv.uio.no/psi/forskning/aktuelt/arrangementer/disputaser/2026/aasvik" target="_blank" rel="noopener">Se disputassiden ved UiO</a></p>
+        <p class="pdf-fallback"><a href="filer/doktorgrad.pdf" target="_blank" rel="noopener">Åpne doktorgrad.pdf i ny fane</a> · <a href="https://www.sv.uio.no/psi/forskning/aktuelt/arrangementer/disputaser/2026/aasvik" target="_blank" rel="noopener">Se disputassiden ved UiO</a></p>
       </section>
 
       <section id="trening" class="container">
@@ -678,11 +679,18 @@
         <div class="note-card">
           <h3>Lokal versjon av "Den Ständiga Resan"</h3>
           <audio controls preload="metadata">
-            <source src="./standiga%20master.flac" type="audio/flac" />
-            <source src="./standiga master.flac" type="audio/x-flac" />
+            <source src="filer/standiga%20master.flac" type="audio/flac" />
+            <source src="filer/standiga%20master.flac" type="audio/x-flac" />
             Din nettleser støtter ikke lydavspilling.
           </audio>
         </div>
+      </section>
+
+      <section id="spotify" class="container game-container">
+        <h2>Spotify-topplister</h2>
+        <p class="game-note">Se dine mest spilte artister og låter, med sjangre og valgbar periode, når du kobler til Spotify.</p>
+        <div class="guitar-frame-wrap"><iframe id="spotify-frame" class="guitar-frame deferred-frame" style="min-height:620px;height:900px;background:#f8fbfc;overflow:hidden" src="about:blank" data-src="spotify/" title="Spotify-topplister" loading="lazy" scrolling="no"></iframe></div>
+        <p class="pdf-fallback"><a href="spotify/" target="_blank" rel="noopener">Åpne topplistene i egen fane</a></p>
       </section>
 
       <section id="kontakt" class="container">
@@ -710,8 +718,8 @@
 
   <script>
     window.addEventListener('message', event => {
-      if (event.origin !== window.location.origin || !['chess-resize', 'gaming-resize'].includes(event.data?.type)) return;
-      const frame = document.getElementById(event.data.type === 'chess-resize' ? 'chess-frame' : 'gaming-frame');
+      if (event.origin !== window.location.origin || !['chess-resize', 'gaming-resize', 'spotify-resize'].includes(event.data?.type)) return;
+      const frame = document.getElementById(event.data.type === 'chess-resize' ? 'chess-frame' : event.data.type === 'gaming-resize' ? 'gaming-frame' : 'spotify-frame');
       if (!frame || event.source !== frame.contentWindow) return;
       const height = Number(event.data.height);
       if (Number.isFinite(height) && height > 300 && height < 20000) {
