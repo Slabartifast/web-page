@@ -1,6 +1,10 @@
 name: Update Steam recent games
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'gaming/update.py'
+      - '.github/workflows/steam-recent.yml'
   schedule:
     - cron: '16 */6 * * *'
 permissions:
