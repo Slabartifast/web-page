@@ -350,6 +350,10 @@
     }
 
 
+    body.chess-immersive { overflow: hidden; }
+    .chess-expanded { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; z-index: 9999; border-radius: 0; }
+    .chess-expanded .guitar-frame { width: 100%; height: 100vh !important; min-height: 0 !important; border-radius: 0; }
+
     .game-frame-wrap {
       position: relative;
       width: 100%;
@@ -718,6 +722,14 @@
 
   <script>
     window.addEventListener('message', event => {
+      if (event.origin === window.location.origin && event.data?.type === 'chess-fullscreen') {
+        const frame = document.getElementById('chess-frame');
+        if (frame && event.source === frame.contentWindow) {
+          frame.parentElement.classList.toggle('chess-expanded', Boolean(event.data.active));
+          document.body.classList.toggle('chess-immersive', Boolean(event.data.active));
+        }
+        return;
+      }
       if (event.origin !== window.location.origin || !['chess-resize', 'gaming-resize', 'spotify-resize'].includes(event.data?.type)) return;
       const frame = document.getElementById(event.data.type === 'chess-resize' ? 'chess-frame' : event.data.type === 'gaming-resize' ? 'gaming-frame' : 'spotify-frame');
       if (!frame || event.source !== frame.contentWindow) return;
