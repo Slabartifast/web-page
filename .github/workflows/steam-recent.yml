@@ -18,18 +18,7 @@ jobs:
             echo "STEAM_API_KEY is not configured. No data will be published."
             exit 0
           fi
-          python3 - <<'PY'
-          import json,os,urllib.parse,urllib.request,pathlib,datetime
-          query=urllib.parse.urlencode({"key":os.environ["STEAM_API_KEY"],"steamid":"76561198030319279","count":12})
-          url="https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?"+query
-          request=urllib.request.Request(url,headers={"User-Agent":"slabartifast-web-page/1.0"})
-          with urllib.request.urlopen(request,timeout=30) as response:
-              source=json.load(response)
-          games=source.get("response",{}).get("games",[])
-          safe=[{"appid":g["appid"],"name":g["name"],"playtime_2weeks":g.get("playtime_2weeks",0),"playtime_forever":g.get("playtime_forever",0)} for g in games]
-          pathlib.Path("data").mkdir(exist_ok=True)
-          pathlib.Path("data/steam-recent.json").write_text(json.dumps({"updated":datetime.datetime.now(datetime.timezone.utc).isoformat(),"games":safe},ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-          PY
+          python3 gaming/update.py
       - name: Commit updated game data
         run: |
           if [ ! -f data/steam-recent.json ]; then exit 0; fi
