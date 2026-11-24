@@ -1,11 +1,113 @@
 {
-  "updated": "2026-11-23T20:47:24.129856+00:00",
+  "updated": "2026-11-24T07:18:34.869828+00:00",
   "games": [
     {
       "appid": 4530370,
       "name": "Football Manager 27",
-      "playtime_2weeks": 1266,
-      "playtime_forever": 2750
+      "playtime_2weeks": 1333,
+      "playtime_forever": 2817
+    }
+  ],
+  "all_time": [
+    {
+      "appid": 378120,
+      "name": "Football Manager 2016",
+      "playtime_2weeks": 0,
+      "playtime_forever": 27263
+    },
+    {
+      "appid": 2252570,
+      "name": "Football Manager 2024",
+      "playtime_2weeks": 0,
+      "playtime_forever": 22893
+    },
+    {
+      "appid": 294100,
+      "name": "RimWorld",
+      "playtime_2weeks": 0,
+      "playtime_forever": 21596
+    },
+    {
+      "appid": 526870,
+      "name": "Satisfactory",
+      "playtime_2weeks": 0,
+      "playtime_forever": 18283
+    },
+    {
+      "appid": 22380,
+      "name": "Fallout: New Vegas",
+      "playtime_2weeks": 0,
+      "playtime_forever": 10615
+    }
+  ],
+  "favorites": [
+    {
+      "appid": 294100,
+      "name": "RimWorld",
+      "playtime_2weeks": 0,
+      "playtime_forever": 21596
+    },
+    {
+      "appid": 526870,
+      "name": "Satisfactory",
+      "playtime_2weeks": 0,
+      "playtime_forever": 18283
+    },
+    {
+      "appid": 221380,
+      "name": "Age of Empires II (2013)",
+      "playtime_2weeks": 0,
+      "playtime_forever": 7506
+    },
+    {
+      "appid": 1466860,
+      "name": "Age of Empires IV: Anniversary Edition",
+      "playtime_2weeks": 0,
+      "playtime_forever": 3556
+    },
+    {
+      "appid": 105450,
+      "name": "Age of Empires® III (2007)",
+      "playtime_2weeks": 0,
+      "playtime_forever": 2200
+    },
+    {
+      "appid": 933110,
+      "name": "Age of Empires III: Definitive Edition",
+      "playtime_2weeks": 0,
+      "playtime_forever": 994
+    }
+  ],
+  "achievements": [
+    {
+      "appid": 1466860,
+      "game": "Age of Empires IV: Anniversary Edition",
+      "name": "Det mongolske riket",
+      "unlocktime": 1792492702
+    },
+    {
+      "appid": 1466860,
+      "game": "Age of Empires IV: Anniversary Edition",
+      "name": "Utforsk, utvid, utnytt",
+      "unlocktime": 1792490886
+    },
+    {
+      "appid": 1466860,
+      "game": "Age of Empires IV: Anniversary Edition",
+      "name": "Vandre på jorden",
+      "unlocktime": 1788173412
+    },
+    {
+      "appid": 1466860,
+      "game": "Age of Empires IV: Anniversary Edition",
+      "name": "Flokk at du liker elefanter",
+      "unlocktime": 1788169722
+    },
+    {
+      "appid": 1466860,
+      "game": "Age of Empires IV: Anniversary Edition",
+      "name": "Gjennom tro",
+      "unlocktime": 1781084232
     }
   ]
 }
