@@ -172,8 +172,12 @@
       id: "commerce",
       name: "Markedssans",
       maxLevel: 5,
-      description: "+8 % pris per poeng på rettene dere serverer.",
+      description: "+8 % pris per poeng på rettene du serverer.",
     },
+    social: { id: "social", name: "Sosial sommerfugl", maxLevel: 5,
+      description: "+4 servicepoeng per nivå. Gjestene trives bedre, også på en svak fiskedag." },
+    kitchen: { id: "kitchen", name: "Kjøkkenhånd", maxLevel: 5,
+      description: "+2 matpoeng per nivå. Du får mer ut av råvaren og oppskriften." },
   };
 
   App.getPlayableViewport = function getPlayableViewport() {
@@ -255,6 +259,8 @@
         instincts: 0,
         reeling: 0,
         commerce: 0,
+        social: 0,
+        kitchen: 0,
       },
       currentMapId: "skogstjern",
       unlockedMapIds: ["skogstjern"],
@@ -275,8 +281,8 @@
       fishTank: [],
       restaurantPlan: {},
       reputation: 0,
-      stars: 1,
       lastReview: 0,
+      evening: null,
       customerMix: [],
       pendingCatch: null,
       catchLog: [],
@@ -316,7 +322,7 @@
   App.createInitialState = function createInitialState() {
     const state = App.createEmptyStateTemplate();
     state.catchLog = [
-      "Morgenen starter hjemme ved brygga. Velg område og håp at kona liker dagens fangst.",
+      "Morgenen starter hjemme ved brygga. Velg område og se hva du får på kroken.",
     ];
     return App.hydrateState(state);
   };
@@ -341,7 +347,6 @@
     merged.restaurantPlan = merged.restaurantPlan || {};
     merged.customerMix = Array.isArray(merged.customerMix) ? merged.customerMix : [];
     merged.reputation = App.utils.clamp(Number(merged.reputation) || 0, 0, 100);
-    merged.stars = App.utils.clamp(1 + merged.reputation / 25, 1, 5);
     merged.lastReview = App.utils.clamp(Number(merged.lastReview) || 0, 0, 100);
     merged.equipment.bagLevel = App.getBagData(merged.equipment.bagLevel).level;
     merged.equipment.tankLevel = App.getTankData(merged.equipment.tankLevel).level;
@@ -360,6 +365,8 @@
         instincts: 0,
         reeling: 0,
         commerce: 0,
+        social: 0,
+        kitchen: 0,
       },
       merged.skills || {}
     );
