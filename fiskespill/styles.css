@@ -511,7 +511,8 @@ canvas {
   left: auto;
   right: 26%;
   bottom: calc(var(--bottom-bar-height) + 10px);
-  width: 190px;
+  width: 220px;
+  min-height: 360px;
   transform: none;
 }
 
@@ -531,8 +532,8 @@ canvas {
 
 .minigame-track {
   position: relative;
-  height: 180px;
-  width: 76px;
+  height: 240px;
+  width: 140px;
   margin: 0 auto;
   overflow: hidden;
   border-radius: 12px;
@@ -555,9 +556,9 @@ canvas {
 
 .reel-fish {
   position: absolute;
-  left: 4px;
-  width: 68px;
-  height: 40px;
+  left: 10px;
+  width: 120px;
+  height: 34px;
   object-fit: contain;
   image-rendering: pixelated;
   transform: translateY(-50%);
