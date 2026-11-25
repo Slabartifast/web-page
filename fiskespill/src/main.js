@@ -228,15 +228,48 @@
       } else {
         drawEllipse(ctx, body);
       }
-      const gradient = ctx.createLinearGradient(0, 0, 0, map.size.height);
-      gradient.addColorStop(0, map.palette.water);
-      gradient.addColorStop(1, map.palette.waterDeep);
+      const left = body.type === "rect" ? body.x : body.x - body.rx;
+      const right = body.type === "rect" ? body.x + body.w : body.x + body.rx;
+      const gradient = body.type === "ellipse"
+        ? ctx.createRadialGradient(body.x, body.y, 0, body.x, body.y, Math.min(body.rx, body.ry))
+        : ctx.createLinearGradient(map.id === "elvebredden" ? 0 : left,
+          map.id === "elvebredden" ? body.y : 0,
+          map.id === "elvebredden" ? 0 : right,
+          map.id === "elvebredden" ? body.y + body.h : 0);
+      if (body.type === "ellipse") {
+        gradient.addColorStop(0, map.palette.waterDeep);
+        gradient.addColorStop(1, map.palette.water);
+      } else if (map.id === "elvebredden") {
+        gradient.addColorStop(0, map.palette.water);
+        gradient.addColorStop(0.5, map.palette.waterDeep);
+        gradient.addColorStop(1, map.palette.water);
+      } else {
+        gradient.addColorStop(0, map.palette.water);
+        gradient.addColorStop(1, map.id === "apenthav" ? map.palette.water : map.palette.waterDeep);
+      }
       ctx.fillStyle = gradient;
       ctx.fill();
       ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
       ctx.lineWidth = 3;
       ctx.stroke();
     });
+
+    if (map.id === "apenthav") {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, map.size.width, map.size.height);
+      ctx.clip();
+      for (let i = 0; i < 18; i += 1) {
+        const x = (i * 683 + 310) % map.size.width;
+        const y = (i * 479 + 190) % map.size.height;
+        const patch = ctx.createRadialGradient(x, y, 12, x, y, 180 + i % 4 * 35);
+        patch.addColorStop(0, "rgba(20,58,82,0.35)");
+        patch.addColorStop(1, "rgba(20,58,82,0)");
+        ctx.fillStyle = patch;
+        ctx.fillRect(x - 320, y - 320, 640, 640);
+      }
+      ctx.restore();
+    }
 
     ctx.beginPath();
     map.waterBodies.forEach((body) => {
@@ -545,6 +578,7 @@
         App.renderUI(game);
       },
       nextDay() {
+        if (game.state.phase !== "afterSkills") return;
         App.advanceToNextDay(game.state);
         App.saveGame(game.state, true);
         App.renderUI(game);
@@ -553,6 +587,26 @@
         if (App.endDay(game.state)) {
           App.saveGame(game.state, true);
         }
+        App.renderUI(game);
+      },
+      serve() {
+        if (App.runRestaurantService(game.state)) App.saveGame(game.state, true);
+        App.renderUI(game);
+      },
+      chooseRecipe(fishId, choice) {
+        if (App.setRestaurantChoice(game.state, fishId, choice)) App.saveGame(game.state, true);
+        App.renderUI(game);
+      },
+      afterShop() {
+        if (game.state.phase !== "summary") return;
+        game.state.phase = "afterShop";
+        App.saveGame(game.state, true);
+        App.renderUI(game);
+      },
+      afterSkills() {
+        if (game.state.phase !== "afterShop") return;
+        game.state.phase = "afterSkills";
+        App.saveGame(game.state, true);
         App.renderUI(game);
       },
       save(silent) {
