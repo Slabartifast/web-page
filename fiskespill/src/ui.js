@@ -452,7 +452,7 @@
           <button class="danger-button" type="button" data-action="reset">Nullstill</button>
         </div>
         <div class="help-list">
-          <p><strong>Kast:</strong> hold space for lengde, slipp og trykk igjen for retning.</p>
+          <p><strong>Kast:</strong> trykk space for lengde, igjen for å låse, igjen for retning.</p>
           <p><strong>Napp:</strong> trykk space, så treff grønt felt.</p>
           <p><strong>Fiskekamp:</strong> hold space for opp, slipp for ned.</p>
           <p><strong>Mål:</strong> fyll kassa, gled kona og bygg bedre utstyr.</p>
@@ -613,7 +613,26 @@
     refs.hookIndicator.style.left = `${fishing.hookMarker * 100}%`;
 
     refs.touchInteractButton.textContent =
-      fishing.mode === "bite" ? "Napp!" : fishing.mode === "hooking" ? "Tilslag" : fishing.mode === "aiming" ? "Kast" : fishing.mode === "reeling" ? "Løft" : "Kast";
+      fishing.mode === "bite" ? "Napp!" : fishing.mode === "hooking" ? "Tilslag" :
+      fishing.mode === "charging" ? "Lås" : fishing.mode === "aiming" ? "Kast" :
+      fishing.mode === "waiting" && ["sluk", "spinner", "pilk"].includes(state.activeBaitId) ? "Sveiv" :
+      fishing.mode === "reeling" ? "Løft" : "Kast";
+  };
+
+  App.renderFishingMotion = function renderFishingMotion(game) {
+    const fishing = game.state.fishing;
+    const refs = game.refs;
+    if (!refs || fishing.mode === "idle") return;
+    const value = fishing.mode === "charging" ? fishing.castPower :
+      fishing.mode === "aiming" ? fishing.aim : fishing.mode === "reeling" ? fishing.progress : 1;
+    refs.actionMeterFill.style.width = `${value * 100}%`;
+    refs.actionMeterValue.textContent = `${Math.round(value * 100)}%`;
+    if (fishing.mode === "hooking") refs.hookIndicator.style.left = `${fishing.hookMarker * 100}%`;
+    if (fishing.mode === "reeling") {
+      refs.targetZone.style.top = `${(fishing.marker - fishing.targetWidth / 2) * 100}%`;
+      refs.reelFish.style.top = `${fishing.fishPosition * 100}%`;
+      refs.tensionFill.style.width = `${Math.round(fishing.tension * 100)}%`;
+    }
   };
 })();
 
