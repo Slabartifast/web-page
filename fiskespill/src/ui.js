@@ -63,6 +63,10 @@
       actionMeterValue: byId("actionMeterValue"),
       actionMeterFill: byId("actionMeterFill"),
       minigameTrack: byId("minigameTrack"),
+      reelFish: byId("reelFish"),
+      hookTrack: byId("hookTrack"),
+      hookZone: byId("hookZone"),
+      hookIndicator: byId("hookIndicator"),
       tensionWrap: byId("tensionWrap"),
       tensionFill: byId("tensionFill"),
       targetZone: byId("targetZone"),
@@ -448,9 +452,9 @@
           <button class="danger-button" type="button" data-action="reset">Nullstill</button>
         </div>
         <div class="help-list">
-          <p><strong>Kast:</strong> hold inne og slipp for lengre kast.</p>
-          <p><strong>Napp:</strong> vent på utropstegn og trykk raskt.</p>
-          <p><strong>Innsveiving:</strong> hold inne for høyre, slipp for venstre.</p>
+          <p><strong>Kast:</strong> hold space for lengde, slipp og trykk igjen for retning.</p>
+          <p><strong>Napp:</strong> trykk space, så treff grønt felt.</p>
+          <p><strong>Fiskekamp:</strong> hold space for opp, slipp for ned.</p>
           <p><strong>Mål:</strong> fyll kassa, gled kona og bygg bedre utstyr.</p>
         </div>
       </article>
@@ -563,11 +567,14 @@
     refs.logDock.classList.toggle("hidden", phase !== "day");
 
     refs.fishingHud.classList.toggle("hidden", phase !== "day" || fishing.mode === "idle");
+    refs.fishingHud.classList.toggle("reeling", fishing.mode === "reeling");
+    refs.logDock.classList.toggle("hidden", phase !== "day" || fishing.mode === "reeling");
     refs.minigameTrack.classList.toggle("hidden", fishing.mode !== "reeling");
+    refs.hookTrack.classList.toggle("hidden", fishing.mode !== "hooking");
     refs.tensionWrap.classList.toggle("hidden", fishing.mode !== "reeling");
     refs.tensionFill.style.width = `${Math.round(fishing.tension * 100)}%`;
 
-    const showMeter = ["charging", "casting", "reeling"].includes(fishing.mode);
+    const showMeter = ["charging", "aiming", "casting", "reeling"].includes(fishing.mode);
     refs.actionMeterWrap.classList.toggle("hidden", !showMeter);
     refs.fishingStatus.textContent = fishing.message || "";
     refs.fishingHint.textContent = fishing.hint || "";
@@ -577,6 +584,9 @@
     if (fishing.mode === "charging") {
       meterLabel = "Kastestyrke";
       meterValue = fishing.castPower;
+    } else if (fishing.mode === "aiming") {
+      meterLabel = "Retning";
+      meterValue = fishing.aim;
     } else if (fishing.mode === "casting") {
       meterLabel = "Kast";
       meterValue = 1;
@@ -588,12 +598,22 @@
     refs.actionMeterLabel.textContent = meterLabel;
     refs.actionMeterValue.textContent = `${Math.round(meterValue * 100)}%`;
     refs.actionMeterFill.style.width = `${meterValue * 100}%`;
-    refs.targetZone.style.left = `${(fishing.targetCenter - fishing.targetWidth / 2) * 100}%`;
-    refs.targetZone.style.width = `${fishing.targetWidth * 100}%`;
-    refs.marker.style.left = `calc(${fishing.marker * 100}% - 5px)`;
+    refs.targetZone.style.top = `${(fishing.marker - fishing.targetWidth / 2) * 100}%`;
+    refs.targetZone.style.height = `${fishing.targetWidth * 100}%`;
+    refs.reelFish.style.top = `${fishing.fishPosition * 100}%`;
+    if (fishing.hookedFishId) {
+      const sprite = App.getFishSprite(fishing.hookedFishId);
+      if (refs.reelFish.dataset.fishId !== fishing.hookedFishId) {
+        refs.reelFish.src = sprite;
+        refs.reelFish.dataset.fishId = fishing.hookedFishId;
+      }
+    }
+    refs.hookZone.style.left = `${(fishing.hookCenter - fishing.hookWidth / 2) * 100}%`;
+    refs.hookZone.style.width = `${fishing.hookWidth * 100}%`;
+    refs.hookIndicator.style.left = `${fishing.hookMarker * 100}%`;
 
     refs.touchInteractButton.textContent =
-      fishing.mode === "bite" ? "Napp!" : fishing.mode === "reeling" ? "Sveiv" : "Kast";
+      fishing.mode === "bite" ? "Napp!" : fishing.mode === "hooking" ? "Tilslag" : fishing.mode === "aiming" ? "Kast" : fishing.mode === "reeling" ? "Løft" : "Kast";
   };
 })();
 
