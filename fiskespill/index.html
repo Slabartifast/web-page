@@ -44,8 +44,8 @@
                   <p class="phase-kicker">Velkommen til kveldsskiftet</p>
                   <h1>Fjord &amp; Fritert</h1>
                   <p class="phase-lead">
-                    Du fisker om dagen og kona di driver taverna om kvelden. Finn vann,
-                    kast ut, få fangsten i kassa og bygg dere opp til en skikkelig
+                    Du fisker om dagen og driver restaurant om kvelden. Finn vann,
+                    kast ut, få fangsten i kassa og bygg opp en skikkelig
                     kystinstitusjon.
                   </p>
                   <div class="welcome-points">
@@ -110,18 +110,18 @@
                   <h2>Hvor vil du fiske i dag?</h2>
                   <p class="phase-lead">
                     Velg morgenens område før du legger ut. Senere steder er større og
-                    mer krevende, men de har også fisk som får kona di til å smile med
-                    hele menyen.
+                    mer krevende, men de har også fisk som kan løfte menyen.
                   </p>
                   <div id="mapSelectPanel"></div>
                 </div>
               </article>
 
-              <article class="phase-card hidden" id="summaryScreen">
+              <article class="phase-card phase-list hidden" id="summaryScreen">
                 <div class="phase-copy">
                   <p class="phase-kicker">Kvelden er over</p>
-                  <h2>Kona oppsummerer nattas drift</h2>
-                  <p class="phase-lead" id="summarySpeech"></p>
+                  <h2>Oppsummering av salg</h2>
+                  <div class="reputation-hero"><span>RYKTE</span><strong id="summaryReputation">0</strong><small id="summaryReputationChange">+0 i kveld</small></div>
+                  <div id="reputationFactors" class="reputation-factors"></div>
                   <div class="summary-grid">
                     <div class="summary-chip">
                       <span class="label">Inntekt</span>
@@ -145,7 +145,7 @@
                     Se på utstyr
                   </button>
                 </div>
-                <div class="phase-art">
+                <div class="phase-art summary-art">
                   <svg viewBox="0 0 360 280" class="scene-art" aria-hidden="true">
                     <rect width="360" height="280" rx="28" fill="#f4e8cf" />
                     <rect x="24" y="124" width="148" height="92" rx="14" fill="#bf7f48" />
@@ -162,25 +162,26 @@
                       <circle cx="6" cy="-3" r="2.5" fill="#17313a" />
                       <path d="M-7 9 Q0 15 7 9" fill="none" stroke="#17313a" stroke-width="2.5" stroke-linecap="round" />
                     </g>
-                    <g transform="translate(242 128)">
-                      <circle cx="0" cy="0" r="17" fill="#f3c48f" />
-                      <rect x="-23" y="14" width="46" height="68" rx="14" fill="#d26b50" />
-                      <circle cx="-6" cy="-4" r="2.5" fill="#17313a" />
-                      <circle cx="6" cy="-4" r="2.5" fill="#17313a" />
-                      <path d="M-7 9 Q0 15 7 9" fill="none" stroke="#17313a" stroke-width="2.5" stroke-linecap="round" />
-                      <path d="M-20 38 Q0 21 20 38" fill="none" stroke="#fff4ea" stroke-width="8" stroke-linecap="round" />
-                    </g>
                   </svg>
                 </div>
               </article>
               <article class="phase-card phase-list hidden" id="restaurantScreen">
                 <div class="phase-copy wide">
                   <p class="phase-kicker">Klokka er 18 · Kveld på tavernaen</p>
-                  <h2>Hva skal kona servere?</h2>
-                  <p class="phase-lead">Velg rett for hver fisk. Stekt er trygt, kaker treffer familier, filet frister matnerder. Fisk i tanken kan vente.</p>
+                  <h2>Hva skal du servere?</h2>
+                  <p class="phase-lead">Velg rett for hver fisk. Kaker løfter enkel fisk, stekt krever bedre råvare. De beste rettene får bord først; resten går til grossist. Fisk i tanken kan vente.</p>
                   <p id="restaurantMeta"></p>
                   <div class="phase-scroll" id="restaurantPanel"></div>
                   <button class="primary-button phase-button" id="serveButton" type="button">Server gjestene</button>
+                </div>
+              </article>
+              <article class="phase-card phase-list hidden" id="eveningScreen">
+                <div class="phase-copy wide">
+                  <p class="phase-kicker">Kvelden pågår</p>
+                  <h2 id="eveningTitle">Serverer gjestene</h2>
+                  <div class="evening-progress"><div id="eveningProgressFill"></div></div>
+                  <p id="eveningCount">0 kunder</p>
+                  <div id="eveningEvents" class="phase-scroll evening-events"></div>
                 </div>
               </article>
               <article class="phase-card phase-list hidden" id="afterShopScreen">
@@ -189,7 +190,7 @@
                   <h2>Oppgrader utstyret</h2>
                   <p class="phase-lead">Bruk kveldens inntekt på fiskeutstyr, båt, bag, tank eller restaurant.</p>
                   <div class="phase-scroll" id="afterShopPanel"></div>
-                  <button class="primary-button phase-button" id="afterShopButton" type="button">Se på ferdigheter</button>
+                  <button class="primary-button phase-button" id="afterShopButton" type="button">Videre</button>
                 </div>
               </article>
               <article class="phase-card phase-list hidden" id="afterSkillsScreen">
