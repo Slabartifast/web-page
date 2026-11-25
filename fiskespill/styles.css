@@ -192,7 +192,7 @@ canvas {
 .journal-card .fish-sprite { width: 130px; height: 72px; margin: 0 auto 6px; }
 
 .phase-card {
-  width: min(92%, 880px);
+  width: min(96%, 1040px);
   min-height: min(72%, 430px);
   max-height: calc(100% - 16px);
   display: grid;
@@ -216,9 +216,9 @@ canvas {
 .phase-copy.wide {
   grid-column: 1 / -1;
 }
-.phase-list { height: min(80%, 500px); min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.phase-list { height: min(88%, 650px); min-height: 0; grid-template-rows: minmax(0, 1fr); }
 .phase-list .phase-copy { min-height: 0; overflow: hidden; }
-.phase-scroll { min-height: 0; flex: 1 1 0; overflow-y: auto; overflow-x: hidden; padding-right: 6px; overscroll-behavior: contain; }
+.phase-scroll { min-height: 0; flex: 1 1 0; overflow-y: auto; overflow-x: hidden; padding-right: 6px; overscroll-behavior: contain; scrollbar-width: thin; }
 .restaurant-fish { display: grid; grid-template-columns: 68px 1fr minmax(130px, 190px); align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
 .restaurant-fish img { width: 64px; height: 48px; object-fit: contain; image-rendering: pixelated; }
 .restaurant-fish small { display: block; color: var(--muted); }
@@ -229,6 +229,22 @@ canvas {
 .upgrade-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; row-gap: 5px; }
 .upgrade-heading { font-weight: 700; font-size: .8rem; line-height: 1.25; }
 .upgrade-cell { min-width: 0; font-size: .79rem; line-height: 1.35; color: var(--muted); }
+.shop-card, .skill-card, .map-card, .journal-card, .quest-card { border-color: rgba(24,49,58,.27); }
+.shop-button, .skill-button, .bait-button { border: 2px solid #407687; background: #f3faf9; font-weight: 700; }
+.shop-button:not([disabled]):hover, .skill-button:not([disabled]):hover { background: #dfeeed; }
+.phase-button { border: 2px solid #9e5822; font-weight: 700; }
+.reputation-hero { display: flex; align-items: baseline; gap: 12px; padding: 12px 16px; border-radius: 16px; background: #e2f0dc; border: 2px solid #66a76b; }
+.reputation-hero strong { font-size: 2.4rem; }
+.reputation-hero small { margin-left: auto; font-weight: 700; }
+.reputation-factors { display: grid; gap: 4px; }
+.reputation-factors > div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(24,49,58,.17); font-size: .82rem; }
+.reputation-factors .positive { color: #287442; }
+.reputation-factors .negative { color: #aa4938; }
+.evening-progress { height: 18px; overflow: hidden; border-radius: 99px; background: #dce5df; }
+.evening-progress > div { height: 100%; width: 0; background: linear-gradient(90deg,#6ab77b,#e4ad58); }
+.evening-events p { margin: 0 0 7px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+#summaryScreen .phase-copy { grid-column: 1 / -1; overflow-y: auto; }
+#summaryScreen .summary-art { display: none; }
 
 .phase-copy h1,
 .phase-copy h2 {
@@ -777,5 +793,17 @@ canvas {
   .bottom-nav {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+@media (max-width: 600px) {
+  .app-shell { padding: 0; }
+  .game-frame { width: 100vw; height: 100dvh; aspect-ratio: auto; padding: 4px; border-radius: 0; }
+  .canvas-wrap { border-radius: 0; }
+  .phase-overlay { padding: 6px; }
+  .phase-card { width: 100%; max-height: 94%; padding: 14px; gap: 8px; }
+  .phase-list { height: 90%; }
+  .phase-copy { gap: 9px; }
+  .phase-art { display: none; }
+  .summary-screen .phase-copy { grid-column: 1 / -1; }
+  .shop-button, .skill-button, .phase-button { min-height: 46px; }
 }
 
