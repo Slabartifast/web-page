@@ -216,14 +216,19 @@ canvas {
 .phase-copy.wide {
   grid-column: 1 / -1;
 }
-.phase-list { min-height: min(80%, 500px); }
-.phase-list .phase-copy { overflow: hidden; }
-.phase-scroll { min-height: 0; flex: 1; overflow: auto; padding-right: 6px; display: grid; align-content: start; gap: 8px; }
+.phase-list { height: min(80%, 500px); min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.phase-list .phase-copy { min-height: 0; overflow: hidden; }
+.phase-scroll { min-height: 0; flex: 1 1 0; overflow-y: auto; overflow-x: hidden; padding-right: 6px; overscroll-behavior: contain; }
 .restaurant-fish { display: grid; grid-template-columns: 68px 1fr minmax(130px, 190px); align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
 .restaurant-fish img { width: 64px; height: 48px; object-fit: contain; image-rendering: pixelated; }
 .restaurant-fish small { display: block; color: var(--muted); }
 .restaurant-fish select { width: 100%; min-height: 36px; border: 1px solid var(--line); border-radius: 9px; background: #fffaf0; color: var(--ink); font: inherit; }
 .phase-scroll .shop-card, .phase-scroll .skill-card { margin-top: 0; }
+.phase-scroll .shop-card + .shop-card, .phase-scroll .skill-card + .skill-card { margin-top: 8px; }
+.shop-price { margin: 7px 0 9px; font-weight: 700; color: #96521a; }
+.upgrade-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; row-gap: 5px; }
+.upgrade-heading { font-weight: 700; font-size: .8rem; line-height: 1.25; }
+.upgrade-cell { min-width: 0; font-size: .79rem; line-height: 1.35; color: var(--muted); }
 
 .phase-copy h1,
 .phase-copy h2 {
