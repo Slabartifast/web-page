@@ -507,6 +507,13 @@ canvas {
   box-shadow: 0 18px 32px rgba(14, 24, 29, 0.34);
   transform: translateX(-50%);
 }
+.fishing-hud.reeling {
+  left: auto;
+  right: 26%;
+  bottom: calc(var(--bottom-bar-height) + 10px);
+  width: 190px;
+  transform: none;
+}
 
 .fishing-row {
   align-items: flex-start;
@@ -524,10 +531,12 @@ canvas {
 
 .minigame-track {
   position: relative;
-  height: 18px;
+  height: 180px;
+  width: 76px;
+  margin: 0 auto;
   overflow: hidden;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
 }
 
 .target-zone,
@@ -539,8 +548,24 @@ canvas {
 }
 
 .target-zone {
+  left: 0;
+  width: 100%;
   background: rgba(116, 201, 131, 0.84);
 }
+
+.reel-fish {
+  position: absolute;
+  left: 4px;
+  width: 68px;
+  height: 40px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  transform: translateY(-50%);
+}
+
+.hook-track { position: relative; height: 26px; border-radius: 8px; background: rgba(255,255,255,.16); }
+.hook-zone { position: absolute; top: 0; height: 100%; background: var(--good); border-radius: 7px; }
+.hook-indicator { position: absolute; top: -3px; width: 5px; height: 32px; background: #fff4de; border-radius: 3px; }
 
 .marker {
   width: 10px;
