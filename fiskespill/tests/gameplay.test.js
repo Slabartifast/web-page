@@ -11,6 +11,26 @@ const state = App.createInitialState();
 state.phase = "day";
 const map = App.getMapById(state.currentMapId);
 assert.equal(App.getBagCapacity(state), 3);
+state.player.x = map.spawn.x;
+state.player.y = map.spawn.y;
+const shortCast = App.getCastContext(state, map, 1);
+state.equipment.rodLevel = 3;
+const improvedCast = App.getCastContext(state, map, 1);
+assert.ok(improvedCast.waterDepth > shortCast.waterDepth, "Bedre stang må nå dypere vann");
+state.equipment.rodLevel = 1;
+
+const lureState = App.createInitialState();
+lureState.phase = "day";
+lureState.activeBaitId = "sluk";
+lureState.player.x = map.spawn.x;
+lureState.player.y = map.spawn.y;
+lureState.fishing.mode = "waiting";
+lureState.fishing.castPoint = { x: 390, y: map.spawn.y };
+lureState.fishing.waterDepth = 75;
+const startDistance = Math.abs(lureState.fishing.castPoint.x - lureState.player.x);
+App.handleFishingInput(lureState, map, { interactPressed: true });
+assert.ok(Math.abs(lureState.fishing.castPoint.x - lureState.player.x) < startDistance,
+  "Sveiving med sluk må trekke agnet inn");
 
 const castState = App.createInitialState();
 castState.phase = "day";
@@ -18,14 +38,17 @@ castState.player.x = map.spawn.x;
 castState.player.y = map.spawn.y;
 assert.equal(App.beginFishingCharge(castState, map), true);
 App.updateFishing(castState, { interactHeld: true }, 0.35, map);
-App.updateFishing(castState, { interactReleased: true }, 0.01, map);
+App.handleFishingInput(castState, map, { interactPressed: true });
 assert.equal(castState.fishing.mode, "aiming");
-App.updateFishing(castState, {}, 0.2, map);
+App.updateFishing(castState, {}, 0.23, map);
+castState.fishing.aim = 0.5;
 App.handleFishingInput(castState, map, { interactPressed: true });
 assert.equal(castState.fishing.mode, "casting");
 App.updateFishing(castState, {}, 0.36, map);
 assert.equal(castState.fishing.mode, "waiting");
-App.updateFishing(castState, {}, castState.fishing.waitTime + 0.01, map);
+for (let attempt = 0; attempt < 100 && castState.fishing.mode === "waiting"; attempt += 1) {
+  App.updateFishing(castState, {}, castState.fishing.waitTime + 0.01, map);
+}
 assert.equal(castState.fishing.mode, "bite");
 
 state.fishing.mode = "bite";
@@ -45,6 +68,14 @@ state.fishing.hookMarker = state.fishing.hookCenter;
 App.handleFishingInput(state, map, { interactPressed: true });
 assert.equal(state.fishing.mode, "reeling");
 const hooked = state.fishing.hookedFishId;
+state.fishing.fishSpeed = 0;
+state.fishing.fishMoveTimer = 100;
+state.fishing.fishPosition = state.fishing.marker;
+for (let frame = 0; frame < 40; frame += 1) {
+  App.updateFishing(state, { interactHeld: frame % 2 === 0 }, 0.05, map);
+}
+assert.ok(state.fishing.mode === "reeling" && state.fishing.progress < 1,
+  "En fiskekamp skal ikke være ferdig etter to sekunder");
 state.fishing.progress = 0.999;
 state.fishing.marker = state.fishing.fishPosition;
 App.updateFishing(state, { interactHeld: false }, 0.05, map);
