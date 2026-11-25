@@ -154,25 +154,25 @@
       id: "casting",
       name: "Kasteteknikk",
       maxLevel: 5,
-      description: "Lengre kast, litt friere valgfrihet og mindre busk-basert ydmykelse.",
+      description: "+18 rekkevidde per poeng. Dypere kast gir bedre odds, aldri garantier.",
     },
     instincts: {
       id: "instincts",
       name: "Fiskeblikk",
       maxLevel: 5,
-      description: "Bedre reaksjon når det napper og litt mer fiskete intuisjon.",
+      description: "+0,2 sekunder på nappet og bredere felt for tilslaget.",
     },
     reeling: {
       id: "reeling",
       name: "Rolig hånd",
       maxLevel: 5,
-      description: "Snillere innsveiving, større grønn sone og færre panikkrykk.",
+      description: "Større grønn sone, raskere fremdrift og mindre tap i fiskekampen.",
     },
     commerce: {
       id: "commerce",
       name: "Markedssans",
       maxLevel: 5,
-      description: "Kona di får bedre pris når du faktisk kommer hjem med noe brukbart.",
+      description: "+8 % pris per poeng på rettene dere serverer.",
     },
   };
 
@@ -265,12 +265,19 @@
         restaurantLevel: 1,
         boatLevel: 0,
         bagLevel: 1,
+        tankLevel: 1,
       },
       ownedBaits: {
         mark: true,
       },
       activeBaitId: "mark",
       inventory: [],
+      fishTank: [],
+      restaurantPlan: {},
+      reputation: 0,
+      stars: 1,
+      lastReview: 0,
+      customerMix: [],
       pendingCatch: null,
       catchLog: [],
       messageLog: [],
@@ -330,7 +337,14 @@
       ? merged.skillPoints
       : Math.max(0, merged.level - 1);
     merged.inventory = Array.isArray(merged.inventory) ? merged.inventory : [];
+    merged.fishTank = Array.isArray(merged.fishTank) ? merged.fishTank : [];
+    merged.restaurantPlan = merged.restaurantPlan || {};
+    merged.customerMix = Array.isArray(merged.customerMix) ? merged.customerMix : [];
+    merged.reputation = App.utils.clamp(Number(merged.reputation) || 0, 0, 100);
+    merged.stars = App.utils.clamp(1 + merged.reputation / 25, 1, 5);
+    merged.lastReview = App.utils.clamp(Number(merged.lastReview) || 0, 0, 100);
     merged.equipment.bagLevel = App.getBagData(merged.equipment.bagLevel).level;
+    merged.equipment.tankLevel = App.getTankData(merged.equipment.tankLevel).level;
     merged.pendingCatch = merged.pendingCatch && App.getFishById(merged.pendingCatch.fishId)
       ? merged.pendingCatch : null;
     merged.catchLog = Array.isArray(merged.catchLog) ? merged.catchLog.slice(0, 16) : [];
