@@ -1,6 +1,7 @@
 (function () {
   const App = (window.FjordFritert = window.FjordFritert || {});
   const { clamp, lerp, weightedPick } = App.utils;
+  const ACTIVE_BAITS = new Set(["sluk", "spinner", "pilk"]);
 
   function getEligibleFish(state, map) {
     const rodData = App.getRodData(state.equipment.rodLevel) || App.getRodData(1);
@@ -22,6 +23,9 @@
         }
         let weight = entry.weight;
         weight *= App.getBaitModifier(fish, state.activeBaitId);
+        if (!ACTIVE_BAITS.has(state.activeBaitId) && fish.qualityTier > 1) {
+          weight *= Math.pow(0.72, fish.qualityTier - 1);
+        }
         const depth = state.fishing.waterDepth || 0;
         const requiredDepth = Math.max(0, (fish.basePrice - 30) * 0.65);
         if (depth < requiredDepth) return null;
@@ -58,7 +62,7 @@
         lineData.heavyBonus +
         boatData.rareBonus * 0.45 +
         castingSkill * 0.03 +
-        (castStrength || 0) * 0.1 +
+        (castStrength || 0) * 0.16 +
         Math.random() * 0.38,
       0,
       1
@@ -72,7 +76,9 @@
       rodData.easeBonus * 2 +
       reelData.controlBonus * 2 +
       reelingSkill * 0.18 +
-      sizeBonus;
+      sizeBonus +
+      Math.min(0.65, (state.fishing.waterDepth || 0) / 190) +
+      (ACTIVE_BAITS.has(state.activeBaitId) ? 0.28 : -0.22);
     const qualityInfo = App.getQualityInfo(qualityScore);
     const qualityRank = App.QUALITY_CLASSES.indexOf(qualityInfo);
     const baseSaleValue = Math.max(
@@ -99,7 +105,7 @@
     if (state.phase !== "day") {
       return false;
     }
-    const castContext = App.getCastContext(state, map, 0.05);
+    const castContext = App.getCastContext(state, map, 1);
     if (!castContext.ok) {
       App.addMessage(state, castContext.reason);
       return false;
@@ -107,8 +113,9 @@
 
     state.fishing = App.createEmptyFishingState();
     state.fishing.mode = "charging";
+    state.fishing.inputLock = 0.28;
     state.fishing.message = "Kastelengde";
-    state.fishing.hint = "Slipp space for å låse lengden.";
+    state.fishing.hint = "";
     return true;
   };
 
@@ -135,7 +142,7 @@
     fishing.hookWidth = clamp(0.34 - difficulty * 0.035 + instincts * 0.018, 0.13, 0.32);
     fishing.hookTime = 3.5;
     fishing.message = "Tilslag!";
-    fishing.hint = "Trykk space i grønt felt.";
+    fishing.hint = "";
   }
 
   function startReeling(state, map) {
@@ -148,7 +155,7 @@
     fishing.mode = "reeling";
     fishing.timer = 0;
     fishing.elapsed = 0;
-    fishing.progress = 0.25 + reelData.controlBonus * 0.12 + reelingSkill * 0.02;
+    fishing.progress = 0.15 + reelData.controlBonus * 0.10 + reelingSkill * 0.015;
     fishing.marker = 0.55;
     fishing.markerVelocity = 0;
     fishing.targetCenter = 0.55;
@@ -166,12 +173,12 @@
     fishing.fishPosition = 0.35;
     fishing.fishDestination = 0.35;
     fishing.fishMoveTimer = 0.25;
-    fishing.fishSpeed = 0.22 + difficulty * 0.08 + pattern * 0.025;
+    fishing.fishSpeed = 0.38 + difficulty * 0.07 + pattern * 0.025;
     fishing.fishJumpiness = 0.8 + difficulty * 0.16 + pattern * 0.08;
     fishing.tension = 0.18;
     fishing.burstTimer = 0;
     fishing.message = `${fish ? fish.name : "Fisk"} på kroken!`;
-    fishing.hint = "Hold space: opp. Slipp: ned. Hold fisken i grønt.";
+    fishing.hint = "";
   }
 
   App.handleFishingInput = function handleFishingInput(state, map, input) {
@@ -181,6 +188,16 @@
     }
     if (fishing.mode === "idle" && input.interactPressed) {
       App.beginFishingCharge(state, map);
+      return;
+    }
+    if (fishing.inputLock > 0) return;
+    if (fishing.mode === "charging" && input.interactPressed) {
+      fishing.mode = "aiming";
+      fishing.aim = 0.5;
+      fishing.aimDirection = 1;
+      fishing.inputLock = 0.22;
+      fishing.message = "Retning";
+      fishing.hint = "";
       return;
     }
     if (fishing.mode === "aiming" && input.interactPressed) {
@@ -212,12 +229,27 @@
       }
       return;
     } else if (fishing.mode === "waiting" && input.interactPressed &&
-      ["sluk", "spinner", "pilk"].includes(state.activeBaitId) &&
-      fishing.jigCooldown <= 0 && fishing.jigCount < 3) {
-      fishing.timer += 0.55;
-      fishing.jigCooldown = 0.6;
+      ACTIVE_BAITS.has(state.activeBaitId) && fishing.jigCooldown <= 0) {
+      fishing.timer += 0.7;
+      fishing.jigCooldown = 0.35;
+      fishing.jigTimer = 1.1;
       fishing.jigCount += 1;
-      fishing.message = "Agn i bevegelse";
+      const distance = Math.hypot(fishing.castPoint.x - state.player.x, fishing.castPoint.y - state.player.y);
+      if (distance <= 40) {
+        state.fishing = App.createEmptyFishingState();
+        App.addMessage(state, "Agnet er tilbake. Kast igjen.");
+        return;
+      }
+      const fraction = Math.min(14, distance - 25) / distance;
+      fishing.castPoint.x += (state.player.x - fishing.castPoint.x) * fraction;
+      fishing.castPoint.y += (state.player.y - fishing.castPoint.y) * fraction;
+      fishing.waterDepth = Math.max(0, fishing.waterDepth - 14);
+      if (!App.isPointInWater(map, fishing.castPoint.x, fishing.castPoint.y)) {
+        state.fishing = App.createEmptyFishingState();
+        App.addMessage(state, "Agnet er på land. Kast igjen.");
+        return;
+      }
+      fishing.message = "Sveiver inn";
     }
   };
 
@@ -230,6 +262,7 @@
     if (fishing.exclamationTimer > 0) {
       fishing.exclamationTimer = Math.max(0, fishing.exclamationTimer - deltaSeconds);
     }
+    fishing.inputLock = Math.max(0, fishing.inputLock - deltaSeconds);
 
     if (fishing.mode === "charging") {
       fishing.charge += deltaSeconds * (1.25 + App.getSkillLevel(state, "casting") * 0.03) * (fishing.chargeDirection || 1);
@@ -239,13 +272,6 @@
       }
       fishing.castPower = fishing.charge;
       fishing.message = `Lengde ${Math.round(fishing.castPower * 100)}%`;
-      if (input.interactReleased) {
-        fishing.mode = "aiming";
-        fishing.aim = 0.5;
-        fishing.aimDirection = 1;
-        fishing.message = "Velg retning";
-        fishing.hint = "Trykk space for å kaste.";
-      }
       return;
     }
 
@@ -264,29 +290,34 @@
         const instincts = App.getSkillLevel(state, "instincts");
         fishing.mode = "waiting";
         fishing.timer = 0;
-        fishing.waitTime = clamp(
-          2.4 + Math.random() * (3.6 + map.difficulty * 0.35) - instincts * 0.12 - (state.activeBaitId === "sluk" || state.activeBaitId === "spinner" ? 0.8 : 0),
-          1.5,
-          7.8
-        );
+        fishing.waitTime = ACTIVE_BAITS.has(state.activeBaitId)
+          ? 1.6 + Math.random() * 1.4
+          : clamp(2.4 + Math.random() * (3.6 + map.difficulty * 0.35) - instincts * 0.12, 1.5, 7.8);
         fishing.message = "Snøret ligger ute.";
-        fishing.hint = ["sluk", "spinner", "pilk"].includes(state.activeBaitId)
-          ? "Trykk space for å lokke fisken." : "Vent på napp.";
+        fishing.hint = ACTIVE_BAITS.has(state.activeBaitId) ? "Trykk space for å sveive inn." : "";
       }
       return;
     }
 
     if (fishing.mode === "waiting") {
       fishing.jigCooldown = Math.max(0, fishing.jigCooldown - deltaSeconds);
+      fishing.jigTimer = Math.max(0, fishing.jigTimer - deltaSeconds);
       fishing.timer += deltaSeconds;
       if (fishing.timer >= fishing.waitTime) {
+        const chance = ACTIVE_BAITS.has(state.activeBaitId)
+          ? (fishing.jigTimer > 0 ? 0.72 : 0.04) : 0.86;
+        if (Math.random() > chance) {
+          fishing.timer = 0;
+          fishing.waitTime = 1.2 + Math.random() * 1.4;
+          return;
+        }
         const instincts = App.getSkillLevel(state, "instincts");
         fishing.mode = "bite";
         fishing.biteWindow = clamp(1.9 + instincts * 0.2 - map.difficulty * 0.1, 1.2, 2.7);
         fishing.timer = fishing.biteWindow;
         fishing.exclamationTimer = fishing.biteWindow;
         fishing.message = "Napp!";
-        fishing.hint = "Trykk på space!";
+        fishing.hint = "";
       }
       return;
     }
@@ -340,18 +371,18 @@
       if (inTarget) {
         fishing.tension = Math.max(0, fishing.tension - 0.28 * deltaSeconds);
         fishing.progress +=
-          (0.31 + rodData.easeBonus * 0.22 + reelData.controlBonus * 0.22 + reelingSkill * 0.027) *
+          (0.16 + rodData.easeBonus * 0.10 + reelData.controlBonus * 0.10 + reelingSkill * 0.012) *
           deltaSeconds;
       } else {
         fishing.tension = Math.min(1, fishing.tension + (input.interactHeld ? 0.21 : 0.09) * deltaSeconds);
         fishing.progress -= clamp(
-          0.135 - reelData.controlBonus * 0.04 - reelingSkill * 0.012,
-          0.05,
-          0.16
+          0.16 - reelData.controlBonus * 0.035 - reelingSkill * 0.008,
+          0.08,
+          0.18
         ) * deltaSeconds;
       }
       fishing.progress = clamp(fishing.progress, 0, 1);
-      fishing.message = fishing.tension > 0.72 ? "Snøret er stramt! Slipp space." : "Sveiv inn fisken";
+      fishing.message = fishing.tension > 0.72 ? "Slipp!" : "Fiskekamp";
       if (fishing.tension >= 1) {
         state.fishing = App.createEmptyFishingState();
         App.addMessage(state, "Snøret røyk. Slipp opp når det strammer seg!");
