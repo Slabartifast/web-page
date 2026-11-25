@@ -107,12 +107,12 @@
 
     state.fishing = App.createEmptyFishingState();
     state.fishing.mode = "charging";
-    state.fishing.message = "Lad kastet.";
-    state.fishing.hint = "Hold inne lenger for lengre kast.";
+    state.fishing.message = "Kastelengde";
+    state.fishing.hint = "Slipp space for å låse lengden.";
     return true;
   };
 
-  function resolveBitePress(state, map) {
+  function startHooking(state, map) {
     const fishing = state.fishing;
     const instincts = App.getSkillLevel(state, "instincts");
     const maxWindow = fishing.biteWindow;
@@ -128,30 +128,50 @@
     const rodData = App.getRodData(state.equipment.rodLevel) || App.getRodData(1);
 
     fishing.hookedFishId = preview ? preview.fish.id : null;
+    fishing.mode = "hooking";
+    fishing.hookMarker = Math.random() * 0.2;
+    fishing.hookDirection = 1;
+    fishing.hookCenter = 0.18 + Math.random() * 0.64;
+    fishing.hookWidth = clamp(0.34 - difficulty * 0.035 + instincts * 0.018, 0.13, 0.32);
+    fishing.hookTime = 3.5;
+    fishing.message = "Tilslag!";
+    fishing.hint = "Trykk space i grønt felt.";
+  }
+
+  function startReeling(state, map) {
+    const fishing = state.fishing;
+    const fish = App.getFishById(fishing.hookedFishId);
+    const difficulty = fish ? fish.baseDifficulty : map.difficulty + 1;
+    const reelingSkill = App.getSkillLevel(state, "reeling");
+    const reelData = App.getReelData(state.equipment.reelLevel) || App.getReelData(1);
+    const rodData = App.getRodData(state.equipment.rodLevel) || App.getRodData(1);
     fishing.mode = "reeling";
     fishing.timer = 0;
     fishing.elapsed = 0;
-    fishing.progress = 0.36 + reelData.controlBonus * 0.16 + reelingSkill * 0.02;
-    fishing.marker = 0.45;
+    fishing.progress = 0.25 + reelData.controlBonus * 0.12 + reelingSkill * 0.02;
+    fishing.marker = 0.55;
     fishing.markerVelocity = 0;
-    fishing.targetCenter = 0.36 + Math.random() * 0.28;
+    fishing.targetCenter = 0.55;
     fishing.targetWidth = clamp(
-      0.44 -
-        difficulty * 0.036 +
+      0.50 -
+        difficulty * 0.043 +
         rodData.easeBonus * 0.45 +
         reelData.controlBonus * 0.38 +
         reelingSkill * 0.03,
       0.26,
       0.54
     );
-    const pattern = preview ? [...preview.fish.id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 4 : 0;
+    const pattern = fish ? [...fish.id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 4 : 0;
     fishing.targetVelocity = (0.065 + difficulty * 0.036) * (pattern % 2 ? -1 : 1);
-    fishing.burstChance = 0.15 + difficulty * 0.075 + pattern * 0.06;
-    fishing.burstStrength = 1.45 + difficulty * 0.12 + pattern * 0.14;
+    fishing.fishPosition = 0.35;
+    fishing.fishDestination = 0.35;
+    fishing.fishMoveTimer = 0.25;
+    fishing.fishSpeed = 0.22 + difficulty * 0.08 + pattern * 0.025;
+    fishing.fishJumpiness = 0.8 + difficulty * 0.16 + pattern * 0.08;
     fishing.tension = 0.18;
     fishing.burstTimer = 0;
-    fishing.message = `${preview ? preview.fish.name : "Fisk"} på kroken!`;
-    fishing.hint = "Hold space: høyre. Slipp: venstre. Følg grønt felt.";
+    fishing.message = `${fish ? fish.name : "Fisk"} på kroken!`;
+    fishing.hint = "Hold space: opp. Slipp: ned. Hold fisken i grønt.";
   }
 
   App.handleFishingInput = function handleFishingInput(state, map, input) {
@@ -163,8 +183,34 @@
       App.beginFishingCharge(state, map);
       return;
     }
+    if (fishing.mode === "aiming" && input.interactPressed) {
+      const castContext = App.getCastContext(state, map, fishing.castPower, fishing.aim);
+      if (!castContext.ok) {
+        state.fishing = App.createEmptyFishingState();
+        App.addMessage(state, castContext.reason);
+        return;
+      }
+      fishing.mode = "casting";
+      fishing.timer = 0;
+      fishing.castStrength = fishing.castPower;
+      fishing.castPoint = castContext.castPoint;
+      fishing.waterDepth = castContext.waterDepth;
+      fishing.message = "Kast!";
+      fishing.hint = "Vent på napp.";
+      return;
+    }
     if (fishing.mode === "bite" && input.interactPressed) {
-      resolveBitePress(state, map);
+      startHooking(state, map);
+      return;
+    }
+    if (fishing.mode === "hooking" && input.interactPressed) {
+      if (Math.abs(fishing.hookMarker - fishing.hookCenter) <= fishing.hookWidth / 2) {
+        startReeling(state, map);
+      } else {
+        state.fishing = App.createEmptyFishingState();
+        App.addMessage(state, "Tilslaget bommet. Fisken slapp unna.");
+      }
+      return;
     } else if (fishing.mode === "waiting" && input.interactPressed &&
       ["sluk", "spinner", "pilk"].includes(state.activeBaitId) &&
       fishing.jigCooldown <= 0 && fishing.jigCount < 3) {
@@ -186,27 +232,28 @@
     }
 
     if (fishing.mode === "charging") {
-      const chargeSpeed = 0.72 + App.getSkillLevel(state, "casting") * 0.04;
-      if (input.interactHeld) {
-        fishing.charge = clamp(fishing.charge + deltaSeconds * chargeSpeed, 0, 1);
-        fishing.castPower = fishing.charge;
-        fishing.message = `Kast ${Math.round(fishing.castPower * 100)}%`;
-        fishing.hint = "Slipp space for å kaste.";
+      fishing.charge += deltaSeconds * (1.25 + App.getSkillLevel(state, "casting") * 0.03) * (fishing.chargeDirection || 1);
+      if (fishing.charge >= 1 || fishing.charge <= 0) {
+        fishing.charge = clamp(fishing.charge, 0, 1);
+        fishing.chargeDirection = fishing.charge >= 1 ? -1 : 1;
       }
-      if (input.interactReleased || fishing.charge >= 1) {
-        const castContext = App.getCastContext(state, map, fishing.castPower);
-        if (!castContext.ok) {
-          state.fishing = App.createEmptyFishingState();
-          App.addMessage(state, castContext.reason);
-          return;
-        }
-        fishing.mode = "casting";
-        fishing.timer = 0;
-        fishing.castStrength = fishing.castPower;
-        fishing.castPoint = castContext.castPoint;
-        fishing.waterDepth = castContext.waterDepth;
-        fishing.message = "Snøret flyr ut.";
-        fishing.hint = "Vent på napp.";
+      fishing.castPower = fishing.charge;
+      fishing.message = `Lengde ${Math.round(fishing.castPower * 100)}%`;
+      if (input.interactReleased) {
+        fishing.mode = "aiming";
+        fishing.aim = 0.5;
+        fishing.aimDirection = 1;
+        fishing.message = "Velg retning";
+        fishing.hint = "Trykk space for å kaste.";
+      }
+      return;
+    }
+
+    if (fishing.mode === "aiming") {
+      fishing.aim += deltaSeconds * 1.25 * fishing.aimDirection;
+      if (fishing.aim >= 1 || fishing.aim <= 0) {
+        fishing.aim = clamp(fishing.aim, 0, 1);
+        fishing.aimDirection *= -1;
       }
       return;
     }
@@ -253,37 +300,43 @@
       return;
     }
 
+    if (fishing.mode === "hooking") {
+      fishing.hookMarker += deltaSeconds * (0.85 + map.difficulty * 0.08) * fishing.hookDirection;
+      if (fishing.hookMarker >= 1 || fishing.hookMarker <= 0) {
+        fishing.hookMarker = clamp(fishing.hookMarker, 0, 1);
+        fishing.hookDirection *= -1;
+      }
+      fishing.hookTime -= deltaSeconds;
+      if (fishing.hookTime <= 0) {
+        state.fishing = App.createEmptyFishingState();
+        App.addMessage(state, "For sent med tilslaget.");
+      }
+      return;
+    }
+
     if (fishing.mode === "reeling") {
       const reelData = App.getReelData(state.equipment.reelLevel) || App.getReelData(1);
       const rodData = App.getRodData(state.equipment.rodLevel) || App.getRodData(1);
       const reelingSkill = App.getSkillLevel(state, "reeling");
       fishing.elapsed += deltaSeconds;
 
-      if (Math.random() < (fishing.burstChance || 0.28) * deltaSeconds) {
-        fishing.targetVelocity *= -1;
-        fishing.burstTimer = 0.55 + Math.random() * 0.5;
+      fishing.fishMoveTimer -= deltaSeconds;
+      if (fishing.fishMoveTimer <= 0) {
+        fishing.fishDestination = 0.06 + Math.random() * 0.88;
+        fishing.fishMoveTimer = (0.25 + Math.random() * 0.7) / fishing.fishJumpiness;
       }
-      fishing.burstTimer = Math.max(0, fishing.burstTimer - deltaSeconds);
-      fishing.targetCenter += fishing.targetVelocity * (fishing.burstTimer > 0 ? fishing.burstStrength || 1.9 : 1) * deltaSeconds;
-      if (
-        fishing.targetCenter < fishing.targetWidth / 2 ||
-        fishing.targetCenter > 1 - fishing.targetWidth / 2
-      ) {
-        fishing.targetVelocity *= -1;
-        fishing.targetCenter = clamp(
-          fishing.targetCenter,
-          fishing.targetWidth / 2,
-          1 - fishing.targetWidth / 2
-        );
+      const swim = fishing.fishDestination - fishing.fishPosition;
+      fishing.fishPosition += Math.sign(swim) * Math.min(Math.abs(swim), fishing.fishSpeed * deltaSeconds);
+
+      fishing.markerVelocity += (input.interactHeld ? -4.8 : 3.6) * deltaSeconds;
+      fishing.markerVelocity = clamp(fishing.markerVelocity, -2.2, 2.2);
+      fishing.marker = clamp(fishing.marker + fishing.markerVelocity * deltaSeconds,
+        fishing.targetWidth / 2, 1 - fishing.targetWidth / 2);
+      if (fishing.marker === fishing.targetWidth / 2 || fishing.marker === 1 - fishing.targetWidth / 2) {
+        fishing.markerVelocity = 0;
       }
 
-      const push = input.interactHeld ? 2.15 + reelData.controlBonus * 1.8 : -1.55;
-      fishing.markerVelocity += push * deltaSeconds;
-      fishing.markerVelocity *= Math.exp(-7 * deltaSeconds);
-      fishing.marker = clamp(fishing.marker + fishing.markerVelocity * deltaSeconds, 0, 1);
-
-      const inTarget =
-        Math.abs(fishing.marker - fishing.targetCenter) <= fishing.targetWidth / 2;
+      const inTarget = Math.abs(fishing.fishPosition - fishing.marker) <= fishing.targetWidth / 2;
       if (inTarget) {
         fishing.tension = Math.max(0, fishing.tension - 0.28 * deltaSeconds);
         fishing.progress +=
