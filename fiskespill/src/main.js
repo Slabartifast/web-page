@@ -358,6 +358,25 @@
     ctx.stroke();
     }
 
+    if (state.fishing.mode === "charging" || state.fishing.mode === "aiming") {
+      const forwardX = player.facingX || 1;
+      const forwardY = player.facingY || 0;
+      const aim = state.fishing.mode === "aiming" ? state.fishing.aim : 0.5;
+      const side = (aim - 0.5) * 1.7;
+      const tipX = player.x + (forwardX - forwardY * side) * 42;
+      const tipY = player.y - 12 + (forwardY + forwardX * side) * 42;
+      ctx.strokeStyle = "#704321";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(player.x, player.y - 12);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+      ctx.fillStyle = "#f7e8ba";
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     if (state.fishing.mode === "bite" || state.fishing.exclamationTimer > 0) {
       ctx.fillStyle = "#fff4de";
       ctx.beginPath();
