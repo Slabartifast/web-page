@@ -36,6 +36,14 @@
       mapSelectScreen: byId("mapSelectScreen"),
       summaryScreen: byId("summaryScreen"),
       restaurantScreen: byId("restaurantScreen"),
+      eveningScreen: byId("eveningScreen"),
+      eveningTitle: byId("eveningTitle"),
+      eveningProgressFill: byId("eveningProgressFill"),
+      eveningCount: byId("eveningCount"),
+      eveningEvents: byId("eveningEvents"),
+      summaryReputation: byId("summaryReputation"),
+      summaryReputationChange: byId("summaryReputationChange"),
+      reputationFactors: byId("reputationFactors"),
       restaurantPanel: byId("restaurantPanel"),
       restaurantMeta: byId("restaurantMeta"),
       serveButton: byId("serveButton"),
@@ -48,7 +56,6 @@
       startGameButton: byId("startGameButton"),
       nextDayButton: byId("nextDayButton"),
       mapSelectPanel: byId("mapSelectPanel"),
-      summarySpeech: byId("summarySpeech"),
       summaryRevenue: byId("summaryRevenue"),
       summaryCaught: byId("summaryCaught"),
       summaryXp: byId("summaryXp"),
@@ -260,6 +267,7 @@
     if (type === "bag" || type === "tank") return [`Kapasitet: ${item.capacity} kg.`, item.note];
     if (type === "restaurant") {
       return [
+        `${item.seats} sitteplasser.`,
         `Kveldsprisen på fisk ganges med ${item.saleMultiplier.toFixed(2)}.`,
         item.note,
       ];
@@ -366,10 +374,10 @@
     const state = game.state;
     const recipes = App.getAvailableRecipes(state);
     const candidates = App.getRestaurantCandidates(state);
-    if (!candidates.length) return `<p class="phase-lead">Ingen fisk i dag. Kona serverer poteter og et strengt blikk.</p>`;
+    if (!candidates.length) return `<p class="phase-lead">Ingen fisk i dag. Det blir en rolig kveld.</p>`;
     return candidates.map(({ fish, source }) => {
       const choice = App.getRestaurantChoice(state, fish, source);
-      const options = recipes.map((recipe) => `<option value="${recipe.id}" ${choice === recipe.id ? "selected" : ""}>${recipe.name}</option>`).join("");
+      const options = recipes.map((recipe) => `<option value="${recipe.id}" ${choice === recipe.id ? "selected" : ""}>${recipe.name} — ${recipe.description}</option>`).join("");
       return `<article class="restaurant-fish"><img src="${App.getFishSprite(fish.fishId)}" alt="" />
         <div><strong>${fish.name}</strong><small>${fish.weightKg.toFixed(1)} kg · ${fish.qualityLabel} · ${source === "tank" ? "i tanken" : "i bagen"}</small></div>
         <select aria-label="Tilbered ${fish.name}" data-restaurant-fish="${fish.id}">
@@ -506,7 +514,7 @@
           <p><strong>Kast:</strong> trykk space for lengde, igjen for å låse, igjen for retning.</p>
           <p><strong>Napp:</strong> trykk space, så treff grønt felt.</p>
           <p><strong>Fiskekamp:</strong> hold space for opp, slipp for ned.</p>
-          <p><strong>Mål:</strong> fyll kassa, gled kona og bygg bedre utstyr.</p>
+          <p><strong>Mål:</strong> fang god fisk, server klokt og bygg opp ryktet.</p>
         </div>
       </article>
     `;
@@ -580,8 +588,8 @@
     const plannedTankWeight = App.getRestaurantCandidates(state)
       .filter(({ fish, source }) => App.getRestaurantChoice(state, fish, source) === "tank")
       .reduce((sum, { fish }) => sum + fish.weightKg, 0);
-    const mix = state.customerMix.map(({ id, count }) => `${App.CUSTOMERS.find((entry) => entry.id === id)?.name || id} ${count}`).join(" · ");
-    refs.restaurantMeta.textContent = `Rykte ${state.reputation.toFixed(1)} · ${state.stars.toFixed(1)} stjerner · tank ${plannedTankWeight.toFixed(1)}/${App.getTankCapacity(state)} kg${plannedTankWeight > App.getTankCapacity(state) ? " — for mye i tanken" : ""}${mix ? ` · ${mix}` : ""}`;
+    const seats = App.getRestaurantData(state.equipment.restaurantLevel).seats;
+    refs.restaurantMeta.textContent = `Rykte ${state.reputation.toFixed(1)} · ${state.customerMix.length} kunder ventet · ${seats} sitteplasser · tank ${plannedTankWeight.toFixed(1)}/${App.getTankCapacity(state)} kg${plannedTankWeight > App.getTankCapacity(state) ? " — for mye i tanken" : ""}`;
     refs.serveButton.disabled = plannedTankWeight > App.getTankCapacity(state) + 0.001;
     setHtml(refs.journalPanel, renderJournal(game));
     setHtml(refs.menuPanel, renderMenu(game));
@@ -603,11 +611,25 @@
     refs.mapSelectScreen.classList.toggle("hidden", phase !== "mapSelect");
     refs.summaryScreen.classList.toggle("hidden", phase !== "summary");
     refs.restaurantScreen.classList.toggle("hidden", phase !== "restaurant");
+    refs.eveningScreen.classList.toggle("hidden", phase !== "evening");
     refs.afterShopScreen.classList.toggle("hidden", phase !== "afterShop");
     refs.afterSkillsScreen.classList.toggle("hidden", phase !== "afterSkills");
 
     const summary = state.lastDaySummary;
-    refs.summarySpeech.textContent = summary ? summary.spouseLine : "";
+    refs.summaryReputation.textContent = summary ? (summary.reputation || 0).toFixed(1) : "0";
+    refs.summaryReputationChange.textContent = summary && Number.isFinite(summary.reputationChange)
+      ? `${summary.reputationChange >= 0 ? "+" : ""}${summary.reputationChange.toFixed(1)} i kveld` : "";
+    setHtml(refs.reputationFactors, summary?.reputationFactors
+      ? summary.reputationFactors.map((factor) => `<div><span>${factor.label}</span><strong class="${factor.value < 0 ? "negative" : "positive"}">${factor.value >= 0 ? "+" : ""}${factor.value.toFixed(1)}</strong></div>`).join("")
+      : "");
+    const evening = state.evening;
+    const elapsed = phase === "evening" ? evening?.elapsed || 0 : 0;
+    refs.eveningProgressFill.style.width = `${Math.min(100, elapsed / 5 * 100)}%`;
+    const events = evening?.events || [];
+    const visibleCount = Math.min(events.length, Math.floor(elapsed / 3.8 * events.length));
+    refs.eveningTitle.textContent = elapsed >= 4.2 ? "Restauranten er stengt" : "Serverer gjestene";
+    refs.eveningCount.textContent = `${Math.min(state.lastDaySummary?.arrivals || 0, Math.round(elapsed / 3.8 * (state.lastDaySummary?.arrivals || 0)))} av ${state.lastDaySummary?.arrivals || 0} kunder`;
+    setHtml(refs.eveningEvents, events.slice(0, visibleCount).map((line) => `<p>${line}</p>`).join(""));
     refs.summaryRevenue.textContent = summary ? App.utils.formatKr(summary.revenue) : "0 kr";
     refs.summaryCaught.textContent = summary ? String(summary.caughtCount) : "0";
     refs.summaryXp.textContent = summary ? `${summary.xpGained} XP` : "0 XP";
@@ -618,7 +640,8 @@
           `<p><strong>Ønskefisk:</strong> ${summary.demandFishName}</p>`,
           `<p><strong>Solgt:</strong> ${summary.soldCount} fisk</p>`,
           ...(Number.isFinite(summary.avgReview) ? [
-            `<p><strong>Vurdering:</strong> ${summary.avgReview}/100 · ${(summary.stars || 1).toFixed(1)} stjerner · rykte ${(summary.reputation || 0).toFixed(1)}</p>`,
+            `<p><strong>Kunder:</strong> ${summary.seated || 0}/${summary.arrivals || 0} fikk plass · ${summary.served || 0} fikk fisk</p>`,
+            `<p><strong>Mat:</strong> ${summary.avgFood || 0}/100 · <strong>Service:</strong> ${summary.serviceScore || 0}/100 · <strong>Snittomtale:</strong> ${summary.avgReview}/100</p>`,
             `<p><strong>I tanken:</strong> ${summary.storedCount || 0} fisk</p>`,
           ] : []),
         ]
