@@ -515,6 +515,9 @@
     App.ensureUnlockedMaps(state);
     App.ensurePlayerOnValidGround(state);
 
+    if (state.phase === "evening" && App.updateEvening(state, deltaSeconds)) {
+      App.saveGame(state, true);
+    }
     if (map && state.phase === "day") {
       state.dayTimeRemaining = Math.max(0, state.dayTimeRemaining - deltaSeconds);
       if (state.dayTimeRemaining <= 0 && !state.pendingCatch) {
