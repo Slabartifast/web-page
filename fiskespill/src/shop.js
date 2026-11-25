@@ -82,11 +82,11 @@
   ];
 
   App.RESTAURANT_UPGRADES = [
-    { level: 1, name: "Liten takeaway", cost: 0, saleMultiplier: 1.0, note: "En stekepanne, en kurv og stor selvtillit." },
-    { level: 2, name: "Bedre frityr", cost: 420, saleMultiplier: 1.08, note: "Mindre søl, mer margin og færre triste poteter." },
-    { level: 3, name: "Større kjøkken", cost: 980, saleMultiplier: 1.16, note: "Gir kona plass til å svinge seg med både fisk og kø." },
-    { level: 4, name: "Flere bord", cost: 2300, saleMultiplier: 1.25, note: "Når ryktene går og gjestene blir sittende." },
-    { level: 5, name: "Spesialmeny", cost: 5200, saleMultiplier: 1.36, note: "Plutselig serveres fangsten din som signaturrett." },
+    { level: 1, name: "Liten takeaway", cost: 0, saleMultiplier: 1.0, seats: 2, note: "To sitteplasser og et enkelt kjøkken." },
+    { level: 2, name: "Bedre frityr", cost: 420, saleMultiplier: 1.08, seats: 3, note: "Tre sitteplasser og jevnere service." },
+    { level: 3, name: "Større kjøkken", cost: 980, saleMultiplier: 1.16, seats: 5, note: "Fem sitteplasser og rom for fin filet." },
+    { level: 4, name: "Flere bord", cost: 2300, saleMultiplier: 1.25, seats: 8, note: "Åtte sitteplasser tar unna køen." },
+    { level: 5, name: "Spesialmeny", cost: 5200, saleMultiplier: 1.36, seats: 12, note: "Tolv sitteplasser og flere menyvalg." },
   ];
 
   App.BAITS = {
