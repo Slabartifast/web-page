@@ -14,13 +14,14 @@
 
           <div class="screen-overlay">
             <header class="top-banner">
+              <div class="banner-stat level-stat"><span class="label" id="levelLabel">Nivå 1</span><div class="xp-mini"><div id="headerXpFill"></div></div><small id="headerXpText">0 / 90 XP</small></div>
               <div class="banner-stat">
                 <span class="label">Penger</span>
                 <strong id="moneyValue">0 kr</strong>
               </div>
               <div class="banner-stat">
-                <span class="label">Fanget / bag</span>
-                <strong id="caughtValue">0 / 3</strong>
+                <span class="label">Fiskebag</span>
+                <strong id="caughtValue">0 / 3 kg</strong>
               </div>
               <div class="banner-stat">
                 <span class="label">Stang</span>
@@ -34,7 +35,7 @@
                 <span class="label">Dagens ønskefisk</span>
                 <strong id="demandValue">Abbor</strong>
               </div>
-              <div class="banner-stat"><span class="label">Tid igjen</span><strong id="timeValue">3:00</strong></div>
+              <div class="banner-stat clock-stat" id="clockStat"><span class="label">Klokka</span><strong id="timeValue">06:00</strong></div>
             </header>
 
             <section class="phase-overlay hidden" id="phaseOverlay">
@@ -141,7 +142,7 @@
                   </div>
                   <div class="summary-lines" id="summaryLines"></div>
                   <button class="primary-button phase-button" id="nextDayButton" type="button">
-                    Ny dag, nye muligheter
+                    Se på utstyr
                   </button>
                 </div>
                 <div class="phase-art">
@@ -170,6 +171,34 @@
                       <path d="M-20 38 Q0 21 20 38" fill="none" stroke="#fff4ea" stroke-width="8" stroke-linecap="round" />
                     </g>
                   </svg>
+                </div>
+              </article>
+              <article class="phase-card phase-list hidden" id="restaurantScreen">
+                <div class="phase-copy wide">
+                  <p class="phase-kicker">Klokka er 18 · Kveld på tavernaen</p>
+                  <h2>Hva skal kona servere?</h2>
+                  <p class="phase-lead">Velg rett for hver fisk. Stekt er trygt, kaker treffer familier, filet frister matnerder. Fisk i tanken kan vente.</p>
+                  <p id="restaurantMeta"></p>
+                  <div class="phase-scroll" id="restaurantPanel"></div>
+                  <button class="primary-button phase-button" id="serveButton" type="button">Server gjestene</button>
+                </div>
+              </article>
+              <article class="phase-card phase-list hidden" id="afterShopScreen">
+                <div class="phase-copy wide">
+                  <p class="phase-kicker">Før neste dag · 1 av 2</p>
+                  <h2>Oppgrader utstyret</h2>
+                  <p class="phase-lead">Bruk kveldens inntekt på fiskeutstyr, båt, bag, tank eller restaurant.</p>
+                  <div class="phase-scroll" id="afterShopPanel"></div>
+                  <button class="primary-button phase-button" id="afterShopButton" type="button">Se på ferdigheter</button>
+                </div>
+              </article>
+              <article class="phase-card phase-list hidden" id="afterSkillsScreen">
+                <div class="phase-copy wide">
+                  <p class="phase-kicker">Før neste dag · 2 av 2</p>
+                  <h2>Utvikle fiskeren</h2>
+                  <p class="phase-lead">Bruk ferdighetspoeng. Hver forbedring virker gradvis.</p>
+                  <div class="phase-scroll" id="afterSkillsPanel"></div>
+                  <button class="primary-button phase-button" id="afterSkillsButton" type="button">Velg fiskeplass</button>
                 </div>
               </article>
             </section>
