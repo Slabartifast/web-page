@@ -260,8 +260,12 @@
     };
   }
 
-  App.getCastContext = function getCastContext(state, map, castPower) {
-    const direction = getFacingVector(state);
+  App.getCastContext = function getCastContext(state, map, castPower, aim = 0.5) {
+    const forward = getFacingVector(state);
+    const side = { x: -forward.y, y: forward.x };
+    const offset = (aim - 0.5) * 0.85;
+    const length = Math.hypot(forward.x + side.x * offset, forward.y + side.y * offset);
+    const direction = { x: (forward.x + side.x * offset) / length, y: (forward.y + side.y * offset) / length };
     const rodData = App.getRodData(state.equipment.rodLevel) || App.getRodData(1);
     const castingSkill = App.getSkillLevel(state, "casting");
     const power = clamp(castPower || 0, 0, 1);
