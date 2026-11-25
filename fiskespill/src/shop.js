@@ -65,15 +65,20 @@
 
   App.BOATS = [
     { level: 0, name: "Ingen båt", cost: 0, rareBonus: 0, speedBonus: 0, cargoBonus: 0, note: "To bein og en drøm." },
-    { level: 1, name: "Liten robåt", cost: 2500, rareBonus: 0.12, speedBonus: 14, cargoBonus: 2, note: "Sjarmerende og smått våt, men plutselig er fjorden din." },
-    { level: 2, name: "Påhengsmotor", cost: 6200, rareBonus: 0.22, speedBonus: 34, cargoBonus: 5, note: "Mer rekkevidde, mer fart og mer nabomisunnelse." },
+    { level: 1, name: "Liten robåt", cost: 2500, rareBonus: 0.12, speedBonus: 0, cargoBonus: 2, note: "Tar deg sakte utover fjorden. Velg kurs med omhu." },
+    { level: 2, name: "Påhengsmotor", cost: 6200, rareBonus: 0.22, speedBonus: 25, cargoBonus: 5, note: "Mer rekkevidde, mer fart og mer nabomisunnelse." },
   ];
 
   App.BAGS = [
-    { level: 1, name: "Liten fiskebag", cost: 0, capacity: 3, note: "Plass til 3 fisk." },
-    { level: 2, name: "Romslig fiskebag", cost: 300, capacity: 5, note: "Plass til 5 fisk." },
-    { level: 3, name: "Stor fiskebag", cost: 850, capacity: 8, note: "Plass til 8 fisk." },
-    { level: 4, name: "Kjølekasse", cost: 1900, capacity: 12, note: "Plass til 12 fisk." },
+    { level: 1, name: "Liten fiskebag", cost: 0, capacity: 3, note: "Plass til 3 kg fisk." },
+    { level: 2, name: "Romslig fiskebag", cost: 300, capacity: 6, note: "Plass til 6 kg fisk." },
+    { level: 3, name: "Stor fiskebag", cost: 850, capacity: 12, note: "Plass til 12 kg fisk." },
+    { level: 4, name: "Kjølekasse", cost: 1900, capacity: 24, note: "Plass til 24 kg fisk." },
+  ];
+  App.TANKS = [
+    { level: 1, name: "Liten fisketank", cost: 0, capacity: 5, note: "Lagrer 5 kg levende fisk til senere kvelder." },
+    { level: 2, name: "Større fisketank", cost: 650, capacity: 12, note: "Lagrer 12 kg levende fisk." },
+    { level: 3, name: "Fjordbasseng", cost: 1750, capacity: 25, note: "Lagrer 25 kg levende fisk." },
   ];
 
   App.RESTAURANT_UPGRADES = [
@@ -155,10 +160,22 @@
   App.getBagData = function getBagData(level) {
     return App.BAGS.find((item) => item.level === level) || App.BAGS[0];
   };
+  App.getTankData = function getTankData(level) {
+    return App.TANKS.find((item) => item.level === level) || App.TANKS[0];
+  };
+  App.getTankCapacity = function getTankCapacity(state) {
+    return App.getTankData(state.equipment.tankLevel).capacity;
+  };
+  App.getTankWeight = function getTankWeight(state) {
+    return state.fishTank.reduce((sum, fish) => sum + fish.weightKg, 0);
+  };
 
   App.getBagCapacity = function getBagCapacity(state) {
     return App.getBagData(state.equipment.bagLevel).capacity +
       (App.getBoatData(state.equipment.boatLevel)?.cargoBonus || 0);
+  };
+  App.getBagWeight = function getBagWeight(state) {
+    return state.inventory.reduce((sum, fish) => sum + fish.weightKg, 0);
   };
 
   App.getRestaurantData = function getRestaurantData(level) {
@@ -213,6 +230,7 @@
       line: { key: "lineLevel", items: App.LINES },
       boat: { key: "boatLevel", items: App.BOATS },
       bag: { key: "bagLevel", items: App.BAGS },
+      tank: { key: "tankLevel", items: App.TANKS },
       restaurant: { key: "restaurantLevel", items: App.RESTAURANT_UPGRADES },
     };
 
