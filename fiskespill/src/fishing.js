@@ -15,20 +15,16 @@
         if (!fish) {
           return null;
         }
-        if (fish.minRodLevel > state.equipment.rodLevel) {
-          return null;
-        }
-        if ((fish.minBoatLevel || 0) > state.equipment.boatLevel) {
-          return null;
-        }
         let weight = entry.weight;
+        weight *= Math.pow(0.55, Math.max(0, fish.minRodLevel - state.equipment.rodLevel));
+        weight *= Math.pow(0.55, Math.max(0, (fish.minBoatLevel || 0) - state.equipment.boatLevel));
         weight *= App.getBaitModifier(fish, state.activeBaitId);
         if (!ACTIVE_BAITS.has(state.activeBaitId) && fish.qualityTier > 1) {
           weight *= Math.pow(0.72, fish.qualityTier - 1);
         }
         const depth = state.fishing.waterDepth || 0;
         const requiredDepth = Math.max(0, (fish.basePrice - 30) * 0.65);
-        if (depth < requiredDepth) return null;
+        if (depth < requiredDepth) weight *= 0.45 + 0.55 * Math.pow(depth / Math.max(1, requiredDepth), 2);
         weight *= 0.8 + Math.min(1, depth / 180) * Math.max(0, fish.qualityTier - 1) * 0.45;
         weight *= 1 + rodData.rareBonus * Math.max(0, fish.qualityTier - 1);
         weight *= 1 + lineData.heavyBonus * Math.max(0, fish.baseDifficulty - 1);
@@ -56,29 +52,19 @@
 
     const minWeight = fish.weightRangeKg[0];
     const maxWeight = fish.weightRangeKg[1];
-    const weightBias = clamp(
-      0.35 +
-        rodData.sizeBonus +
-        lineData.heavyBonus +
-        boatData.rareBonus * 0.45 +
-        castingSkill * 0.03 +
-        (castStrength || 0) * 0.16 +
-        Math.random() * 0.38,
-      0,
-      1
-    );
-    const weightKg = lerp(minWeight, maxWeight, Math.pow(weightBias, 0.9));
+    const weightBias = clamp(Math.pow(Math.random(), 1.25) +
+      rodData.sizeBonus * 0.45 + lineData.heavyBonus * 0.2 +
+      castingSkill * 0.012 + (castStrength || 0) * 0.06 +
+      Math.min(0.05, (state.fishing.waterDepth || 0) / 5000), 0, 1);
+    const weightKg = lerp(minWeight, maxWeight, weightBias);
     const sizeBonus = weightKg >= lerp(minWeight, maxWeight, 0.7) ? 0.7 : 0.25;
-    const qualityScore =
-      fish.qualityTier +
-      reactionScore * 0.7 +
-      reelScore * 1.15 +
-      rodData.easeBonus * 2 +
-      reelData.controlBonus * 2 +
-      reelingSkill * 0.18 +
-      sizeBonus +
-      Math.min(0.65, (state.fishing.waterDepth || 0) / 190) +
-      (ACTIVE_BAITS.has(state.activeBaitId) ? 0.28 : -0.22);
+    const taste = clamp(20 + fish.qualityTier * 9 + Math.random() * 45, 5, 99);
+    const fight = clamp(12 + fish.baseDifficulty * 17 + Math.random() * 24, 5, 99);
+    const quality = clamp(18 + fish.qualityTier * 7 + Math.random() * 48 +
+      reactionScore * 5 + reelScore * 5 + Math.min(7, (state.fishing.waterDepth || 0) / 25) +
+      (ACTIVE_BAITS.has(state.activeBaitId) ? 3 : -3), 5, 99);
+    const qualityScore = quality / 25 + fish.qualityTier * 0.18 + sizeBonus * 0.5 +
+      rodData.easeBonus + reelData.controlBonus + reelingSkill * 0.05;
     const qualityInfo = App.getQualityInfo(qualityScore);
     const qualityRank = App.QUALITY_CLASSES.indexOf(qualityInfo);
     const baseSaleValue = Math.max(
@@ -91,6 +77,9 @@
       fishId: fish.id,
       name: fish.name,
       weightKg,
+      taste,
+      fight,
+      quality,
       baseSaleValue,
       qualityLabel: qualityInfo.label,
       qualityMultiplier: qualityInfo.multiplier,
@@ -436,12 +425,13 @@
     if (action === "release") {
       App.addMessage(state, `${catchData.name} svømte videre.`);
     } else if (action === "keep") {
-      if (state.inventory.length >= App.getBagCapacity(state)) return false;
+      if (App.getBagWeight(state) + catchData.weightKg > App.getBagCapacity(state) + 0.001) return false;
       state.inventory.push(catchData);
       App.addMessage(state, `${catchData.name} i bagen.`);
     } else if (action === "replace") {
       const index = state.inventory.findIndex((fish) => fish.id === replaceId);
       if (index < 0) return false;
+      if (App.getBagWeight(state) - state.inventory[index].weightKg + catchData.weightKg > App.getBagCapacity(state) + 0.001) return false;
       const released = state.inventory.splice(index, 1, catchData)[0];
       App.addMessage(state, `${catchData.name} inn, ${released.name} ut.`);
     } else return false;
