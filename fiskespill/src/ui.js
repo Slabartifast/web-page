@@ -27,10 +27,24 @@
       baitValue: byId("baitValue"),
       demandValue: byId("demandValue"),
       timeValue: byId("timeValue"),
+      clockStat: byId("clockStat"),
+      levelLabel: byId("levelLabel"),
+      headerXpFill: byId("headerXpFill"),
+      headerXpText: byId("headerXpText"),
       phaseOverlay: byId("phaseOverlay"),
       welcomeScreen: byId("welcomeScreen"),
       mapSelectScreen: byId("mapSelectScreen"),
       summaryScreen: byId("summaryScreen"),
+      restaurantScreen: byId("restaurantScreen"),
+      restaurantPanel: byId("restaurantPanel"),
+      restaurantMeta: byId("restaurantMeta"),
+      serveButton: byId("serveButton"),
+      afterShopScreen: byId("afterShopScreen"),
+      afterShopPanel: byId("afterShopPanel"),
+      afterShopButton: byId("afterShopButton"),
+      afterSkillsScreen: byId("afterSkillsScreen"),
+      afterSkillsPanel: byId("afterSkillsPanel"),
+      afterSkillsButton: byId("afterSkillsButton"),
       startGameButton: byId("startGameButton"),
       nextDayButton: byId("nextDayButton"),
       mapSelectPanel: byId("mapSelectPanel"),
@@ -70,7 +84,6 @@
       tensionWrap: byId("tensionWrap"),
       tensionFill: byId("tensionFill"),
       targetZone: byId("targetZone"),
-      marker: byId("marker"),
       touchControls: byId("touchControls"),
       touchInteractButton: byId("touchInteractButton"),
       virtualJoystick: byId("virtualJoystick"),
@@ -83,7 +96,10 @@
     game.refs = refs;
 
     refs.startGameButton.addEventListener("click", () => game.actions.beginCareer());
-    refs.nextDayButton.addEventListener("click", () => game.actions.nextDay());
+    refs.nextDayButton.addEventListener("click", () => game.actions.afterShop());
+    refs.serveButton.addEventListener("click", () => game.actions.serve());
+    refs.afterShopButton.addEventListener("click", () => game.actions.afterSkills());
+    refs.afterSkillsButton.addEventListener("click", () => game.actions.nextDay());
     refs.endDayButton.addEventListener("click", () => game.actions.endDay());
     refs.toggleLogButton.addEventListener("click", () => game.actions.toggleLog());
     refs.backMenuButton.addEventListener("click", () => game.actions.togglePanel("menu"));
@@ -117,6 +133,20 @@
       }
       if (button.dataset.action === "bait") {
         game.actions.chooseBait(button.dataset.baitId);
+      }
+    });
+    refs.afterShopPanel.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action]");
+      if (button?.dataset.action === "buy") game.actions.purchase(button.dataset.upgradeType);
+      if (button?.dataset.action === "bait") game.actions.chooseBait(button.dataset.baitId);
+    });
+    refs.afterSkillsPanel.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action='skill']");
+      if (button) game.actions.spendSkill(button.dataset.skillId);
+    });
+    refs.restaurantPanel.addEventListener("change", (event) => {
+      if (event.target.matches("[data-restaurant-fish]")) {
+        game.actions.chooseRecipe(event.target.dataset.restaurantFish, event.target.value);
       }
     });
     refs.skillsPanel.addEventListener("click", (event) => {
@@ -223,11 +253,11 @@
       return [
         `Sjansen for sjeldne arter øker med ${formatPercent(item.rareBonus)}.`,
         `Fartsbonus: ${item.speedBonus}.`,
-        item.cargoBonus ? `${item.cargoBonus} ekstra fisk i bagen.` : "Ingen ekstra bagplass.",
+        item.cargoBonus ? `${item.cargoBonus} kg ekstra bagplass.` : "Ingen ekstra bagplass.",
         item.note,
       ];
     }
-    if (type === "bag") return [`Kapasitet: ${item.capacity} fisk.`, item.note];
+    if (type === "bag" || type === "tank") return [`Kapasitet: ${item.capacity} kg.`, item.note];
     if (type === "restaurant") {
       return [
         `Kveldsprisen på fisk ganges med ${item.saleMultiplier.toFixed(2)}.`,
@@ -315,6 +345,8 @@
     const bagNext = App.BAGS.find((item) => item.level === state.equipment.bagLevel + 1);
     const restaurantCurrent = App.getRestaurantData(state.equipment.restaurantLevel);
     const restaurantNext = App.getRestaurantData(state.equipment.restaurantLevel + 1);
+    const tankCurrent = App.getTankData(state.equipment.tankLevel);
+    const tankNext = App.getTankData(state.equipment.tankLevel + 1);
 
     return `
       ${renderUpgradeCard("Fiskestang", rodCurrent, rodNext, "rod")}
@@ -322,9 +354,26 @@
       ${renderUpgradeCard("Snøre", lineCurrent, lineNext, "line")}
       ${renderUpgradeCard("Båt", boatCurrent, boatNext, "boat")}
       ${renderUpgradeCard("Fiskebag", bagCurrent, bagNext, "bag")}
+      ${renderUpgradeCard("Fisketank", tankCurrent, tankNext, "tank")}
       ${renderUpgradeCard("Restaurant", restaurantCurrent, restaurantNext, "restaurant")}
       ${renderBaitCards(game)}
     `;
+  }
+
+  function renderRestaurant(game) {
+    const state = game.state;
+    const recipes = App.getAvailableRecipes(state);
+    const candidates = App.getRestaurantCandidates(state);
+    if (!candidates.length) return `<p class="phase-lead">Ingen fisk i dag. Kona serverer poteter og et strengt blikk.</p>`;
+    return candidates.map(({ fish, source }) => {
+      const choice = App.getRestaurantChoice(state, fish, source);
+      const options = recipes.map((recipe) => `<option value="${recipe.id}" ${choice === recipe.id ? "selected" : ""}>${recipe.name}</option>`).join("");
+      return `<article class="restaurant-fish"><img src="${App.getFishSprite(fish.fishId)}" alt="" />
+        <div><strong>${fish.name}</strong><small>${fish.weightKg.toFixed(1)} kg · ${fish.qualityLabel} · ${source === "tank" ? "i tanken" : "i bagen"}</small></div>
+        <select aria-label="Tilbered ${fish.name}" data-restaurant-fish="${fish.id}">
+          ${options}<option value="tank" ${choice === "tank" ? "selected" : ""} ${fish.weightKg > App.getTankCapacity(state) ? "disabled" : ""}>Spar i tanken</option>
+        </select></article>`;
+    }).join("");
   }
 
   function renderSkills(game) {
@@ -479,24 +528,25 @@
     const phase = state.phase;
 
     refs.moneyValue.textContent = App.utils.formatKr(state.money);
-    refs.caughtValue.textContent = `${state.dayStats.caughtCount} / ${state.inventory.length} av ${App.getBagCapacity(state)}`;
+    refs.caughtValue.textContent = `${App.getBagWeight(state).toFixed(1)} / ${App.getBagCapacity(state)} kg`;
     refs.catchOverlay.classList.toggle("hidden", phase !== "day" || !state.pendingCatch);
     if (state.pendingCatch) {
       const fish = state.pendingCatch;
       const capacity = App.getBagCapacity(state);
-      const full = state.inventory.length >= capacity;
+      const bagWeight = App.getBagWeight(state);
+      const full = bagWeight + fish.weightKg > capacity + 0.001;
       refs.catchTitle.textContent = fish.name;
       refs.catchSprite.src = App.getFishSprite(fish.fishId);
       refs.catchSprite.alt = fish.name;
-      refs.catchDetails.textContent = `${fish.weightKg.toFixed(1)} kg · ${fish.qualityLabel} · ca. ${fish.baseSaleValue} kr`;
+      refs.catchDetails.textContent = `${fish.weightKg.toFixed(1)} kg · ${fish.qualityLabel} · kvalitet ${Math.round(fish.quality || 50)}/100 · smak ${Math.round(fish.taste || 45)}/100 · ca. ${fish.baseSaleValue} kr`;
       const best = state.journal[fish.fishId]?.bestWeight || 0;
       refs.catchAdvice.textContent = `${demandFish && demandFish.id === fish.fishId ? "Dagens ønskefisk! " : ""}${fish.weightKg >= best ? "Ny vekt­rekord. " : ""}Velg hva som skal i bagen.`;
-      refs.catchBagStatus.textContent = `Fiskebag: ${state.inventory.length}/${capacity}${full ? " — full!" : ""}`;
+      refs.catchBagStatus.textContent = `Fiskebag: ${bagWeight.toFixed(1)}/${capacity} kg${full ? " — for lite plass" : ""}`;
       const actionKey = `${fish.id}|${capacity}|${state.inventory.map((entry) => entry.id).join("|")}`;
       if (refs.catchActions.dataset.renderKey !== actionKey) {
         refs.catchActions.innerHTML = `
           <button class="secondary-button" type="button" data-catch-action="release">Slipp ut</button>
-          ${full ? [...state.inventory].sort((a,b) => a.baseSaleValue - b.baseSaleValue).map((entry) => `<button class="primary-button" type="button" data-catch-action="replace" data-replace-id="${entry.id}">Bytt ut ${entry.name} (${entry.weightKg.toFixed(1)} kg · ${entry.baseSaleValue} kr)</button>`).join("") : '<button class="primary-button" type="button" data-catch-action="keep">Behold</button>'}
+          ${full ? [...state.inventory].filter((entry) => bagWeight - entry.weightKg + fish.weightKg <= capacity + 0.001).sort((a,b) => a.baseSaleValue - b.baseSaleValue).map((entry) => `<button class="primary-button" type="button" data-catch-action="replace" data-replace-id="${entry.id}">Bytt ut ${entry.name} (${entry.weightKg.toFixed(1)} kg · ${entry.baseSaleValue} kr)</button>`).join("") : '<button class="primary-button" type="button" data-catch-action="keep">Behold</button>'}
         `;
         refs.catchActions.dataset.renderKey = actionKey;
       }
@@ -506,24 +556,39 @@
     refs.rodValue.textContent = App.getRodData(state.equipment.rodLevel).name;
     refs.baitValue.textContent = activeBait.name;
     refs.demandValue.textContent = demandFish ? demandFish.name : "Ingen";
-    const seconds = Math.ceil(state.dayTimeRemaining);
-    refs.timeValue.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+    const dayRatio = Math.max(0, Math.min(1, state.dayTimeRemaining / 180));
+    const clockMinutes = Math.min(720, Math.floor((1 - dayRatio) * 720));
+    refs.timeValue.textContent = `${String(6 + Math.floor(clockMinutes / 60)).padStart(2, "0")}:${String(clockMinutes % 60).padStart(2, "0")}`;
+    refs.clockStat.style.backgroundColor = `hsl(${Math.round(dayRatio * 120)} 72% 78%)`;
+    const headerProgress = App.getLevelProgress(state);
+    refs.levelLabel.textContent = `Nivå ${state.level}`;
+    refs.headerXpFill.style.width = `${headerProgress.ratio * 100}%`;
+    refs.headerXpText.textContent = `${Math.floor(headerProgress.current)} / ${headerProgress.needed} XP`;
 
     setHtml(refs.mapPanel, "");
     setHtml(refs.focusPanel, `<article class="menu-card"><h3>${demandFish ? demandFish.name : "Fangst"}</h3><p>${state.dailyDemand ? state.dailyDemand.text : "Velg fiskeplass."}</p></article>`);
     setHtml(refs.questsPanel, renderQuests(game));
     setHtml(refs.shopPanel, renderShop(game));
     setHtml(refs.skillsPanel, renderSkills(game));
+    setHtml(refs.afterShopPanel, renderShop(game));
+    setHtml(refs.afterSkillsPanel, renderSkills(game));
+    setHtml(refs.restaurantPanel, renderRestaurant(game));
+    const plannedTankWeight = App.getRestaurantCandidates(state)
+      .filter(({ fish, source }) => App.getRestaurantChoice(state, fish, source) === "tank")
+      .reduce((sum, { fish }) => sum + fish.weightKg, 0);
+    const mix = state.customerMix.map(({ id, count }) => `${App.CUSTOMERS.find((entry) => entry.id === id)?.name || id} ${count}`).join(" · ");
+    refs.restaurantMeta.textContent = `Rykte ${state.reputation.toFixed(1)} · ${state.stars.toFixed(1)} stjerner · tank ${plannedTankWeight.toFixed(1)}/${App.getTankCapacity(state)} kg${plannedTankWeight > App.getTankCapacity(state) ? " — for mye i tanken" : ""}${mix ? ` · ${mix}` : ""}`;
+    refs.serveButton.disabled = plannedTankWeight > App.getTankCapacity(state) + 0.001;
     setHtml(refs.journalPanel, renderJournal(game));
     setHtml(refs.menuPanel, renderMenu(game));
     setHtml(refs.mapSelectPanel, renderMapCards(game, "Fisk her i dag"));
     setHtml(refs.catchLog, renderLogs(game));
 
     const levelProgress = App.getLevelProgress(state);
-    const xpFill = refs.skillsPanel.querySelector("#xpBarFill");
-    if (xpFill) {
-      xpFill.style.width = `${levelProgress.ratio * 100}%`;
-    }
+    [refs.skillsPanel, refs.afterSkillsPanel].forEach((panel) => {
+      const xpFill = panel.querySelector("#xpBarFill");
+      if (xpFill) xpFill.style.width = `${levelProgress.ratio * 100}%`;
+    });
 
     refs.logDock.classList.toggle("collapsed", !!state.ui.logCollapsed);
     refs.toggleLogButton.textContent = state.ui.logCollapsed ? "+" : "−";
@@ -533,6 +598,9 @@
     refs.welcomeScreen.classList.toggle("hidden", phase !== "welcome");
     refs.mapSelectScreen.classList.toggle("hidden", phase !== "mapSelect");
     refs.summaryScreen.classList.toggle("hidden", phase !== "summary");
+    refs.restaurantScreen.classList.toggle("hidden", phase !== "restaurant");
+    refs.afterShopScreen.classList.toggle("hidden", phase !== "afterShop");
+    refs.afterSkillsScreen.classList.toggle("hidden", phase !== "afterSkills");
 
     const summary = state.lastDaySummary;
     refs.summarySpeech.textContent = summary ? summary.spouseLine : "";
@@ -545,6 +613,10 @@
           `<p><strong>Sted:</strong> ${summary.mapName}</p>`,
           `<p><strong>Ønskefisk:</strong> ${summary.demandFishName}</p>`,
           `<p><strong>Solgt:</strong> ${summary.soldCount} fisk</p>`,
+          ...(Number.isFinite(summary.avgReview) ? [
+            `<p><strong>Vurdering:</strong> ${summary.avgReview}/100 · ${(summary.stars || 1).toFixed(1)} stjerner · rykte ${(summary.reputation || 0).toFixed(1)}</p>`,
+            `<p><strong>I tanken:</strong> ${summary.storedCount || 0} fisk</p>`,
+          ] : []),
         ]
           .concat(summary.lines.map((line) => `<p>${line}</p>`))
           .join("")
