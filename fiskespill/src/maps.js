@@ -231,6 +231,29 @@
       return isInsideEllipse(x, y, body);
     });
   };
+  App.getWaterDepth = function getWaterDepth(map, x, y) {
+    if (map.id === "apenthav") {
+      let depth = 65;
+      for (let i = 0; i < 18; i += 1) {
+        const patchX = (i * 683 + 310) % map.size.width;
+        const patchY = (i * 479 + 190) % map.size.height;
+        const radius = 180 + i % 4 * 35;
+        depth = Math.max(depth, 65 + 130 * Math.max(0, 1 - Math.hypot(x - patchX, y - patchY) / radius));
+      }
+      return depth;
+    }
+    const body = map.waterBodies.find((entry) => entry.type === "rect" ?
+      isInsideRect(x, y, entry) : isInsideEllipse(x, y, entry));
+    if (!body) return 0;
+    if (body.type === "ellipse") {
+      const radial = Math.hypot((x - body.x) / body.rx, (y - body.y) / body.ry);
+      return Math.max(0, 1 - radial) * Math.min(body.rx, body.ry) * 1.5;
+    }
+    if (map.id === "elvebredden") {
+      return Math.max(0, Math.min(y - body.y, body.y + body.h - y)) * 2;
+    }
+    return Math.max(0, x - body.x) * 0.65;
+  };
 
   App.canOccupyPoint = function canOccupyPoint(map, state, x, y) {
     const radius = state.player.radius || 14;
@@ -271,7 +294,7 @@
     const castingSkill = App.getSkillLevel(state, "casting");
     const power = clamp(castPower || 0, 0, 1);
     const minDistance = 18;
-    const maxReach = 128 + (rodData.level - 1) * 38 + castingSkill * 15;
+    const maxReach = 128 + (rodData.level - 1) * 38 + castingSkill * 18;
     const maxDistance = 48 + power * (maxReach - 48);
     const startX = state.player.x;
     const startY = state.player.y;
@@ -291,7 +314,7 @@
       if (!bestPoint) {
         return { ok: false, reason: "Kastet fant ikke åpent vann." };
       }
-      return { ok: true, castPoint: bestPoint, castDistance: maxDistance, waterDepth: maxDistance };
+      return { ok: true, castPoint: bestPoint, castDistance: maxDistance, waterDepth: App.getWaterDepth(map, bestPoint.x, bestPoint.y) };
     }
 
     let firstWaterPoint = null;
@@ -323,7 +346,7 @@
       ok: true,
       castPoint: lastWaterPoint || firstWaterPoint,
       castDistance: firstWaterDistance,
-      waterDepth: Math.max(0, Math.hypot(lastWaterPoint.x - firstWaterPoint.x, lastWaterPoint.y - firstWaterPoint.y)),
+      waterDepth: App.getWaterDepth(map, lastWaterPoint.x, lastWaterPoint.y),
     };
   };
 
