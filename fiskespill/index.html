@@ -49,9 +49,9 @@
                   </p>
                   <div class="welcome-points">
                     <p><strong>Bevegelse:</strong> piltaster, WASD eller touch-knapper.</p>
-                    <p><strong>Kast:</strong> hold inne kast-knappen lenger for lengre kast.</p>
-                    <p><strong>Napp:</strong> trykk på space!</p>
-                    <p><strong>Sveiv:</strong> hold og slipp space for å følge grønt felt.</p>
+                    <p><strong>Kast:</strong> hold space for lengde, slipp, trykk igjen for retning.</p>
+                    <p><strong>Napp:</strong> trykk space, så treff grønt felt med neste trykk.</p>
+                    <p><strong>Fiskekamp:</strong> hold space for opp, slipp for ned.</p>
                     <p><strong>Kveld:</strong> selg fisken, tjen XP og bruk ferdighetspoeng smart.</p>
                   </div>
                   <div class="phase-button" style="display: flex; gap: 12px; flex-wrap: wrap;">
@@ -222,8 +222,9 @@
               </div>
               <div class="minigame-track hidden" id="minigameTrack">
                 <div class="target-zone" id="targetZone"></div>
-                <div class="marker" id="marker"></div>
+                <img class="reel-fish" id="reelFish" alt="Fisk" />
               </div>
+              <div class="hook-track hidden" id="hookTrack"><div class="hook-zone" id="hookZone"></div><div class="hook-indicator" id="hookIndicator"></div></div>
               <div class="tension-wrap hidden" id="tensionWrap">
                 <span>Snørebelastning</span>
                 <div class="fishing-progress-bar"><div id="tensionFill"></div></div>
