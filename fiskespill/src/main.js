@@ -362,9 +362,9 @@
       const forwardX = player.facingX || 1;
       const forwardY = player.facingY || 0;
       const aim = state.fishing.mode === "aiming" ? state.fishing.aim : 0.5;
-      const side = (aim - 0.5) * 1.7;
-      const tipX = player.x + (forwardX - forwardY * side) * 42;
-      const tipY = player.y - 12 + (forwardY + forwardX * side) * 42;
+      const angle = (aim - 0.5) * (110 * Math.PI / 180);
+      const tipX = player.x + (forwardX * Math.cos(angle) - forwardY * Math.sin(angle)) * 42;
+      const tipY = player.y - 12 + (forwardY * Math.cos(angle) + forwardX * Math.sin(angle)) * 42;
       ctx.strokeStyle = "#704321";
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -650,6 +650,7 @@
       App.renderUI(game);
       game.lastUiRender = timeMs;
     }
+    App.renderFishingMotion(game);
     if (game.state.phase === "day" && timeMs - game.lastAutosave > 5000) {
       App.saveGame(game.state, true);
       game.lastAutosave = timeMs;
