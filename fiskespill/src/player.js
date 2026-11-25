@@ -20,7 +20,7 @@
     moveY /= length;
 
     const boatBonus = App.getBoatData(state.equipment.boatLevel).speedBonus || 0;
-    const speed = (map.requiresBoat ? 190 : 165) + boatBonus;
+    const speed = (map.requiresBoat ? 9 : 165) + boatBonus;
     const desiredX = state.player.x + moveX * speed * deltaSeconds;
     const desiredY = state.player.y + moveY * speed * deltaSeconds;
 
@@ -49,3 +49,4 @@
     }
   };
 })();
+
