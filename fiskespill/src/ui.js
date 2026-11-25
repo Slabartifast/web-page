@@ -268,22 +268,24 @@
   }
 
   function renderUpgradeCard(title, current, next, type) {
-    const currentLines = getUpgradeDetails(type, current)
-      .map((line) => `<li>${line}</li>`)
-      .join("");
-    const nextLines = next
-      ? getUpgradeDetails(type, next).map((line) => `<li>${line}</li>`).join("")
-      : `<li>Dette er toppnivå. Nå er det bare å se profesjonell ut.</li>`;
+    const currentLines = getUpgradeDetails(type, current);
+    const nextLines = next ? getUpgradeDetails(type, next) : [];
+    const rows = Array.from({ length: Math.max(currentLines.length, nextLines.length) }, (_, index) => `
+      <div class="upgrade-cell">${currentLines[index] || ""}</div>
+      <div class="upgrade-cell">${next ? nextLines[index] || "" : "Maksnivå"}</div>
+    `).join("");
     return `
       <article class="shop-card">
         <div class="card-head">
           <h3>${title}</h3>
-          <span class="quality-pill">${current.name}</span>
+          <span class="quality-pill">Nivå ${current.level}</span>
         </div>
-        <p class="shop-meta">Nåværende nivå: ${current.note}</p>
-        <ul class="detail-list">${currentLines}</ul>
-        <p class="shop-meta">${next ? `Neste oppgradering koster ${next.cost} kr.` : "Maksnivå nådd."}</p>
-        <ul class="detail-list">${nextLines}</ul>
+        <p class="shop-price">${next ? `Oppgradering: ${next.cost} kr` : "Maksnivå nådd"}</p>
+        <div class="upgrade-compare" role="table" aria-label="Sammenligning av ${title.toLowerCase()}">
+          <div class="upgrade-heading" role="columnheader">Nåværende: ${current.name}</div>
+          <div class="upgrade-heading" role="columnheader">${next ? `Oppgradering: ${next.name}` : "Fullt oppgradert"}</div>
+          ${rows}
+        </div>
         <button
           class="shop-button"
           type="button"
@@ -570,7 +572,9 @@
     setHtml(refs.questsPanel, renderQuests(game));
     setHtml(refs.shopPanel, renderShop(game));
     setHtml(refs.skillsPanel, renderSkills(game));
+    const shopScroll = refs.afterShopPanel.scrollTop;
     setHtml(refs.afterShopPanel, renderShop(game));
+    refs.afterShopPanel.scrollTop = shopScroll;
     setHtml(refs.afterSkillsPanel, renderSkills(game));
     setHtml(refs.restaurantPanel, renderRestaurant(game));
     const plannedTankWeight = App.getRestaurantCandidates(state)
