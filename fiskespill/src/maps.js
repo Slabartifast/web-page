@@ -262,16 +262,17 @@
 
   App.getCastContext = function getCastContext(state, map, castPower, aim = 0.5) {
     const forward = getFacingVector(state);
-    const side = { x: -forward.y, y: forward.x };
-    const offset = (aim - 0.5) * 0.85;
-    const length = Math.hypot(forward.x + side.x * offset, forward.y + side.y * offset);
-    const direction = { x: (forward.x + side.x * offset) / length, y: (forward.y + side.y * offset) / length };
+    const angle = (aim - 0.5) * (110 * Math.PI / 180);
+    const direction = {
+      x: forward.x * Math.cos(angle) - forward.y * Math.sin(angle),
+      y: forward.y * Math.cos(angle) + forward.x * Math.sin(angle),
+    };
     const rodData = App.getRodData(state.equipment.rodLevel) || App.getRodData(1);
     const castingSkill = App.getSkillLevel(state, "casting");
     const power = clamp(castPower || 0, 0, 1);
     const minDistance = 18;
-    const maxDistance =
-      92 + rodData.level * 22 + castingSkill * 20 + power * (115 + rodData.level * 24);
+    const maxReach = 128 + (rodData.level - 1) * 38 + castingSkill * 15;
+    const maxDistance = 48 + power * (maxReach - 48);
     const startX = state.player.x;
     const startY = state.player.y;
 
