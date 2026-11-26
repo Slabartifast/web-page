@@ -37,6 +37,12 @@
       titleAchievements: byId("titleAchievements"),
       continueButton: byId("continueButton"),
       newCareerButton: byId("newCareerButton"),
+      titleFullscreenButton: byId("titleFullscreenButton"),
+      endDayConfirm: byId("endDayConfirm"),
+      confirmEndDayButton: byId("confirmEndDayButton"),
+      cancelEndDayButton: byId("cancelEndDayButton"),
+      summaryIncomeHero: byId("summaryIncomeHero"),
+      incomeBreakdown: byId("incomeBreakdown"),
       welcomeScreen: byId("welcomeScreen"),
       mapSelectScreen: byId("mapSelectScreen"),
       summaryScreen: byId("summaryScreen"),
@@ -115,6 +121,9 @@
     refs.startGameButton.addEventListener("click", () => game.actions.beginCareer());
     refs.continueButton.addEventListener("click", () => game.actions.continueCareer());
     refs.newCareerButton.addEventListener("click", () => game.actions.newCareer());
+    refs.titleFullscreenButton.addEventListener("click", () => game.actions.toggleFullscreen());
+    refs.confirmEndDayButton.addEventListener("click", () => game.actions.confirmEndDay());
+    refs.cancelEndDayButton.addEventListener("click", () => game.actions.cancelEndDay());
     refs.nextDayButton.addEventListener("click", () => game.actions.afterShop());
     refs.serveButton.addEventListener("click", () => game.actions.serve());
     refs.afterShopButton.addEventListener("click", () => game.actions.afterSkills());
@@ -195,6 +204,7 @@
         }
       }
       if (button.dataset.action === "dev") game.actions.toggleDev();
+      if (button.dataset.action === "fullscreen") game.actions.toggleFullscreen();
     });
   };
 
@@ -205,7 +215,7 @@
   function getPanelConfig(panelId) {
     const configs = {
       maps: { title: "Kart", meta: "Bytt område hvis du vil prøve lykken et annet sted." },
-      shop: { title: "Utstyr", meta: "Bedre verktøy, bedre historier og færre unnskyldninger." },
+      shop: { title: "Butikker", meta: "Fiskeutstyr, agn og restaurant." },
       skills: { title: "Ferdigheter", meta: "Bruk erfaringspoeng på fordeler som faktisk merkes." },
       journal: { title: "Dagbok", meta: "Her bor rekordene og alle fiskene du skrøt av." },
       achievements: { title: "Achievements", meta: "Små milepæler som belønner nysgjerrighet." },
@@ -284,6 +294,7 @@
     if (type === "kitchen") return [`Matbonus: +${item.bonus}.`, item.note];
     if (type === "chairs") return [`Ekstra plasser: ${item.seats}.`, item.note];
     if (type === "comfort" || type === "service") return [`Servicebonus: +${item.bonus}.`, item.note];
+    if (type === "wholesale") return [`Grossist betaler ${Math.round(item.rate * 100)} % av råvareverdien.`, item.note];
     if (type === "restaurant") {
       return [
         `${item.seats} sitteplasser.`,
@@ -396,6 +407,7 @@
       ${renderUpgradeCard("Stoler og bord", App.CHAIRS[state.equipment.chairsLevel], App.CHAIRS[state.equipment.chairsLevel + 1], "chairs", state)}
       ${renderUpgradeCard("Komfort", App.COMFORTS[state.equipment.comfortLevel], App.COMFORTS[state.equipment.comfortLevel + 1], "comfort", state)}
       ${renderUpgradeCard("Servering", App.SERVICE_UPGRADES[state.equipment.serviceLevel], App.SERVICE_UPGRADES[state.equipment.serviceLevel + 1], "service", state)}
+      ${renderUpgradeCard("Grossistavtale", App.WHOLESALE[state.equipment.wholesaleLevel], App.WHOLESALE[state.equipment.wholesaleLevel + 1], "wholesale", state)}
       ${renderUpgradeCard("Fisketank", tankCurrent, tankNext, "tank", state)}
       ` : ""}
       ${category === "bait" ? renderBaitCards(game) : ""}
@@ -541,6 +553,7 @@
           <span class="small-note">lokalt i nettleseren</span>
         </div>
         <div class="save-row">
+          <button class="secondary-button" type="button" data-action="fullscreen">${document.fullscreenElement ? "Avslutt fullskjerm" : "Full skjerm"}</button>
           <button class="secondary-button" type="button" data-action="save">Lagre</button>
           <button class="secondary-button" type="button" data-action="load">Last inn</button>
           <button class="danger-button" type="button" data-action="reset">Nullstill</button>
@@ -582,6 +595,7 @@
     refs.moneyValue.textContent = App.utils.formatKr(state.money);
     refs.caughtValue.textContent = `${App.getBagWeight(state).toFixed(1)} / ${App.getBagCapacity(state)} kg`;
     refs.catchOverlay.classList.toggle("hidden", phase !== "day" || !state.pendingCatch);
+    refs.endDayConfirm.classList.toggle("hidden", phase !== "day" || !game.confirmEndDay);
     if (state.pendingCatch) {
       const fish = state.pendingCatch;
       const capacity = App.getBagCapacity(state);
@@ -653,6 +667,7 @@
     const showOverlay = phase !== "day";
     refs.phaseOverlay.classList.toggle("hidden", !showOverlay);
     refs.titleScreen.classList.toggle("hidden", phase !== "title");
+    refs.titleFullscreenButton.textContent = document.fullscreenElement ? "Avslutt fullskjerm" : "Full skjerm";
     refs.continueButton.disabled = !game.hasSavedCareer;
     const earned = state.achievements || [];
     const upgrades = [`Stang ${state.equipment.rodLevel}`, `Snelle ${state.equipment.reelLevel}`, `Restaurant ${state.equipment.restaurantLevel}`].join(" · ");
@@ -684,6 +699,10 @@
     refs.eveningCount.textContent = `${Math.min(state.lastDaySummary?.arrivals || 0, Math.round(elapsed / 3.8 * (state.lastDaySummary?.arrivals || 0)))} av ${state.lastDaySummary?.arrivals || 0} kunder`;
     setHtml(refs.eveningEvents, events.slice(0, visibleCount).map((line) => `<p>${line}</p>`).join(""));
     refs.summaryRevenue.textContent = summary ? App.utils.formatKr(summary.revenue) : "0 kr";
+    refs.summaryIncomeHero.textContent = summary ? App.utils.formatKr(summary.revenue) : "0 kr";
+    refs.incomeBreakdown.textContent = summary && Number.isFinite(summary.tableRevenue)
+      ? `Servering ${App.utils.formatKr(summary.tableRevenue)} + grossist ${App.utils.formatKr(summary.wholesaleRevenue)} (${Math.round(summary.wholesaleRate * 100)} % av råvareverdi) = ${App.utils.formatKr(summary.revenue)}`
+      : "";
     refs.summaryCaught.textContent = summary ? String(summary.caughtCount) : "0";
     refs.summaryXp.textContent = summary ? `${summary.xpGained} XP` : "0 XP";
     refs.summaryWish.textContent = summary ? String(summary.bonusCount) : "0";
