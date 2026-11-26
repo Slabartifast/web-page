@@ -294,7 +294,11 @@
         restaurantLevel: 1,
         boatLevel: 0,
         bagLevel: 1,
-        tankLevel: 1,
+        tankLevel: 0,
+        kitchenLevel: 0,
+        chairsLevel: 0,
+        comfortLevel: 0,
+        serviceLevel: 0,
       },
       ownedBaits: {
         mark: true,
