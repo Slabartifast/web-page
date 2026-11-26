@@ -134,7 +134,7 @@
       showJoystick();
     };
 
-    const joystickArea = game.refs.joystickTouchArea;
+    const joystickArea = game.canvas;
     joystickArea.addEventListener("pointerdown", (event) => {
       if (event.pointerType === "mouse" || game.state.phase !== "day" || game.state.ui.activePanel) {
         return;
@@ -358,17 +358,31 @@
     const player = state.player;
     ctx.save();
     if (map.requiresBoat) {
-      ctx.fillStyle = "#8b593c";
+      const boatLevel = state.equipment.boatLevel || 1;
+      const length = boatLevel >= 3 ? 56 : boatLevel >= 2 ? 43 : 28;
+      const width = boatLevel >= 3 ? 23 : boatLevel >= 2 ? 18 : 14;
+      ctx.fillStyle = boatLevel >= 3 ? "#314b55" : boatLevel >= 2 ? "#576d71" : "#8b593c";
       ctx.beginPath();
-      ctx.ellipse(player.x, player.y, 28, 14, 0, 0, Math.PI * 2);
+      ctx.ellipse(player.x, player.y, length, width, 0, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#f6efe0";
-      ctx.beginPath();
-      ctx.moveTo(player.x, player.y - 24);
-      ctx.lineTo(player.x, player.y);
-      ctx.lineTo(player.x + 16, player.y - 10);
-      ctx.closePath();
-      ctx.fill();
+      ctx.strokeStyle = "#d8c9a9";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      if (boatLevel >= 2) {
+        ctx.fillStyle = "#2e444b";
+        ctx.fillRect(player.x - length - 12, player.y - 9, 18, 18);
+        ctx.fillStyle = "#d3e5e4";
+        ctx.fillRect(player.x - 2, player.y - width - 8, 25, 12);
+      } else {
+        ctx.strokeStyle = "#d4b584";
+        ctx.beginPath(); ctx.moveTo(player.x - 8, player.y + 4); ctx.lineTo(player.x + 30, player.y + 28); ctx.stroke();
+      }
+      if (boatLevel >= 3) {
+        ctx.fillStyle = "#e7e2ce";
+        ctx.fillRect(player.x + 8, player.y - 29, 27, 22);
+        ctx.fillStyle = "#5e9aaf";
+        ctx.fillRect(player.x + 13, player.y - 24, 17, 9);
+      }
     }
     if (fishermanSprite.complete && fishermanSprite.naturalWidth) {
       ctx.imageSmoothingEnabled = false;
@@ -610,11 +624,23 @@
       },
       endDay() {
         if (game.state.phase !== "day") return;
-        if (!window.confirm("Avslutte fiskedagen nå og dra til restauranten?")) return;
+        game.confirmEndDay = true;
+        App.renderUI(game);
+      },
+      cancelEndDay() {
+        game.confirmEndDay = false;
+        App.renderUI(game);
+      },
+      confirmEndDay() {
+        game.confirmEndDay = false;
         if (App.endDay(game.state)) {
           App.saveGame(game.state, true);
         }
         App.renderUI(game);
+      },
+      toggleFullscreen() {
+        if (document.fullscreenElement) document.exitFullscreen?.();
+        else (document.documentElement.requestFullscreen?.() || Promise.resolve()).catch(() => {});
       },
       serve() {
         if (App.runRestaurantService(game.state)) App.saveGame(game.state, true);
