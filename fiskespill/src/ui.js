@@ -32,6 +32,11 @@
       headerXpFill: byId("headerXpFill"),
       headerXpText: byId("headerXpText"),
       phaseOverlay: byId("phaseOverlay"),
+      titleScreen: byId("titleScreen"),
+      titleProgress: byId("titleProgress"),
+      titleAchievements: byId("titleAchievements"),
+      continueButton: byId("continueButton"),
+      newCareerButton: byId("newCareerButton"),
       welcomeScreen: byId("welcomeScreen"),
       mapSelectScreen: byId("mapSelectScreen"),
       summaryScreen: byId("summaryScreen"),
@@ -61,6 +66,7 @@
       summaryXp: byId("summaryXp"),
       summaryWish: byId("summaryWish"),
       summaryLines: byId("summaryLines"),
+      summaryAchievements: byId("summaryAchievements"),
       panelDrawer: byId("panelDrawer"),
       backMenuButton: byId("backMenuButton"),
       panelTitle: byId("panelTitle"),
@@ -69,6 +75,7 @@
       shopPanel: byId("shopPanel"),
       skillsPanel: byId("skillsPanel"),
       journalPanel: byId("journalPanel"),
+      achievementsPanel: byId("achievementsPanel"),
       menuPanel: byId("menuPanel"),
       focusPanel: byId("focusPanel"),
       questsPanel: byId("questsPanel"),
@@ -103,6 +110,8 @@
     game.refs = refs;
 
     refs.startGameButton.addEventListener("click", () => game.actions.beginCareer());
+    refs.continueButton.addEventListener("click", () => game.actions.continueCareer());
+    refs.newCareerButton.addEventListener("click", () => game.actions.newCareer());
     refs.nextDayButton.addEventListener("click", () => game.actions.afterShop());
     refs.serveButton.addEventListener("click", () => game.actions.serve());
     refs.afterShopButton.addEventListener("click", () => game.actions.afterSkills());
@@ -180,6 +189,7 @@
           game.actions.reset();
         }
       }
+      if (button.dataset.action === "dev") game.actions.toggleDev();
     });
   };
 
@@ -193,6 +203,7 @@
       shop: { title: "Utstyr", meta: "Bedre verktøy, bedre historier og færre unnskyldninger." },
       skills: { title: "Ferdigheter", meta: "Bruk erfaringspoeng på fordeler som faktisk merkes." },
       journal: { title: "Dagbok", meta: "Her bor rekordene og alle fiskene du skrøt av." },
+      achievements: { title: "Achievements", meta: "Små milepæler som belønner nysgjerrighet." },
       menu: { title: "Meny", meta: "Oppdrag, lagring og en liten huskelapp." },
       focus: { title: "Dagens fokus", meta: "Ønskefisken gir bedre pris i kveld." },
       quests: { title: "Oppdrag", meta: "Mål som gir penger og erfaring." },
@@ -359,6 +370,7 @@
     const tankNext = App.getTankData(state.equipment.tankLevel + 1);
 
     return `
+      ${state.devFreeUpgrades ? '<p class="shop-price">Utviklermodus: alle kjøp er gratis.</p>' : ''}
       ${renderUpgradeCard("Fiskestang", rodCurrent, rodNext, "rod")}
       ${renderUpgradeCard("Snelle", reelCurrent, reelNext, "reel")}
       ${renderUpgradeCard("Snøre", lineCurrent, lineNext, "line")}
@@ -409,9 +421,9 @@
               type="button"
               data-action="skill"
               data-skill-id="${skill.id}"
-              ${skillPoints > 0 && level < skill.maxLevel ? "" : "disabled"}
+              ${(skillPoints > 0 || game.state.devFreeUpgrades) && level < skill.maxLevel ? "" : "disabled"}
             >
-              ${skillPoints > 0 && level < skill.maxLevel ? "Bruk ferdighetspoeng" : "Ingen poeng eller maks nivå"}
+              ${(skillPoints > 0 || game.state.devFreeUpgrades) && level < skill.maxLevel ? "Øk ferdigheten" : "Ingen poeng eller maks nivå"}
             </button>
           </article>
         `;
@@ -499,7 +511,10 @@
   function renderMenu(game) {
     return `
       <article class="menu-card"><button class="secondary-button" type="button" data-action="panel" data-panel="skills">Ferdigheter</button>
-      <button class="secondary-button" type="button" data-action="panel" data-panel="journal">Dagbok</button></article>
+      <button class="secondary-button" type="button" data-action="panel" data-panel="journal">Dagbok</button>
+      <button class="secondary-button" type="button" data-action="panel" data-panel="achievements">Achievements</button></article>
+      <article class="menu-card"><h3>Utviklerinnstilling</h3><p>For rask testing. Kjøp og ferdighetsøkninger blir gratis.</p>
+      <button class="secondary-button" type="button" data-action="dev" aria-pressed="${game.state.devFreeUpgrades}">${game.state.devFreeUpgrades ? "Gratis oppgraderinger: På" : "Gratis oppgraderinger: Av"}</button></article>
       <article class="menu-card">
         <div class="card-head">
           <h3>Lagring og hjelp</h3>
@@ -518,6 +533,13 @@
         </div>
       </article>
     `;
+  }
+
+  function renderAchievements(state) {
+    return App.ACHIEVEMENTS.map((entry) => {
+      const earned = state.achievements.find((item) => item.id === entry.id);
+      return `<article class="achievement-card ${earned ? "earned" : ""}"><strong>${earned ? "✓ " : "○ "}${entry.name}</strong><span>${earned ? `Oppnådd dag ${earned.day}` : entry.hint}</span></article>`;
+    }).join("");
   }
 
   function renderLogs(game) {
@@ -592,6 +614,7 @@
     refs.restaurantMeta.textContent = `Rykte ${state.reputation.toFixed(1)} · ${state.customerMix.length} kunder ventet · ${seats} sitteplasser · tank ${plannedTankWeight.toFixed(1)}/${App.getTankCapacity(state)} kg${plannedTankWeight > App.getTankCapacity(state) ? " — for mye i tanken" : ""}`;
     refs.serveButton.disabled = plannedTankWeight > App.getTankCapacity(state) + 0.001;
     setHtml(refs.journalPanel, renderJournal(game));
+    setHtml(refs.achievementsPanel, renderAchievements(state));
     setHtml(refs.menuPanel, renderMenu(game));
     setHtml(refs.mapSelectPanel, renderMapCards(game, "Fisk her i dag"));
     setHtml(refs.catchLog, renderLogs(game));
@@ -607,6 +630,14 @@
 
     const showOverlay = phase !== "day";
     refs.phaseOverlay.classList.toggle("hidden", !showOverlay);
+    refs.titleScreen.classList.toggle("hidden", phase !== "title");
+    refs.continueButton.disabled = !game.hasSavedCareer;
+    const earned = state.achievements || [];
+    const upgrades = [`Stang ${state.equipment.rodLevel}`, `Snelle ${state.equipment.reelLevel}`, `Restaurant ${state.equipment.restaurantLevel}`].join(" · ");
+    refs.titleProgress.textContent = game.hasSavedCareer
+      ? `Dag ${state.day} · Nivå ${state.level} · Rykte ${state.reputation.toFixed(1)} · ${upgrades}`
+      : "Ingen lagret karriere ennå.";
+    refs.titleAchievements.textContent = `${earned.length}/${App.ACHIEVEMENTS.length} achievements · ${earned.slice(-2).map((item) => App.ACHIEVEMENTS.find((entry) => entry.id === item.id)?.name).filter(Boolean).join(" · ") || "Første venter på deg"}`;
     refs.welcomeScreen.classList.toggle("hidden", phase !== "welcome");
     refs.mapSelectScreen.classList.toggle("hidden", phase !== "mapSelect");
     refs.summaryScreen.classList.toggle("hidden", phase !== "summary");
@@ -648,9 +679,13 @@
           .concat(summary.lines.map((line) => `<p>${line}</p>`))
           .join("")
       : "";
+    const today = earned.filter((item) => item.day === summary?.dayNumber);
+    refs.summaryAchievements.textContent = today.length
+      ? `Achievements i dag: ${today.map((item) => App.ACHIEVEMENTS.find((entry) => entry.id === item.id)?.name).filter(Boolean).join(", ")}`
+      : `Achievements: ${earned.length}/${App.ACHIEVEMENTS.length}`;
 
     refs.panelDrawer.classList.toggle("active", phase === "day" && !!activePanel);
-    refs.backMenuButton.classList.toggle("hidden", !["skills", "journal"].includes(activePanel));
+    refs.backMenuButton.classList.toggle("hidden", !["skills", "journal", "achievements"].includes(activePanel));
     const panelConfig = getPanelConfig(activePanel);
     refs.panelTitle.textContent = panelConfig.title;
     refs.panelMeta.textContent = panelConfig.meta;
