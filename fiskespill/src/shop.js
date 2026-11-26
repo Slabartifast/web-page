@@ -65,16 +65,17 @@
 
   App.BOATS = [
     { level: 0, name: "Ingen båt", cost: 0, rareBonus: 0, speedBonus: 0, cargoBonus: 0, note: "To bein og en drøm." },
-    { level: 1, name: "Liten robåt", cost: 2500, rareBonus: 0.12, speedBonus: 0, cargoBonus: 2, note: "Tar deg sakte utover fjorden. Velg kurs med omhu." },
-    { level: 2, name: "Påhengsmotor", cost: 6200, rareBonus: 0.22, speedBonus: 52, cargoBonus: 5, note: "Raskere ute på dypet." },
-    { level: 3, name: "Havkutter", cost: 16000, rareBonus: 0.38, speedBonus: 100, cargoBonus: 12, note: "Stor båt, stor rekkevidde og langt mer lasteplass." },
+    { level: 1, name: "Liten robåt", cost: 2500, rareBonus: 0.12, speedBonus: 0, cargoBonus: 30, note: "Sakte, men med 30 kg lasteplass." },
+    { level: 2, name: "Påhengsmotor", cost: 6200, rareBonus: 0.22, speedBonus: 52, cargoBonus: 100, note: "Raskere og 100 kg lasteplass." },
+    { level: 3, name: "Havkutter", cost: 16000, rareBonus: 0.38, speedBonus: 100, cargoBonus: 300, note: "Stor båt med 300 kg lasteplass." },
   ];
 
   App.BAGS = [
     { level: 1, name: "Liten fiskebag", cost: 0, capacity: 3, note: "Plass til 3 kg fisk." },
-    { level: 2, name: "Romslig fiskebag", cost: 300, capacity: 6, note: "Plass til 6 kg fisk." },
-    { level: 3, name: "Stor fiskebag", cost: 850, capacity: 12, note: "Plass til 12 kg fisk." },
-    { level: 4, name: "Kjølekasse", cost: 1900, capacity: 24, note: "Plass til 24 kg fisk." },
+    { level: 2, name: "Romslig fiskebag", cost: 300, capacity: 10, note: "Plass til 10 kg fisk." },
+    { level: 3, name: "Stor fiskebag", cost: 850, capacity: 30, note: "Plass til 30 kg fisk." },
+    { level: 4, name: "Kjølekasse", cost: 1900, capacity: 80, note: "Plass til 80 kg fisk." },
+    { level: 5, name: "Stor kjølekasse", cost: 5200, capacity: 200, note: "Plass til 200 kg fisk." },
   ];
   App.TANKS = [
     { level: 0, name: "Ingen fisketank", cost: 0, capacity: 0, note: "Kjøp en tank for å spare fisk." },
@@ -90,9 +91,10 @@
   ];
   App.CHAIRS = [
     { level: 0, name: "Ingen ekstra stoler", cost: 0, seats: 0, note: "Grunnkapasitet." },
-    { level: 1, name: "To ekstra stoler", cost: 450, seats: 2, note: "+2 sitteplasser." },
-    { level: 2, name: "Flere bord", cost: 1250, seats: 5, note: "+5 sitteplasser." },
-    { level: 3, name: "Stor sal", cost: 3100, seats: 9, note: "+9 sitteplasser." },
+    { level: 1, name: "Flere bord", cost: 450, seats: 10, note: "+10 sitteplasser." },
+    { level: 2, name: "Utvidet sal", cost: 1250, seats: 30, note: "+30 sitteplasser." },
+    { level: 3, name: "Stor sal", cost: 3100, seats: 60, note: "+60 sitteplasser." },
+    { level: 4, name: "Festivalservering", cost: 9000, seats: 100, note: "+100 sitteplasser." },
   ];
   App.COMFORTS = [
     { level: 0, name: "Enkel innredning", cost: 0, bonus: 0, note: "Nøkternt og rent." },
@@ -114,11 +116,11 @@
   ];
 
   App.RESTAURANT_UPGRADES = [
-    { level: 1, name: "Liten takeaway", cost: 0, saleMultiplier: 1.0, seats: 2, note: "To sitteplasser og et enkelt kjøkken." },
-    { level: 2, name: "Bedre frityr", cost: 420, saleMultiplier: 1.08, seats: 3, note: "Tre sitteplasser og jevnere service." },
-    { level: 3, name: "Større kjøkken", cost: 980, saleMultiplier: 1.16, seats: 5, note: "Fem sitteplasser og rom for fin filet." },
-    { level: 4, name: "Flere bord", cost: 2300, saleMultiplier: 1.25, seats: 8, note: "Åtte sitteplasser tar unna køen." },
-    { level: 5, name: "Spesialmeny", cost: 5200, saleMultiplier: 1.36, seats: 12, note: "Tolv sitteplasser og flere menyvalg." },
+    { level: 1, name: "Enkelt lokale", cost: 0, saleMultiplier: 1.0, ambienceBonus: 0, note: "Et nøkternt sted ved vannet." },
+    { level: 2, name: "Nymalt lokale", cost: 420, saleMultiplier: 1.04, ambienceBonus: 2, note: "Litt finere omgivelser." },
+    { level: 3, name: "Maritim stil", cost: 980, saleMultiplier: 1.08, ambienceBonus: 4, note: "Gjestene legger merke til detaljene." },
+    { level: 4, name: "Fjordrestaurant", cost: 2300, saleMultiplier: 1.13, ambienceBonus: 7, note: "Et lokale med særpreg." },
+    { level: 5, name: "Kystperle", cost: 5200, saleMultiplier: 1.2, ambienceBonus: 10, note: "Et sted folk forteller om." },
   ];
 
   App.BAITS = {
