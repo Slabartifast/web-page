@@ -179,6 +179,26 @@
     kitchen: { id: "kitchen", name: "Kjøkkenhånd", maxLevel: 5,
       description: "+2 matpoeng per nivå. Du får mer ut av råvaren og oppskriften." },
   };
+  App.ACHIEVEMENTS = [
+    { id: "first_catch", name: "Første napp", hint: "Fang din første fisk.", check: (s) => s.stats.totalCaught >= 1 },
+    { id: "five_species", name: "Artsjeger", hint: "Oppdag fem arter.", check: (s) => App.getDiscoveredFishCount(s) >= 5 },
+    { id: "heavy", name: "Tung dag", hint: "Fang 10 kg fisk totalt.", check: (s) => s.stats.totalWeight >= 10 },
+    { id: "boat", name: "På bølgene", hint: "Kjøp en båt.", check: (s) => s.equipment.boatLevel >= 1 },
+    { id: "cook", name: "Første servering", hint: "Server din første fisk.", check: (s) => s.stats.totalSold >= 1 },
+    { id: "tank", name: "Til senere", hint: "Spar fisk i tanken.", check: (s) => s.fishTank.length >= 1 },
+    { id: "reputation", name: "Godt rykte", hint: "Nå 20 i rykte.", check: (s) => s.reputation >= 20 },
+    { id: "restaurant", name: "Flere bord", hint: "Oppgrader restauranten to ganger.", check: (s) => s.equipment.restaurantLevel >= 3 },
+    { id: "explorer", name: "Vannvandrer", hint: "Besøk fem fiskeplasser.", check: (s) => (s.visitedMapIds || []).length >= 5 },
+    { id: "veteran", name: "Fast fisker", hint: "Start dag 10.", check: (s) => s.day >= 10 },
+  ];
+  App.syncAchievements = function (state) {
+    state.achievements = state.achievements || [];
+    for (const entry of App.ACHIEVEMENTS) {
+      if (state.achievements.some((earned) => earned.id === entry.id) || !entry.check(state)) continue;
+      state.achievements.push({ id: entry.id, day: state.day });
+      App.addMessage(state, `Achievement: ${entry.name}!`);
+    }
+  };
 
   App.getPlayableViewport = function getPlayableViewport() {
     return {
@@ -254,6 +274,9 @@
       xp: 0,
       level: 1,
       skillPoints: 0,
+      devFreeUpgrades: false,
+      achievements: [],
+      visitedMapIds: [],
       skills: {
         casting: 0,
         instincts: 0,
@@ -343,6 +366,11 @@
       ? merged.skillPoints
       : Math.max(0, merged.level - 1);
     merged.inventory = Array.isArray(merged.inventory) ? merged.inventory : [];
+    merged.achievements = Array.isArray(merged.achievements) ? merged.achievements : [];
+    merged.visitedMapIds = Array.isArray(merged.visitedMapIds) ? merged.visitedMapIds : [];
+    if (merged.phase === "day" && !merged.visitedMapIds.includes(merged.currentMapId)) {
+      merged.visitedMapIds.push(merged.currentMapId);
+    }
     merged.fishTank = Array.isArray(merged.fishTank) ? merged.fishTank : [];
     merged.restaurantPlan = merged.restaurantPlan || {};
     merged.customerMix = Array.isArray(merged.customerMix) ? merged.customerMix : [];
@@ -454,7 +482,7 @@
     if (!skill) {
       return { ok: false, message: "Ukjent ferdighet." };
     }
-    if (state.skillPoints <= 0) {
+    if (state.skillPoints <= 0 && !state.devFreeUpgrades) {
       return { ok: false, message: "Du har ingen ledige ferdighetspoeng." };
     }
     const currentLevel = App.getSkillLevel(state, skillId);
@@ -462,8 +490,9 @@
       return { ok: false, message: `${skill.name} er allerede på maks.` };
     }
     state.skills[skillId] = currentLevel + 1;
-    state.skillPoints -= 1;
+    if (!state.devFreeUpgrades) state.skillPoints -= 1;
     App.addMessage(state, `${skill.name} økte til nivå ${state.skills[skillId]}.`);
+    App.syncAchievements(state);
     return { ok: true, message: `${skill.name} forbedret.` };
   };
 
@@ -615,6 +644,7 @@
     )
       .slice(0, 3)
       .map((quest) => quest.id);
+    App.syncAchievements(state);
   };
 
   App.beginCareer = function beginCareer(state) {
@@ -637,6 +667,7 @@
     state.ui.activePanel = null;
     state.fishing = App.createEmptyFishingState();
     App.addMessage(state, `Dag ${state.day} starter. Velg dagens fiskeplass.`);
+    App.syncAchievements(state);
   };
 })();
 
