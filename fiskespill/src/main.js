@@ -134,7 +134,8 @@
       showJoystick();
     };
 
-    game.canvas.addEventListener("pointerdown", (event) => {
+    const joystickArea = game.refs.joystickTouchArea;
+    joystickArea.addEventListener("pointerdown", (event) => {
       if (event.pointerType === "mouse" || game.state.phase !== "day" || game.state.ui.activePanel) {
         return;
       }
@@ -149,12 +150,12 @@
       joystick.x = 0;
       joystick.y = 0;
       showJoystick();
-      if (game.canvas.setPointerCapture) {
-        game.canvas.setPointerCapture(event.pointerId);
+      if (joystickArea.setPointerCapture) {
+        joystickArea.setPointerCapture(event.pointerId);
       }
     });
 
-    game.canvas.addEventListener("pointermove", (event) => {
+    joystickArea.addEventListener("pointermove", (event) => {
       if (!joystick.active || joystick.pointerId !== event.pointerId) {
         return;
       }
@@ -170,9 +171,9 @@
       hideJoystick();
     };
 
-    game.canvas.addEventListener("pointerup", endJoystick);
-    game.canvas.addEventListener("pointercancel", endJoystick);
-    game.canvas.addEventListener("lostpointercapture", endJoystick);
+    joystickArea.addEventListener("pointerup", endJoystick);
+    joystickArea.addEventListener("pointercancel", endJoystick);
+    joystickArea.addEventListener("lostpointercapture", endJoystick);
 
     window.addEventListener("blur", () => {
       game.input.held.clear();
@@ -608,6 +609,8 @@
         App.renderUI(game);
       },
       endDay() {
+        if (game.state.phase !== "day") return;
+        if (!window.confirm("Avslutte fiskedagen nå og dra til restauranten?")) return;
         if (App.endDay(game.state)) {
           App.saveGame(game.state, true);
         }
@@ -624,6 +627,7 @@
       afterShop() {
         if (game.state.phase !== "summary") return;
         game.state.phase = "afterShop";
+        game.shopNotice = "";
         App.saveGame(game.state, true);
         App.renderUI(game);
       },
@@ -669,13 +673,23 @@
       purchase(type) {
         const result = App.purchaseItem(game.state, type);
         if (result.ok) {
+          game.shopNotice = `${result.message}`;
           App.ensureUnlockedMaps(game.state);
           App.syncQuests(game.state);
           App.saveGame(game.state, true);
         } else {
+          game.shopNotice = result.message;
           App.addMessage(game.state, result.message);
         }
         App.renderUI(game);
+      },
+      chooseShopCategory(category) {
+        if (!["fishing", "bait", "restaurant"].includes(category)) return;
+        game.state.ui.shopCategory = category;
+        game.shopNotice = "";
+        App.renderUI(game);
+        game.refs.afterShopPanel.scrollTop = 0;
+        game.refs.shopPanel.scrollTop = 0;
       },
       toggleDev() {
         game.state.devFreeUpgrades = !game.state.devFreeUpgrades;
