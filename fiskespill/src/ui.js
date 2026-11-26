@@ -54,6 +54,8 @@
       serveButton: byId("serveButton"),
       afterShopScreen: byId("afterShopScreen"),
       afterShopPanel: byId("afterShopPanel"),
+      shopBalance: byId("shopBalance"),
+      shopNotice: byId("shopNotice"),
       afterShopButton: byId("afterShopButton"),
       afterSkillsScreen: byId("afterSkillsScreen"),
       afterSkillsPanel: byId("afterSkillsPanel"),
@@ -101,6 +103,7 @@
       touchControls: byId("touchControls"),
       touchInteractButton: byId("touchInteractButton"),
       virtualJoystick: byId("virtualJoystick"),
+      joystickTouchArea: byId("joystickTouchArea"),
       joystickBase: byId("joystickBase"),
       joystickKnob: byId("joystickKnob"),
       navButtons: Array.from(document.querySelectorAll(".nav-button[data-panel]")),
@@ -147,6 +150,7 @@
       if (button.dataset.action === "buy") {
         game.actions.purchase(button.dataset.upgradeType);
       }
+      if (button.dataset.action === "shop-category") game.actions.chooseShopCategory(button.dataset.category);
       if (button.dataset.action === "bait") {
         game.actions.chooseBait(button.dataset.baitId);
       }
@@ -155,6 +159,7 @@
       const button = event.target.closest("[data-action]");
       if (button?.dataset.action === "buy") game.actions.purchase(button.dataset.upgradeType);
       if (button?.dataset.action === "bait") game.actions.chooseBait(button.dataset.baitId);
+      if (button?.dataset.action === "shop-category") game.actions.chooseShopCategory(button.dataset.category);
     });
     refs.afterSkillsPanel.addEventListener("click", (event) => {
       const button = event.target.closest("[data-action='skill']");
@@ -276,6 +281,9 @@
       ];
     }
     if (type === "bag" || type === "tank") return [`Kapasitet: ${item.capacity} kg.`, item.note];
+    if (type === "kitchen") return [`Matbonus: +${item.bonus}.`, item.note];
+    if (type === "chairs") return [`Ekstra plasser: ${item.seats}.`, item.note];
+    if (type === "comfort" || type === "service") return [`Servicebonus: +${item.bonus}.`, item.note];
     if (type === "restaurant") {
       return [
         `${item.seats} sitteplasser.`,
@@ -286,7 +294,7 @@
     return [];
   }
 
-  function renderUpgradeCard(title, current, next, type) {
+  function renderUpgradeCard(title, current, next, type, state) {
     const currentLines = getUpgradeDetails(type, current);
     const nextLines = next ? getUpgradeDetails(type, next) : [];
     const rows = Array.from({ length: Math.max(currentLines.length, nextLines.length) }, (_, index) => `
@@ -300,6 +308,7 @@
           <span class="quality-pill">Nivå ${current.level}</span>
         </div>
         <p class="shop-price">${next ? `Oppgradering: ${next.cost} kr` : "Maksnivå nådd"}</p>
+        ${next && App.getUpgradeRequiredLevel(type, next.level) > 1 ? `<p class="shop-meta">Krever nivå ${App.getUpgradeRequiredLevel(type, next.level)}${state.level < App.getUpgradeRequiredLevel(type, next.level) && !state.devFreeUpgrades ? " · låst ennå" : ""}</p>` : ""}
         <div class="upgrade-compare" role="table" aria-label="Sammenligning av ${title.toLowerCase()}">
           <div class="upgrade-heading" role="columnheader">Nåværende: ${current.name}</div>
           <div class="upgrade-heading" role="columnheader">${next ? `Oppgradering: ${next.name}` : "Fullt oppgradert"}</div>
@@ -368,17 +377,28 @@
     const restaurantNext = App.getRestaurantData(state.equipment.restaurantLevel + 1);
     const tankCurrent = App.getTankData(state.equipment.tankLevel);
     const tankNext = App.getTankData(state.equipment.tankLevel + 1);
+    const category = state.ui.shopCategory || "fishing";
+    const categories = `<div class="shop-categories">${[["fishing", "Fiskeutstyr"], ["bait", "Agn og sluk"], ["restaurant", "Restaurant"]].map(([id, label]) => `<button type="button" data-action="shop-category" data-category="${id}" class="secondary-button ${category === id ? "active" : ""}">${label}</button>`).join("")}</div>`;
 
     return `
       ${state.devFreeUpgrades ? '<p class="shop-price">Utviklermodus: alle kjøp er gratis.</p>' : ''}
-      ${renderUpgradeCard("Fiskestang", rodCurrent, rodNext, "rod")}
-      ${renderUpgradeCard("Snelle", reelCurrent, reelNext, "reel")}
-      ${renderUpgradeCard("Snøre", lineCurrent, lineNext, "line")}
-      ${renderUpgradeCard("Båt", boatCurrent, boatNext, "boat")}
-      ${renderUpgradeCard("Fiskebag", bagCurrent, bagNext, "bag")}
-      ${renderUpgradeCard("Fisketank", tankCurrent, tankNext, "tank")}
-      ${renderUpgradeCard("Restaurant", restaurantCurrent, restaurantNext, "restaurant")}
-      ${renderBaitCards(game)}
+      ${categories}
+      ${category === "fishing" ? `
+      ${renderUpgradeCard("Fiskestang", rodCurrent, rodNext, "rod", state)}
+      ${renderUpgradeCard("Snelle", reelCurrent, reelNext, "reel", state)}
+      ${renderUpgradeCard("Snøre", lineCurrent, lineNext, "line", state)}
+      ${renderUpgradeCard("Båt", boatCurrent, boatNext, "boat", state)}
+      ${renderUpgradeCard("Fiskebag", bagCurrent, bagNext, "bag", state)}
+      ` : ""}
+      ${category === "restaurant" ? `
+      ${renderUpgradeCard("Restaurant", restaurantCurrent, restaurantNext, "restaurant", state)}
+      ${renderUpgradeCard("Kjøkken", App.KITCHENS[state.equipment.kitchenLevel], App.KITCHENS[state.equipment.kitchenLevel + 1], "kitchen", state)}
+      ${renderUpgradeCard("Stoler og bord", App.CHAIRS[state.equipment.chairsLevel], App.CHAIRS[state.equipment.chairsLevel + 1], "chairs", state)}
+      ${renderUpgradeCard("Komfort", App.COMFORTS[state.equipment.comfortLevel], App.COMFORTS[state.equipment.comfortLevel + 1], "comfort", state)}
+      ${renderUpgradeCard("Servering", App.SERVICE_UPGRADES[state.equipment.serviceLevel], App.SERVICE_UPGRADES[state.equipment.serviceLevel + 1], "service", state)}
+      ${renderUpgradeCard("Fisketank", tankCurrent, tankNext, "tank", state)}
+      ` : ""}
+      ${category === "bait" ? renderBaitCards(game) : ""}
     `;
   }
 
@@ -610,9 +630,11 @@
     const plannedTankWeight = App.getRestaurantCandidates(state)
       .filter(({ fish, source }) => App.getRestaurantChoice(state, fish, source) === "tank")
       .reduce((sum, { fish }) => sum + fish.weightKg, 0);
-    const seats = App.getRestaurantData(state.equipment.restaurantLevel).seats;
+    const seats = App.getRestaurantData(state.equipment.restaurantLevel).seats + (App.CHAIRS[state.equipment.chairsLevel]?.seats || 0);
     refs.restaurantMeta.textContent = `Rykte ${state.reputation.toFixed(1)} · ${state.customerMix.length} kunder ventet · ${seats} sitteplasser · tank ${plannedTankWeight.toFixed(1)}/${App.getTankCapacity(state)} kg${plannedTankWeight > App.getTankCapacity(state) ? " — for mye i tanken" : ""}`;
     refs.serveButton.disabled = plannedTankWeight > App.getTankCapacity(state) + 0.001;
+    refs.shopBalance.textContent = `Penger: ${App.utils.formatKr(state.money)}${state.devFreeUpgrades ? " · Gratis testmodus" : ""}`;
+    refs.shopNotice.textContent = game.shopNotice || "";
     setHtml(refs.journalPanel, renderJournal(game));
     setHtml(refs.achievementsPanel, renderAchievements(state));
     setHtml(refs.menuPanel, renderMenu(game));
@@ -697,7 +719,8 @@
     });
 
     refs.endDayButton.disabled = phase !== "day" || !!state.pendingCatch;
-    refs.touchControls.classList.toggle("hidden", phase !== "day");
+    refs.touchControls.classList.toggle("hidden", phase !== "day" || !!activePanel);
+    refs.joystickTouchArea.classList.toggle("hidden", phase !== "day" || !!activePanel);
     refs.logDock.classList.toggle("hidden", phase !== "day");
 
     refs.fishingHud.classList.toggle("hidden", phase !== "day" || fishing.mode === "idle");
