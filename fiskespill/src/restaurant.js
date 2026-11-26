@@ -47,7 +47,7 @@
     state.ui.activePanel = null;
     state.fishing = App.createEmptyFishingState();
     state.restaurantPlan = {};
-    const arrivals = Math.min(20, 2 + Math.floor(state.reputation / 12) + Math.floor(Math.random() * 3));
+    const arrivals = Math.min(20, 1 + Math.floor(state.reputation / 12) + Math.floor(Math.random() * 3));
     state.customerMix = Array.from({ length: arrivals }, () =>
       App.CUSTOMERS[Math.floor(Math.random() * App.CUSTOMERS.length)].id);
     App.addMessage(state, "Klokka er 18. Planlegg kveldens servering.");
