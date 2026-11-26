@@ -2,11 +2,11 @@
   const App = (window.FjordFritert = window.FjordFritert || {});
   const clamp = App.utils.clamp;
   App.RECIPES = [
-    { id: "stekt", name: "Stekt fisk", minKitchen: 1, price: 1.15, likes: ["lokale", "turister"], description: "Best med høy kvalitet." },
-    { id: "kokt", name: "Kokt fisk", minKitchen: 1, price: 1, likes: ["lokale"], description: "Trygt mellomvalg." },
-    { id: "kaker", name: "Fiskekaker", minKitchen: 1, price: 0.9, likes: ["familier"], description: "Løfter enkel fisk." },
-    { id: "filet", name: "Fin filet", minKitchen: 3, price: 1.35, likes: ["matnerder", "turister"], description: "Krever topp råvare." },
-    { id: "suppe", name: "Fiskesuppe", minKitchen: 4, price: 1.2, likes: ["familier", "turister"], description: "Allsidig rett." },
+    { id: "stekt", name: "Stekt fisk", minKitchen: 0, price: 1.15, likes: ["lokale", "turister"], description: "Best med høy kvalitet." },
+    { id: "kokt", name: "Kokt fisk", minKitchen: 0, price: 1, likes: ["lokale"], description: "Trygt mellomvalg." },
+    { id: "kaker", name: "Fiskekaker", minKitchen: 0, price: 0.9, likes: ["familier"], description: "Løfter enkel fisk." },
+    { id: "filet", name: "Fin filet", minKitchen: 2, price: 1.35, likes: ["matnerder", "turister"], description: "Krever topp råvare." },
+    { id: "suppe", name: "Fiskesuppe", minKitchen: 3, price: 1.2, likes: ["familier", "turister"], description: "Allsidig rett." },
   ];
   App.CUSTOMERS = [
     { id: "lokale", name: "Lokale stamgjester", priceSensitivity: 0.75 },
@@ -14,7 +14,7 @@
     { id: "matnerder", name: "Matnerder", priceSensitivity: 0.65 },
     { id: "turister", name: "Turister", priceSensitivity: 0.9 },
   ];
-  App.getAvailableRecipes = (state) => App.RECIPES.filter((r) => state.equipment.restaurantLevel >= r.minKitchen);
+  App.getAvailableRecipes = (state) => App.RECIPES.filter((r) => state.equipment.kitchenLevel >= r.minKitchen);
   App.getRestaurantCandidates = (state) => state.inventory.map((fish) => ({ fish, source: "bag" }))
     .concat(state.fishTank.map((fish) => ({ fish, source: "tank" })));
   App.getRestaurantChoice = (state, fish, source) =>
@@ -82,40 +82,62 @@
         return score(b) - score(a);
       });
     const arrivals = state.customerMix.length;
-    const seated = Math.min(arrivals, restaurant.seats);
+    const seated = Math.min(arrivals, restaurant.seats + (App.CHAIRS[state.equipment.chairsLevel]?.seats || 0));
     const turnedAway = arrivals - seated;
-    const served = Math.min(seated, dishes.length);
-    const withoutFood = seated - served;
-    const serviceScore = clamp(58 + state.equipment.restaurantLevel * 3 + App.getSkillLevel(state, "social") * 4, 0, 100);
+    const serviceScore = clamp(58 + state.equipment.restaurantLevel * 3 +
+      (App.COMFORTS[state.equipment.comfortLevel]?.bonus || 0) +
+      (App.SERVICE_UPGRADES[state.equipment.serviceLevel]?.bonus || 0) +
+      App.getSkillLevel(state, "social") * 4, 0, 100);
     const reviews = [], foods = [], events = [], lines = [];
     let revenue = 0, bonusCount = 0;
-    for (let i = 0; i < served; i += 1) {
-      const fish = dishes[i].fish;
-      const recipe = App.getAvailableRecipes(state).find((r) =>
-        r.id === App.getRestaurantChoice(state, fish, dishes[i].source)) || App.RECIPES[0];
+    const portions = dishes.map((entry) => ({ ...entry, remaining: entry.fish.weightKg }));
+    let cursor = 0, served = 0;
+    for (let i = 0; i < seated; i += 1) {
       const customer = App.CUSTOMERS.find((c) => c.id === state.customerMix[i]) || App.CUSTOMERS[0];
-      const food = foodScore(fish, recipe, App.getSkillLevel(state, "kitchen"));
+      const appetite = { matnerder: 0.22, familier: 0.42, lokale: 0.3, turister: 0.28 }[customer.id] || 0.3;
+      let needed = appetite, mealQuality = 0, mealWeight = 0, price = 0, wish = false;
+      let mainFish = null, mainRecipe = null;
+      while (needed > 0.001 && cursor < portions.length) {
+        const part = portions[cursor];
+        if (part.remaining <= 0.001) { cursor++; continue; }
+        const fish = part.fish;
+        const recipe = App.getAvailableRecipes(state).find((r) =>
+          r.id === App.getRestaurantChoice(state, fish, part.source)) || App.RECIPES[0];
+        const used = Math.min(needed, part.remaining);
+        const score = foodScore(fish, recipe, App.getSkillLevel(state, "kitchen")) +
+          (App.KITCHENS[state.equipment.kitchenLevel]?.bonus || 0);
+        mealQuality += score * used;
+        mealWeight += used;
+        price += fish.baseSaleValue * used / fish.weightKg * restaurant.saleMultiplier * recipe.price *
+          (1 + App.getSkillLevel(state, "commerce") * 0.08) *
+          (state.dailyDemand?.fishId === fish.fishId ? state.dailyDemand.multiplier : 1);
+        wish ||= state.dailyDemand?.fishId === fish.fishId;
+        mainFish ||= fish;
+        mainRecipe ||= recipe;
+        part.remaining -= used;
+        needed -= used;
+      }
+      if (!mealWeight) break;
+      served++;
+      const food = clamp(mealQuality / mealWeight - needed * 40, 5, 100);
       foods.push(food);
       const review = clamp(Math.round(0.72 * food + 0.28 * serviceScore +
-        (recipe.likes.includes(customer.id) ? 5 : 0) -
-        Math.max(0, recipe.price - 1) * customer.priceSensitivity * 20), 5, 100);
+        (mainRecipe.likes.includes(customer.id) ? 5 : 0) -
+        Math.max(0, mainRecipe.price - 1) * customer.priceSensitivity * 20), 5, 100);
       reviews.push(review);
-      const wish = state.dailyDemand?.fishId === fish.fishId;
-      const price = Math.round(fish.baseSaleValue * restaurant.saleMultiplier * recipe.price *
-        (1 + App.getSkillLevel(state, "commerce") * 0.08) * (wish ? state.dailyDemand.multiplier : 1));
-      revenue += price;
+      revenue += Math.round(price);
       if (wish) bonusCount++;
-      state.stats.soldByFishId[fish.fishId] = (state.stats.soldByFishId[fish.fishId] || 0) + 1;
-      lines.push(`${recipe.name} av ${fish.name}: ${price} kr · ${customer.name} ${review}/100.`);
-      events.push(`${customer.name}: ${recipe.name} av ${fish.name} · ${review}/100`);
+      lines.push(`${mainRecipe.name} av ${mainFish.name}: ${Math.round(mealWeight * 1000)} g · ${Math.round(price)} kr · ${customer.name} ${review}/100.`);
+      events.push(`${customer.name}: ${mainRecipe.name} · ${Math.round(mealWeight * 1000)} g · ${review}/100`);
     }
-    for (let i = served; i < dishes.length; i += 1) {
-      const fish = dishes[i].fish;
-      const price = Math.round(fish.baseSaleValue * 0.35);
+    for (const part of portions) {
+      const fish = part.fish;
+      const price = Math.round(fish.baseSaleValue * part.remaining / fish.weightKg * 0.35);
       revenue += price;
       state.stats.soldByFishId[fish.fishId] = (state.stats.soldByFishId[fish.fishId] || 0) + 1;
-      lines.push(`${fish.name} uten bord: ${price} kr til grossist.`);
+      if (part.remaining > 0.01) lines.push(`${fish.name}, ${part.remaining.toFixed(2)} kg til overs: ${price} kr til grossist.`);
     }
+    const withoutFood = seated - served;
     for (let i = 0; i < withoutFood; i++) events.push("En gjest fikk ikke mat og gikk misfornøyd.");
     for (let i = 0; i < turnedAway; i++) events.push("En kunde snudde i døra: fullt hus.");
     if (!events.length) events.push("Rolig kveld. Ingen gjester kom innom.");
