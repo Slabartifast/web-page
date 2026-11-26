@@ -321,7 +321,11 @@ canvas {
 .summary-hero-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .income-hero { display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; border-radius: 16px; background: #fff0d9; border: 2px solid #cc9650; }
 .income-hero strong { font-size: 1.8rem; }
-.income-breakdown { font-size: .87rem; font-weight: 700; padding: 8px 12px; border-radius: 10px; background: #fff8ec; }
+.income-breakdown { display: flex; flex-direction: column; flex: 0 1 160px; min-height: 85px; overflow: hidden; font-size: .84rem; padding: 8px 12px; border: 1px solid #c9ab85; border-radius: 10px; background: #fff8ec; }
+.income-items { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.income-items > div, .income-total { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border-bottom: 1px solid rgba(24,49,58,.14); }
+.income-items strong, .income-total strong { white-space: nowrap; }
+.income-total { font-weight: 700; border-bottom: 0; border-top: 2px solid #b89463; }
 .summary-details { flex: 1 1 0; min-height: 130px; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
 #summaryScreen .summary-lines { max-height: none; overflow: visible; margin: 10px 0; }
 #summaryScreen .phase-copy { overflow: hidden; }
