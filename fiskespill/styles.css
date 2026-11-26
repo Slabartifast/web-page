@@ -316,6 +316,15 @@ canvas {
   overflow: auto;
   padding-right: 4px;
 }
+#mapSelectScreen #mapSelectPanel { max-height: none; min-height: 0; flex: 1; overflow-y: auto; }
+#mapSelectScreen .phase-copy { overflow: hidden; }
+.summary-hero-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.income-hero { display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; border-radius: 16px; background: #fff0d9; border: 2px solid #cc9650; }
+.income-hero strong { font-size: 1.8rem; }
+.income-breakdown { font-size: .87rem; font-weight: 700; padding: 8px 12px; border-radius: 10px; background: #fff8ec; }
+.summary-details { flex: 1 1 0; min-height: 130px; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
+#summaryScreen .summary-lines { max-height: none; overflow: visible; margin: 10px 0; }
+#summaryScreen .phase-copy { overflow: hidden; }
 
 .panel-drawer {
   display: none;
@@ -829,5 +838,16 @@ canvas {
 }
 @media (pointer: coarse) and (min-width: 601px) {
   .log-dock { bottom: calc(var(--bottom-bar-height) + 138px); }
+}
+@media (pointer: fine), (min-width: 901px) {
+  .touch-controls, .joystick-touch-area { display: none !important; }
+}
+.joystick-touch-area { display: none !important; }
+.phase-card, .map-card, .shop-card, .skill-card, .menu-card, .journal-card, .quest-card { border: 2px solid rgba(24,49,58,.25); }
+.secondary-button, .map-button, .bait-button, .shop-button, .skill-button { border: 2px solid rgba(24,49,58,.32); }
+.primary-button, .danger-button { border: 2px solid rgba(75,48,35,.48); }
+@media (max-width: 600px) {
+  .touch-action-button { min-width: 112px; min-height: 82px; }
+  .summary-hero-row { grid-template-columns: 1fr; }
 }
 
