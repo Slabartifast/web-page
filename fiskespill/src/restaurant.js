@@ -47,7 +47,7 @@
     state.ui.activePanel = null;
     state.fishing = App.createEmptyFishingState();
     state.restaurantPlan = {};
-    const arrivals = Math.min(20, 1 + Math.floor(state.reputation / 12) + Math.floor(Math.random() * 3));
+    const arrivals = clamp(Math.round(2 + state.reputation * 0.98 + (Math.random() - 0.5) * (2 + state.reputation * 0.2)), 1, 120);
     state.customerMix = Array.from({ length: arrivals }, () =>
       App.CUSTOMERS[Math.floor(Math.random() * App.CUSTOMERS.length)].id);
     App.addMessage(state, "Klokka er 18. Planlegg kveldens servering.");
@@ -82,13 +82,13 @@
         return score(b) - score(a);
       });
     const arrivals = state.customerMix.length;
-    const seated = Math.min(arrivals, restaurant.seats + (App.CHAIRS[state.equipment.chairsLevel]?.seats || 0));
+    const seated = Math.min(arrivals, 2 + (App.CHAIRS[state.equipment.chairsLevel]?.seats || 0));
     const turnedAway = arrivals - seated;
-    const serviceScore = clamp(58 + state.equipment.restaurantLevel * 3 +
+    const serviceScore = clamp(58 + (restaurant.ambienceBonus || 0) +
       (App.COMFORTS[state.equipment.comfortLevel]?.bonus || 0) +
       (App.SERVICE_UPGRADES[state.equipment.serviceLevel]?.bonus || 0) +
       App.getSkillLevel(state, "social") * 4, 0, 100);
-    const reviews = [], foods = [], events = [], lines = [];
+    const reviews = [], foods = [], events = [], lines = [], incomeItems = [];
     let revenue = 0, tableRevenue = 0, wholesaleRevenue = 0, bonusCount = 0;
     const portions = dishes.map((entry) => ({ ...entry, remaining: entry.fish.weightKg }));
     let cursor = 0, served = 0;
@@ -97,6 +97,7 @@
       const appetite = { matnerder: 0.22, familier: 0.42, lokale: 0.3, turister: 0.28 }[customer.id] || 0.3;
       let needed = appetite, mealQuality = 0, mealWeight = 0, price = 0, wish = false;
       let mainFish = null, mainRecipe = null;
+      const mealParts = [];
       while (needed > 0.001 && cursor < portions.length) {
         const part = portions[cursor];
         if (part.remaining <= 0.001) { cursor++; continue; }
@@ -108,6 +109,7 @@
           (App.KITCHENS[state.equipment.kitchenLevel]?.bonus || 0);
         mealQuality += score * used;
         mealWeight += used;
+        mealParts.push(`${recipe.name} av ${fish.name} ${Math.round(used * 1000)} g`);
         price += fish.baseSaleValue * used / fish.weightKg * restaurant.saleMultiplier * recipe.price *
           (1 + App.getSkillLevel(state, "commerce") * 0.08) *
           (state.dailyDemand?.fishId === fish.fishId ? state.dailyDemand.multiplier : 1);
@@ -127,6 +129,7 @@
       reviews.push(review);
       revenue += Math.round(price);
       tableRevenue += Math.round(price);
+      incomeItems.push({ label: `${customer.name}: ${mealParts.join(" + ")}${wish ? " · ønskefiskbonus" : ""}`, amount: Math.round(price) });
       if (wish) bonusCount++;
       lines.push(`${mainRecipe.name} av ${mainFish.name}: ${Math.round(mealWeight * 1000)} g · ${Math.round(price)} kr · ${customer.name} ${review}/100.`);
       events.push(`${customer.name}: ${mainRecipe.name} · ${Math.round(mealWeight * 1000)} g · ${review}/100`);
@@ -136,6 +139,7 @@
       const price = Math.round(fish.baseSaleValue * part.remaining / fish.weightKg * App.WHOLESALE[state.equipment.wholesaleLevel].rate);
       revenue += price;
       wholesaleRevenue += price;
+      if (part.remaining > 0.01) incomeItems.push({ label: `Grossist · ${fish.name} · ${part.remaining.toFixed(2)} kg × ${Math.round(App.WHOLESALE[state.equipment.wholesaleLevel].rate * 100)} %`, amount: price });
       state.stats.soldByFishId[fish.fishId] = (state.stats.soldByFishId[fish.fishId] || 0) + 1;
       if (part.remaining > 0.01) lines.push(`${fish.name}, ${part.remaining.toFixed(2)} kg til overs: ${price} kr til grossist.`);
     }
@@ -148,7 +152,7 @@
     const factors = [
       { label: "Mat og tilberedning", value: (avgFood - 55) * 0.12 },
       { label: "Service", value: (serviceScore - 60) * 0.06 },
-      { label: `${turnedAway} avvist ved døra`, value: -turnedAway * 1.2 },
+      { label: `${turnedAway} avvist ved døra`, value: -turnedAway * 0.2 },
       { label: `${withoutFood} uten mat`, value: -withoutFood * 0.8 },
     ];
     const before = state.reputation;
@@ -169,7 +173,7 @@
       revenue, tableRevenue, wholesaleRevenue, wholesaleRate: App.WHOLESALE[state.equipment.wholesaleLevel].rate,
       bonusCount, avgFood: Math.round(avgFood), avgReview, serviceScore,
       reputationBefore: before, reputation: state.reputation, reputationChange: appliedChange,
-      reputationFactors: factors, storedCount: stored.length, lines: lines.slice(0, 12),
+      reputationFactors: factors, incomeItems, storedCount: stored.length, lines: lines.slice(0, 12),
       caughtCount: state.dayStats.caughtCount, xpGained: state.dayStats.xpGained,
       demandFishName: App.getFishById(state.dailyDemand?.fishId)?.name || "Ingen",
       mapName: App.getMapById(state.currentMapId)?.name || "Ukjent sted",
