@@ -89,7 +89,7 @@
       (App.SERVICE_UPGRADES[state.equipment.serviceLevel]?.bonus || 0) +
       App.getSkillLevel(state, "social") * 4, 0, 100);
     const reviews = [], foods = [], events = [], lines = [];
-    let revenue = 0, bonusCount = 0;
+    let revenue = 0, tableRevenue = 0, wholesaleRevenue = 0, bonusCount = 0;
     const portions = dishes.map((entry) => ({ ...entry, remaining: entry.fish.weightKg }));
     let cursor = 0, served = 0;
     for (let i = 0; i < seated; i += 1) {
@@ -126,14 +126,16 @@
         Math.max(0, mainRecipe.price - 1) * customer.priceSensitivity * 20), 5, 100);
       reviews.push(review);
       revenue += Math.round(price);
+      tableRevenue += Math.round(price);
       if (wish) bonusCount++;
       lines.push(`${mainRecipe.name} av ${mainFish.name}: ${Math.round(mealWeight * 1000)} g · ${Math.round(price)} kr · ${customer.name} ${review}/100.`);
       events.push(`${customer.name}: ${mainRecipe.name} · ${Math.round(mealWeight * 1000)} g · ${review}/100`);
     }
     for (const part of portions) {
       const fish = part.fish;
-      const price = Math.round(fish.baseSaleValue * part.remaining / fish.weightKg * 0.35);
+      const price = Math.round(fish.baseSaleValue * part.remaining / fish.weightKg * App.WHOLESALE[state.equipment.wholesaleLevel].rate);
       revenue += price;
+      wholesaleRevenue += price;
       state.stats.soldByFishId[fish.fishId] = (state.stats.soldByFishId[fish.fishId] || 0) + 1;
       if (part.remaining > 0.01) lines.push(`${fish.name}, ${part.remaining.toFixed(2)} kg til overs: ${price} kr til grossist.`);
     }
@@ -164,7 +166,8 @@
     if (dishes.length) App.gainXp(state, Math.round(12 + dishes.length * 4 + revenue / 25), `Kveldssalg ga ${revenue} kr`);
     state.lastDaySummary = {
       dayNumber: state.day, soldCount: dishes.length, served, arrivals, seated, turnedAway, withoutFood,
-      revenue, bonusCount, avgFood: Math.round(avgFood), avgReview, serviceScore,
+      revenue, tableRevenue, wholesaleRevenue, wholesaleRate: App.WHOLESALE[state.equipment.wholesaleLevel].rate,
+      bonusCount, avgFood: Math.round(avgFood), avgReview, serviceScore,
       reputationBefore: before, reputation: state.reputation, reputationChange: appliedChange,
       reputationFactors: factors, storedCount: stored.length, lines: lines.slice(0, 12),
       caughtCount: state.dayStats.caughtCount, xpGained: state.dayStats.xpGained,
