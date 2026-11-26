@@ -245,6 +245,13 @@ canvas {
 .evening-events p { margin: 0 0 7px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: white; }
 #summaryScreen .phase-copy { grid-column: 1 / -1; overflow-y: auto; }
 #summaryScreen .summary-art { display: none; }
+.title-progress, .title-achievements, .summary-achievements { padding: 12px 14px; border: 1px solid rgba(24,49,58,.25); border-radius: 14px; background: #fffaf0; }
+.title-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: auto; }
+.title-actions button { min-height: 48px; padding: 0 22px; font-weight: 700; }
+.title-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.achievement-card { display: flex; justify-content: space-between; gap: 10px; margin: 8px 0; padding: 10px; border: 1px solid rgba(24,49,58,.25); border-radius: 12px; background: #fff; }
+.achievement-card.earned { border-color: #78a86f; background: #eff8eb; }
+.achievement-card span { color: var(--muted); font-size: .8rem; text-align: right; }
 
 .phase-copy h1,
 .phase-copy h2 {
