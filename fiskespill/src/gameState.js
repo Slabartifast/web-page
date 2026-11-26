@@ -299,6 +299,7 @@
         chairsLevel: 0,
         comfortLevel: 0,
         serviceLevel: 0,
+        wholesaleLevel: 0,
       },
       ownedBaits: {
         mark: true,
