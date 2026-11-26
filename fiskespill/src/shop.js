@@ -220,7 +220,7 @@
       if (!state.devFreeUpgrades) state.money -= bait.cost;
       state.ownedBaits[itemId] = true;
       state.activeBaitId = itemId;
-      App.addMessage(state, `Du kjøpte ${bait.name.toLowerCase()} for ${bait.cost} kr.`);
+      App.addMessage(state, `Du kjøpte ${bait.name.toLowerCase()}${state.devFreeUpgrades ? " gratis" : ` for ${bait.cost} kr`}.`);
       return { ok: true, message: "Kjøpet er gjennomført." };
     }
 
@@ -254,7 +254,7 @@
 
     if (!state.devFreeUpgrades) state.money -= nextItem.cost;
     state.equipment[category.key] = nextItem.level;
-    App.addMessage(state, `Du kjøpte ${nextItem.name.toLowerCase()} for ${nextItem.cost} kr.`);
+    App.addMessage(state, `Du kjøpte ${nextItem.name.toLowerCase()}${state.devFreeUpgrades ? " gratis" : ` for ${nextItem.cost} kr`}.`);
     return { ok: true, message: `${nextItem.name} er nå i bruk.` };
   };
 })();
