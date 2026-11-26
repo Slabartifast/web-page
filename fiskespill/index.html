@@ -115,7 +115,7 @@
                 </div>
               </article>
 
-              <article class="phase-card hidden" id="mapSelectScreen">
+              <article class="phase-card phase-list hidden" id="mapSelectScreen">
                 <div class="phase-copy wide">
                   <p class="phase-kicker">Ny dag</p>
                   <h2>Hvor vil du fiske i dag?</h2>
@@ -201,6 +201,8 @@
                   <p class="phase-kicker">Før neste dag · 1 av 2</p>
                   <h2>Oppgrader utstyret</h2>
                   <p class="phase-lead">Bruk kveldens inntekt på fiskeutstyr, båt, bag, tank eller restaurant.</p>
+                  <p class="shop-balance" id="shopBalance">Penger: 0 kr</p>
+                  <p class="shop-notice" id="shopNotice" role="status" aria-live="polite"></p>
                   <div class="phase-scroll" id="afterShopPanel"></div>
                   <button class="primary-button phase-button" id="afterShopButton" type="button">Videre</button>
                 </div>
@@ -290,6 +292,7 @@
               <div class="joystick-base" id="joystickBase"></div>
               <div class="joystick-knob" id="joystickKnob"></div>
             </div>
+            <div class="joystick-touch-area" id="joystickTouchArea" aria-label="Bevegelse med joystick"><span>Beveg</span></div>
 
             <section class="touch-controls touch-action-dock" id="touchControls">
               <button class="touch-action-button" data-touch-action="interact" id="touchInteractButton" type="button">
