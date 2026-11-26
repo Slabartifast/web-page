@@ -76,9 +76,33 @@
     { level: 4, name: "Kjølekasse", cost: 1900, capacity: 24, note: "Plass til 24 kg fisk." },
   ];
   App.TANKS = [
+    { level: 0, name: "Ingen fisketank", cost: 0, capacity: 0, note: "Kjøp en tank for å spare fisk." },
     { level: 1, name: "Liten fisketank", cost: 0, capacity: 5, note: "Lagrer 5 kg levende fisk til senere kvelder." },
     { level: 2, name: "Større fisketank", cost: 650, capacity: 12, note: "Lagrer 12 kg levende fisk." },
     { level: 3, name: "Fjordbasseng", cost: 1750, capacity: 25, note: "Lagrer 25 kg levende fisk." },
+  ];
+  App.KITCHENS = [
+    { level: 0, name: "Enkelt kjøkken", cost: 0, bonus: 0, note: "Grunnutstyr." },
+    { level: 1, name: "God stekeplass", cost: 500, bonus: 4, note: "+4 matpoeng." },
+    { level: 2, name: "Fagkjøkken", cost: 1450, bonus: 8, note: "+8 matpoeng og fin filet." },
+    { level: 3, name: "Mesterkjøkken", cost: 3600, bonus: 13, note: "+13 matpoeng og fiskesuppe." },
+  ];
+  App.CHAIRS = [
+    { level: 0, name: "Ingen ekstra stoler", cost: 0, seats: 0, note: "Grunnkapasitet." },
+    { level: 1, name: "To ekstra stoler", cost: 450, seats: 2, note: "+2 sitteplasser." },
+    { level: 2, name: "Flere bord", cost: 1250, seats: 5, note: "+5 sitteplasser." },
+    { level: 3, name: "Stor sal", cost: 3100, seats: 9, note: "+9 sitteplasser." },
+  ];
+  App.COMFORTS = [
+    { level: 0, name: "Enkel innredning", cost: 0, bonus: 0, note: "Nøkternt og rent." },
+    { level: 1, name: "Varme benker", cost: 360, bonus: 3, note: "+3 servicepoeng." },
+    { level: 2, name: "Trivelig sal", cost: 950, bonus: 7, note: "+7 servicepoeng." },
+    { level: 3, name: "Fjordutsikt", cost: 2400, bonus: 12, note: "+12 servicepoeng." },
+  ];
+  App.SERVICE_UPGRADES = [
+    { level: 0, name: "Enmannsdrift", cost: 0, bonus: 0, note: "Du gjør alt selv." },
+    { level: 1, name: "Raskere servering", cost: 650, bonus: 4, note: "+4 servicepoeng." },
+    { level: 2, name: "God flyt", cost: 1700, bonus: 9, note: "+9 servicepoeng." },
   ];
 
   App.RESTAURANT_UPGRADES = [
@@ -185,6 +209,12 @@
   App.getActiveBait = function getActiveBait(state) {
     return App.BAITS[state.activeBaitId] || App.BAITS.mark;
   };
+  App.getUpgradeRequiredLevel = function (type, nextLevel) {
+    if (type === "rod") return Math.max(1, nextLevel * 2 - 2);
+    if (type === "boat") return nextLevel * 3;
+    if (type === "kitchen") return nextLevel * 2;
+    return 1;
+  };
 
   App.getBaitModifier = function getBaitModifier(fish, baitId) {
     const bait = App.BAITS[baitId];
@@ -232,6 +262,10 @@
       bag: { key: "bagLevel", items: App.BAGS },
       tank: { key: "tankLevel", items: App.TANKS },
       restaurant: { key: "restaurantLevel", items: App.RESTAURANT_UPGRADES },
+      kitchen: { key: "kitchenLevel", items: App.KITCHENS },
+      chairs: { key: "chairsLevel", items: App.CHAIRS },
+      comfort: { key: "comfortLevel", items: App.COMFORTS },
+      service: { key: "serviceLevel", items: App.SERVICE_UPGRADES },
     };
 
     const category = categoryMap[type];
@@ -248,8 +282,12 @@
     if (!nextItem) {
       return { ok: false, message: "Denne oppgraderingen er allerede maks." };
     }
+    const neededLevel = App.getUpgradeRequiredLevel(type, nextItem.level);
+    if (state.level < neededLevel && !state.devFreeUpgrades) {
+      return { ok: false, message: `Krever fiskernivå ${neededLevel}. Du er nivå ${state.level}.` };
+    }
     if (state.money < nextItem.cost && !state.devFreeUpgrades) {
-      return { ok: false, message: "Du har ikke nok penger." };
+      return { ok: false, message: `Du trenger ${nextItem.cost} kr, men har ${Math.round(state.money)} kr.` };
     }
 
     if (!state.devFreeUpgrades) state.money -= nextItem.cost;
