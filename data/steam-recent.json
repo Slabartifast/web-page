@@ -1,11 +1,17 @@
 {
-  "updated": "2026-11-26T08:20:20.727332+00:00",
+  "updated": "2026-11-26T21:33:44.256581+00:00",
   "games": [
     {
       "appid": 4530370,
       "name": "Football Manager 27",
-      "playtime_2weeks": 902,
+      "playtime_2weeks": 697,
       "playtime_forever": 2817
+    },
+    {
+      "appid": 255710,
+      "name": "Cities: Skylines",
+      "playtime_2weeks": 88,
+      "playtime_forever": 7043
     }
   ],
   "all_time": [
