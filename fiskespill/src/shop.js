@@ -66,7 +66,8 @@
   App.BOATS = [
     { level: 0, name: "Ingen båt", cost: 0, rareBonus: 0, speedBonus: 0, cargoBonus: 0, note: "To bein og en drøm." },
     { level: 1, name: "Liten robåt", cost: 2500, rareBonus: 0.12, speedBonus: 0, cargoBonus: 2, note: "Tar deg sakte utover fjorden. Velg kurs med omhu." },
-    { level: 2, name: "Påhengsmotor", cost: 6200, rareBonus: 0.22, speedBonus: 25, cargoBonus: 5, note: "Mer rekkevidde, mer fart og mer nabomisunnelse." },
+    { level: 2, name: "Påhengsmotor", cost: 6200, rareBonus: 0.22, speedBonus: 52, cargoBonus: 5, note: "Raskere ute på dypet." },
+    { level: 3, name: "Havkutter", cost: 16000, rareBonus: 0.38, speedBonus: 100, cargoBonus: 12, note: "Stor båt, stor rekkevidde og langt mer lasteplass." },
   ];
 
   App.BAGS = [
@@ -103,6 +104,13 @@
     { level: 0, name: "Enmannsdrift", cost: 0, bonus: 0, note: "Du gjør alt selv." },
     { level: 1, name: "Raskere servering", cost: 650, bonus: 4, note: "+4 servicepoeng." },
     { level: 2, name: "God flyt", cost: 1700, bonus: 9, note: "+9 servicepoeng." },
+  ];
+  App.WHOLESALE = [
+    { level: 0, name: "Tilfeldig grossist", cost: 0, rate: 0.1, note: "10 % av råvareverdien." },
+    { level: 1, name: "Fast avtale", cost: 520, rate: 0.25, note: "25 % av råvareverdien." },
+    { level: 2, name: "Bygrossist", cost: 1450, rate: 0.45, note: "45 % av råvareverdien." },
+    { level: 3, name: "Kystmarked", cost: 3600, rate: 0.65, note: "65 % av råvareverdien." },
+    { level: 4, name: "Eksportavtale", cost: 8200, rate: 0.8, note: "80 % av råvareverdien." },
   ];
 
   App.RESTAURANT_UPGRADES = [
@@ -266,6 +274,7 @@
       chairs: { key: "chairsLevel", items: App.CHAIRS },
       comfort: { key: "comfortLevel", items: App.COMFORTS },
       service: { key: "serviceLevel", items: App.SERVICE_UPGRADES },
+      wholesale: { key: "wholesaleLevel", items: App.WHOLESALE },
     };
 
     const category = categoryMap[type];
