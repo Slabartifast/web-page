@@ -214,10 +214,10 @@
         App.setActiveBait(state, itemId);
         return { ok: true, message: `${bait.name} valgt som aktivt agn.` };
       }
-      if (state.money < bait.cost) {
+      if (state.money < bait.cost && !state.devFreeUpgrades) {
         return { ok: false, message: "Du har ikke nok penger." };
       }
-      state.money -= bait.cost;
+      if (!state.devFreeUpgrades) state.money -= bait.cost;
       state.ownedBaits[itemId] = true;
       state.activeBaitId = itemId;
       App.addMessage(state, `Du kjøpte ${bait.name.toLowerCase()} for ${bait.cost} kr.`);
@@ -248,11 +248,11 @@
     if (!nextItem) {
       return { ok: false, message: "Denne oppgraderingen er allerede maks." };
     }
-    if (state.money < nextItem.cost) {
+    if (state.money < nextItem.cost && !state.devFreeUpgrades) {
       return { ok: false, message: "Du har ikke nok penger." };
     }
 
-    state.money -= nextItem.cost;
+    if (!state.devFreeUpgrades) state.money -= nextItem.cost;
     state.equipment[category.key] = nextItem.level;
     App.addMessage(state, `Du kjøpte ${nextItem.name.toLowerCase()} for ${nextItem.cost} kr.`);
     return { ok: true, message: `${nextItem.name} er nå i bruk.` };
