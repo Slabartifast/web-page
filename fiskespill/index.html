@@ -49,6 +49,7 @@
                   <div class="title-actions">
                     <button class="primary-button" id="continueButton" type="button">Fortsett</button>
                     <button class="secondary-button" id="newCareerButton" type="button">Ny karriere</button>
+                    <button class="secondary-button" id="titleFullscreenButton" type="button">Full skjerm</button>
                   </div>
                 </div>
               </article>
@@ -131,8 +132,11 @@
                 <div class="phase-copy">
                   <p class="phase-kicker">Kvelden er over</p>
                   <h2>Oppsummering av salg</h2>
-                  <div class="reputation-hero"><span>RYKTE</span><strong id="summaryReputation">0</strong><small id="summaryReputationChange">+0 i kveld</small></div>
+                  <div class="summary-hero-row"><div class="reputation-hero"><span>RYKTE</span><strong id="summaryReputation">0</strong><small id="summaryReputationChange">+0 i kveld</small></div>
+                  <div class="income-hero"><span>INNTEKT</span><strong id="summaryIncomeHero">0 kr</strong></div></div>
                   <div id="reputationFactors" class="reputation-factors"></div>
+                  <div id="incomeBreakdown" class="income-breakdown"></div>
+                  <div id="summaryDetails" class="summary-details">
                   <div class="summary-grid">
                     <div class="summary-chip">
                       <span class="label">Inntekt</span>
@@ -153,6 +157,7 @@
                   </div>
                   <div class="summary-lines" id="summaryLines"></div>
                   <div class="summary-achievements" id="summaryAchievements"></div>
+                  </div>
                   <button class="primary-button phase-button" id="nextDayButton" type="button">
                     Se på utstyr
                   </button>
@@ -199,7 +204,7 @@
               <article class="phase-card phase-list hidden" id="afterShopScreen">
                 <div class="phase-copy wide">
                   <p class="phase-kicker">Før neste dag · 1 av 2</p>
-                  <h2>Oppgrader utstyret</h2>
+                  <h2>Butikker</h2>
                   <p class="phase-lead">Bruk kveldens inntekt på fiskeutstyr, båt, bag, tank eller restaurant.</p>
                   <p class="shop-balance" id="shopBalance">Penger: 0 kr</p>
                   <p class="shop-notice" id="shopNotice" role="status" aria-live="polite"></p>
@@ -287,6 +292,12 @@
                 <div class="catch-actions" id="catchActions"></div>
               </article>
             </section>
+            <section class="catch-overlay hidden" id="endDayConfirm" role="dialog" aria-modal="true" aria-labelledby="endDayConfirmTitle">
+              <article class="catch-card"><h2 id="endDayConfirmTitle">Avslutte dagen?</h2><p>Du drar til restauranten nå.</p>
+                <div class="catch-actions"><button class="secondary-button" id="cancelEndDayButton" type="button">Fortsett å fiske</button>
+                <button class="danger-button" id="confirmEndDayButton" type="button">Avslutt dagen</button></div>
+              </article>
+            </section>
 
             <div class="virtual-joystick hidden" id="virtualJoystick" aria-hidden="true">
               <div class="joystick-base" id="joystickBase"></div>
@@ -311,7 +322,7 @@
             <nav class="bottom-nav">
               <button class="nav-button" data-panel="focus" type="button">Dagens fokus</button>
               <button class="nav-button" data-panel="quests" type="button">Oppdrag</button>
-              <button class="nav-button" data-panel="shop" type="button">Utstyr</button>
+              <button class="nav-button" data-panel="shop" type="button">Butikker</button>
               <button class="nav-button" data-panel="menu" type="button">Meny</button>
               <button class="nav-button nav-end-day" id="endDayButton" type="button">Avslutt dagen</button>
             </nav>
