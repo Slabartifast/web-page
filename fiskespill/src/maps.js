@@ -367,12 +367,15 @@
       return false;
     }
     state.currentMapId = mapId;
+    state.visitedMapIds = state.visitedMapIds || [];
+    if (!state.visitedMapIds.includes(mapId)) state.visitedMapIds.push(mapId);
     state.player.x = clamp(map.spawn.x, 30, map.size.width - 30);
     state.player.y = clamp(map.spawn.y, 30, map.size.height - 30);
     state.fishing = App.createEmptyFishingState();
     state.ui.activePanel = null;
     state.phase = "day";
     App.addMessage(state, `Du drar til ${map.name}.`);
+    App.syncAchievements(state);
     return true;
   };
 })();
