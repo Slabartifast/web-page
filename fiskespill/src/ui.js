@@ -297,7 +297,7 @@
     if (type === "wholesale") return [`Grossist betaler ${Math.round(item.rate * 100)} % av råvareverdien.`, item.note];
     if (type === "restaurant") {
       return [
-        `${item.seats} sitteplasser.`,
+        `Miljøbonus: +${item.ambienceBonus} servicepoeng.`,
         `Kveldsprisen på fisk ganges med ${item.saleMultiplier.toFixed(2)}.`,
         item.note,
       ];
@@ -387,7 +387,7 @@
     const restaurantCurrent = App.getRestaurantData(state.equipment.restaurantLevel);
     const restaurantNext = App.getRestaurantData(state.equipment.restaurantLevel + 1);
     const tankCurrent = App.getTankData(state.equipment.tankLevel);
-    const tankNext = App.getTankData(state.equipment.tankLevel + 1);
+    const tankNext = App.TANKS.find((item) => item.level === state.equipment.tankLevel + 1);
     const category = state.ui.shopCategory || "fishing";
     const categories = `<div class="shop-categories">${[["fishing", "Fiskeutstyr"], ["bait", "Agn og sluk"], ["restaurant", "Restaurant"]].map(([id, label]) => `<button type="button" data-action="shop-category" data-category="${id}" class="secondary-button ${category === id ? "active" : ""}">${label}</button>`).join("")}</div>`;
 
@@ -644,7 +644,7 @@
     const plannedTankWeight = App.getRestaurantCandidates(state)
       .filter(({ fish, source }) => App.getRestaurantChoice(state, fish, source) === "tank")
       .reduce((sum, { fish }) => sum + fish.weightKg, 0);
-    const seats = App.getRestaurantData(state.equipment.restaurantLevel).seats + (App.CHAIRS[state.equipment.chairsLevel]?.seats || 0);
+    const seats = 2 + (App.CHAIRS[state.equipment.chairsLevel]?.seats || 0);
     refs.restaurantMeta.textContent = `Rykte ${state.reputation.toFixed(1)} · ${state.customerMix.length} kunder ventet · ${seats} sitteplasser · tank ${plannedTankWeight.toFixed(1)}/${App.getTankCapacity(state)} kg${plannedTankWeight > App.getTankCapacity(state) ? " — for mye i tanken" : ""}`;
     refs.serveButton.disabled = plannedTankWeight > App.getTankCapacity(state) + 0.001;
     refs.shopBalance.textContent = `Penger: ${App.utils.formatKr(state.money)}${state.devFreeUpgrades ? " · Gratis testmodus" : ""}`;
@@ -700,9 +700,9 @@
     setHtml(refs.eveningEvents, events.slice(0, visibleCount).map((line) => `<p>${line}</p>`).join(""));
     refs.summaryRevenue.textContent = summary ? App.utils.formatKr(summary.revenue) : "0 kr";
     refs.summaryIncomeHero.textContent = summary ? App.utils.formatKr(summary.revenue) : "0 kr";
-    refs.incomeBreakdown.textContent = summary && Number.isFinite(summary.tableRevenue)
-      ? `Servering ${App.utils.formatKr(summary.tableRevenue)} + grossist ${App.utils.formatKr(summary.wholesaleRevenue)} (${Math.round(summary.wholesaleRate * 100)} % av råvareverdi) = ${App.utils.formatKr(summary.revenue)}`
-      : "";
+    setHtml(refs.incomeBreakdown, summary && Number.isFinite(summary.tableRevenue)
+      ? `<strong>Inntektsregnskap</strong><div class="income-items">${(summary.incomeItems || []).map((item) => `<div><span>${item.label}</span><strong>+${App.utils.formatKr(item.amount)}</strong></div>`).join("")}</div><div class="income-total"><span>Servering ${App.utils.formatKr(summary.tableRevenue)} + grossist ${App.utils.formatKr(summary.wholesaleRevenue)}</span><strong>= ${App.utils.formatKr(summary.revenue)}</strong></div>`
+      : "");
     refs.summaryCaught.textContent = summary ? String(summary.caughtCount) : "0";
     refs.summaryXp.textContent = summary ? `${summary.xpGained} XP` : "0 XP";
     refs.summaryWish.textContent = summary ? String(summary.bonusCount) : "0";
