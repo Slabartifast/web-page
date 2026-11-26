@@ -39,6 +39,19 @@
             </header>
 
             <section class="phase-overlay hidden" id="phaseOverlay">
+              <article class="phase-card phase-list hidden" id="titleScreen">
+                <div class="phase-copy wide">
+                  <p class="phase-kicker">Fiske om dagen · restaurant om kvelden</p>
+                  <h1>Fjord &amp; Fritert</h1>
+                  <p class="phase-lead">Fang fisk, velg hvordan du serverer den, og bygg et rykte som fyller restauranten.</p>
+                  <div class="title-progress" id="titleProgress"></div>
+                  <div class="title-achievements" id="titleAchievements"></div>
+                  <div class="title-actions">
+                    <button class="primary-button" id="continueButton" type="button">Fortsett</button>
+                    <button class="secondary-button" id="newCareerButton" type="button">Ny karriere</button>
+                  </div>
+                </div>
+              </article>
               <article class="phase-card hidden" id="welcomeScreen">
                 <div class="phase-copy">
                   <p class="phase-kicker">Velkommen til kveldsskiftet</p>
@@ -49,11 +62,9 @@
                     kystinstitusjon.
                   </p>
                   <div class="welcome-points">
-                    <p><strong>Bevegelse:</strong> piltaster, WASD eller touch-knapper.</p>
-                    <p><strong>Kast:</strong> trykk space for lengde, trykk igjen for å låse, så igjen for retning.</p>
-                    <p><strong>Napp:</strong> trykk space, så treff grønt felt med neste trykk.</p>
-                    <p><strong>Fiskekamp:</strong> hold space for opp, slipp for ned.</p>
-                    <p><strong>Kveld:</strong> selg fisken, tjen XP og bruk ferdighetspoeng smart.</p>
+                    <p><strong>Fisk:</strong> Gå med piltaster/WASD. Trykk space for kastelengde, igjen for retning.</p>
+                    <p><strong>Napp:</strong> Trykk space raskt, treff grønt felt, og hold fisken i sonen.</p>
+                    <p><strong>Kveld:</strong> Velg rett, få kundeomtaler og bruk inntekten på utstyr og restaurant.</p>
                   </div>
                   <div class="phase-button" style="display: flex; gap: 12px; flex-wrap: wrap;">
                     <button class="primary-button" id="startGameButton" type="button">
@@ -141,6 +152,7 @@
                     </div>
                   </div>
                   <div class="summary-lines" id="summaryLines"></div>
+                  <div class="summary-achievements" id="summaryAchievements"></div>
                   <button class="primary-button phase-button" id="nextDayButton" type="button">
                     Se på utstyr
                   </button>
@@ -228,6 +240,7 @@
               <div class="panel-body" id="panel-journal">
                 <div id="journalPanel"></div>
               </div>
+              <div class="panel-body" id="panel-achievements"><div id="achievementsPanel"></div></div>
 
               <div class="panel-body" id="panel-menu">
                 <div id="menuPanel"></div>
