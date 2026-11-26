@@ -549,6 +549,8 @@
     const ctx = canvas.getContext("2d");
     const loaded = App.loadGame();
     const state = loaded || App.createInitialState();
+    const resumePhase = loaded?.phase === "title" ? "mapSelect" : loaded?.phase;
+    state.phase = "title";
     App.ensureUnlockedMaps(state);
     App.ensurePlayerOnValidGround(state);
     if (!state.dailyDemand) {
@@ -563,6 +565,8 @@
       canvas,
       ctx,
       state,
+      hasSavedCareer: !!loaded,
+      resumePhase,
       input: createInputState(),
       lastFrameTime: 0,
       lastUiRender: 0,
@@ -575,8 +579,25 @@
 
   function attachActions(game) {
     game.actions = {
+      continueCareer() {
+        if (!game.hasSavedCareer) return;
+        game.state.phase = game.resumePhase || "mapSelect";
+        App.renderUI(game);
+      },
+      newCareer() {
+        if (game.hasSavedCareer && !window.confirm("Starte en ny karriere? Den lagrede karrieren blir erstattet.")) return;
+        game.state = App.createInitialState();
+        App.rollDailyDemand(game.state);
+        game.hasSavedCareer = false;
+        game.state.phase = "welcome";
+        App.saveGame(game.state, true);
+        game.hasSavedCareer = true;
+        game.resumePhase = "welcome";
+        App.renderUI(game);
+      },
       beginCareer() {
         App.beginCareer(game.state);
+        game.hasSavedCareer = true;
         App.saveGame(game.state, true);
         App.renderUI(game);
       },
@@ -634,6 +655,7 @@
       reset() {
         App.clearSavedGame();
         game.state = App.createInitialState();
+        game.hasSavedCareer = false;
         App.rollDailyDemand(game.state);
         App.renderUI(game);
       },
@@ -653,6 +675,12 @@
         } else {
           App.addMessage(game.state, result.message);
         }
+        App.renderUI(game);
+      },
+      toggleDev() {
+        game.state.devFreeUpgrades = !game.state.devFreeUpgrades;
+        App.addMessage(game.state, game.state.devFreeUpgrades ? "Utviklermodus: gratis oppgraderinger aktivert." : "Utviklermodus avslått.");
+        App.saveGame(game.state, true);
         App.renderUI(game);
       },
       chooseBait(baitId) {
