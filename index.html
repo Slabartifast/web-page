@@ -741,7 +741,7 @@
       <section id="oppdagelser" class="container">
         <h2>Oles oppsiktsvekkende oppdagelser</h2>
         <blockquote class="discover-intro"><p id="discover-quote">«Et godt spørsmål er en nøkkel som ennå ikke vet hvilken dør den passer i.»</p><cite>Fra sitatkrukka</cite></blockquote>
-        <div class="discover-tools"><label for="discover-topic">Tema</label><select id="discover-topic"><option value="alle">Alle tema</option><option value="geologi">Geologi</option><option value="romfart">Romfart</option><option value="naturfare">Naturfare</option><option value="hav">Hav</option><option value="astronomi">Astronomi</option><option value="biologi">Biologi</option><option value="historie">Historie</option><option value="teknologi">Teknologi</option><option value="filosofi">Filosofi</option><option value="litteratur">Litteratur</option><option value="medisin">Medisin</option><option value="vitenskap">Vitenskap</option></select><label for="discover-period">Arkiv</label><select id="discover-period"><option value="alle">Alle datoer</option></select><span id="discover-count" class="discover-count" aria-live="polite">55 innlegg</span></div>
+        <div class="discover-tools"><label for="discover-topic">Tema</label><select id="discover-topic"><option value="alle">Alle tema</option></select><label for="discover-period">Arkiv</label><select id="discover-period"><option value="alle">Alle datoer</option></select><span id="discover-count" class="discover-count" aria-live="polite">55 innlegg</span></div>
         <details class="discover-archive"><summary>Arkiv</summary><div id="discover-archive-list"></div></details>
         <p id="discover-empty" class="discover-empty" hidden>Ingen innlegg med dette temaet i valgt periode.</p>
         <div class="discover-grid">
@@ -1009,6 +1009,16 @@
 
     const discoveryFilters = [document.getElementById('discover-topic'), document.getElementById('discover-period')];
     const discoveryPosts = [...document.querySelectorAll('.discover-post')];
+    const topicOptions = new Map();
+    discoveryPosts.forEach(post => {
+      post.querySelectorAll('.discover-tag').forEach(tag => {
+        const label = tag.textContent.trim();
+        topicOptions.set(label.toLocaleLowerCase('no-NO'), label);
+      });
+    });
+    [...topicOptions.entries()].sort((a, b) => a[1].localeCompare(b[1], 'no-NO')).forEach(([value, label]) => {
+      discoveryFilters[0].add(new Option(label, value));
+    });
     const archiveGroups = new Map();
     discoveryPosts.forEach(post => {
       const month = post.dataset.period;
@@ -1036,7 +1046,8 @@
       const topic = discoveryFilters[0].value, period = discoveryFilters[1].value;
       let count = 0;
       discoveryPosts.forEach(post => {
-        const matches = (topic === 'alle' || post.dataset.topic.split(' ').includes(topic)) && (period === 'alle' || post.dataset.period === period);
+        const matchesTopic = topic === 'alle' || [...post.querySelectorAll('.discover-tag')].some(tag => tag.textContent.trim().toLocaleLowerCase('no-NO') === topic) || post.dataset.topic.split(' ').includes(topic);
+        const matches = matchesTopic && (period === 'alle' || post.dataset.period === period);
         post.hidden = !matches; if (matches) count++;
       });
       document.getElementById('discover-count').textContent = count + ' innlegg';
