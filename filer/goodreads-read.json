@@ -1,0 +1,2032 @@
+{
+  "source": "Goodreads library export",
+  "exportedAt": "2026-11-27",
+  "books": [
+    {
+      "id": "18404522",
+      "title": "Fugletribunalet",
+      "author": "Agnes Ravatn",
+      "rating": 4,
+      "pages": 208,
+      "dateRead": "2026-10-31",
+      "readCount": 1
+    },
+    {
+      "id": "3218263",
+      "title": "Pelsjegerliv blant Nord-Canadas indianere",
+      "author": "Helge Ingstad",
+      "rating": 2,
+      "pages": 224,
+      "dateRead": "2026-10-16",
+      "readCount": 1
+    },
+    {
+      "id": "241191391",
+      "title": "Linneas kamp - En barnevernssak",
+      "author": "Anne-Britt Harsem",
+      "rating": 4,
+      "pages": 220,
+      "dateRead": "2026-08-19",
+      "readCount": 1
+    },
+    {
+      "id": "51180735",
+      "title": "Sykdommen til døden",
+      "author": "Søren Kierkegaard",
+      "rating": 2,
+      "pages": 179,
+      "dateRead": "2026-08-12",
+      "readCount": 1
+    },
+    {
+      "id": "53061",
+      "title": "Death in Venice",
+      "author": "Thomas Mann",
+      "rating": 3,
+      "pages": 142,
+      "dateRead": "2026-08-07",
+      "readCount": 1
+    },
+    {
+      "id": "865",
+      "title": "The Alchemist",
+      "author": "Paulo Coelho",
+      "rating": 3,
+      "pages": 197,
+      "dateRead": "2026-08-05",
+      "readCount": 1
+    },
+    {
+      "id": "220341389",
+      "title": "Everything Is Tuberculosis: The History and Persistence of Our Deadliest Infection",
+      "author": "John  Green",
+      "rating": 4,
+      "pages": 198,
+      "dateRead": "2026-07-26",
+      "readCount": 1
+    },
+    {
+      "id": "1772374",
+      "title": "Brødrene Løvehjerte",
+      "author": "Astrid Lindgren",
+      "rating": 3,
+      "pages": 228,
+      "dateRead": "2026-07-21",
+      "readCount": 2
+    },
+    {
+      "id": "10154587",
+      "title": "Kafka på stranden",
+      "author": "Haruki Murakami",
+      "rating": 3,
+      "pages": 528,
+      "dateRead": "2026-06-02",
+      "readCount": 1
+    },
+    {
+      "id": "239531485",
+      "title": "Alt et",
+      "author": "Leander Djønne",
+      "rating": 4,
+      "pages": 193,
+      "dateRead": "2026-05-20",
+      "readCount": 1
+    },
+    {
+      "id": "239533109",
+      "title": "Det har skjedd verre ting i utlandet - Scener fra et farskap",
+      "author": "Marte Michelet",
+      "rating": 4,
+      "pages": 278,
+      "dateRead": "2026-05-08",
+      "readCount": 1
+    },
+    {
+      "id": "7301214",
+      "title": "Bildet Av Dorian Gray",
+      "author": "Oscar Wilde",
+      "rating": 3,
+      "pages": 222,
+      "dateRead": "2026-04-28",
+      "readCount": 1
+    },
+    {
+      "id": "16003032",
+      "title": "Haiene",
+      "author": "Jens Bjørneboe",
+      "rating": 3,
+      "pages": 214,
+      "dateRead": "2026-03-06",
+      "readCount": 1
+    },
+    {
+      "id": "34454589",
+      "title": "The Handmaid's Tale",
+      "author": "Margaret Atwood",
+      "rating": 4,
+      "pages": 320,
+      "dateRead": "2026-02-13",
+      "readCount": 1
+    },
+    {
+      "id": "217499405",
+      "title": "Skjerm barna",
+      "author": "Maja Lunde",
+      "rating": 4,
+      "pages": 263,
+      "dateRead": "2026-01-21",
+      "readCount": 1
+    },
+    {
+      "id": "35031085",
+      "title": "Frankenstein",
+      "author": "Mary Wollstonecraft Shelley",
+      "rating": 3,
+      "pages": 260,
+      "dateRead": "2025-11-26",
+      "readCount": 1
+    },
+    {
+      "id": "222620980",
+      "title": "Minnesota",
+      "author": "Jo Nesbø",
+      "rating": 4,
+      "pages": 407,
+      "dateRead": "2025-11-09",
+      "readCount": 1
+    },
+    {
+      "id": "1056172",
+      "title": "The Emperor of Portugalia",
+      "author": "Selma Lagerlöf",
+      "rating": 5,
+      "pages": 200,
+      "dateRead": "2025-09-29",
+      "readCount": 1
+    },
+    {
+      "id": "16081734",
+      "title": "Markens grøde",
+      "author": "Knut Hamsun",
+      "rating": 3,
+      "pages": 304,
+      "dateRead": "2025-09-27",
+      "readCount": 1
+    },
+    {
+      "id": "53405778",
+      "title": "Heroin chic",
+      "author": "Maria Kjos Fonn",
+      "rating": 5,
+      "pages": 205,
+      "dateRead": "2024-11-13",
+      "readCount": 1
+    },
+    {
+      "id": "171681821",
+      "title": "The Anxious Generation: How the Great Rewiring of Childhood Caused an Epidemic of Mental Illness",
+      "author": "Jonathan Haidt",
+      "rating": 4,
+      "pages": 385,
+      "dateRead": "2024-10-31",
+      "readCount": 1
+    },
+    {
+      "id": "61439040",
+      "title": "1984",
+      "author": "George Orwell",
+      "rating": 4,
+      "pages": 368,
+      "dateRead": "2024-10-01",
+      "readCount": 1
+    },
+    {
+      "id": "75723724",
+      "title": "Pulskuren",
+      "author": "Torkil Færø",
+      "rating": 4,
+      "pages": 208,
+      "dateRead": "2024-08-24",
+      "readCount": 1
+    },
+    {
+      "id": "203968",
+      "title": "The Social Animal",
+      "author": "Elliot Aronson",
+      "rating": 4,
+      "pages": 512,
+      "dateRead": "2024-02-01",
+      "readCount": 1
+    },
+    {
+      "id": "40121378",
+      "title": "Atomic Habits: An Easy & Proven Way to Build Good Habits & Break Bad Ones",
+      "author": "James Clear",
+      "rating": 3,
+      "pages": 319,
+      "dateRead": "2023-10-18",
+      "readCount": 1
+    },
+    {
+      "id": "40745",
+      "title": "Mindset: The New Psychology of Success",
+      "author": "Carol S. Dweck",
+      "rating": 3,
+      "pages": 276,
+      "dateRead": "2023-08-04",
+      "readCount": 1
+    },
+    {
+      "id": "352323",
+      "title": "The Happiest Toddler on the Block: The New Way to Stop the Daily Battle of Wills and Raise a Secure and Well-Behaved One- to Four-Year-Old",
+      "author": "Harvey Karp",
+      "rating": 4,
+      "pages": 336,
+      "dateRead": "2023-07-04",
+      "readCount": 1
+    },
+    {
+      "id": "54842171",
+      "title": "Pappas hemmelighet",
+      "author": "Vilde Bratland Hansen",
+      "rating": 5,
+      "pages": 216,
+      "dateRead": "2022-08-09",
+      "readCount": 1
+    },
+    {
+      "id": "49235317",
+      "title": "Kanskje du er frisk?",
+      "author": "Kaveh Rashidi",
+      "rating": 4,
+      "pages": 237,
+      "dateRead": "2022-08-08",
+      "readCount": 1
+    },
+    {
+      "id": "8285950",
+      "title": "Sofies verden",
+      "author": "Jostein Gaarder",
+      "rating": 5,
+      "pages": 542,
+      "dateRead": "2022-06-28",
+      "readCount": 1
+    },
+    {
+      "id": "23878688",
+      "title": "The 5 Love Languages: The Secret to Love That Lasts",
+      "author": "Gary Chapman",
+      "rating": 4,
+      "pages": 232,
+      "dateRead": "2022-05-13",
+      "readCount": 1
+    },
+    {
+      "id": "16152575",
+      "title": "Mammas svik: Datterens gripende historie fra Alvdal-saken og Gjerdrum",
+      "author": "Anne-Britt Harsem",
+      "rating": 5,
+      "pages": 239,
+      "dateRead": "2021-09-22",
+      "readCount": 1
+    },
+    {
+      "id": "17912952",
+      "title": "Et kvart liv: Håvard Vederhus 1989–2011",
+      "author": "Hans Olav Lahlum",
+      "rating": 5,
+      "pages": 144,
+      "dateRead": "2021-09-18",
+      "readCount": 1
+    },
+    {
+      "id": "49515326",
+      "title": "Lars Monsen - Mitt liv",
+      "author": "Lars Monsen",
+      "rating": 4,
+      "pages": 246,
+      "dateRead": "2021-09-07",
+      "readCount": 1
+    },
+    {
+      "id": "56791518",
+      "title": "Epidemier: En natur- og kulturhistorie",
+      "author": "Jan Brøgger Sr.",
+      "rating": 3,
+      "pages": null,
+      "dateRead": "2021-08-25",
+      "readCount": 1
+    },
+    {
+      "id": "34697243",
+      "title": "10 Years of Freedom",
+      "author": "Natascha Kampusch",
+      "rating": 4,
+      "pages": 195,
+      "dateRead": "2021-07-31",
+      "readCount": 1
+    },
+    {
+      "id": "24965",
+      "title": "Fear and Trembling",
+      "author": "Søren Kierkegaard",
+      "rating": 2,
+      "pages": 152,
+      "dateRead": "2021-07-31",
+      "readCount": 1
+    },
+    {
+      "id": "10911459",
+      "title": "3096 dager",
+      "author": "Natascha Kampusch",
+      "rating": 5,
+      "pages": 239,
+      "dateRead": "2021-07-24",
+      "readCount": 1
+    },
+    {
+      "id": "223380",
+      "title": "Stories of Your Life and Others",
+      "author": "Ted Chiang",
+      "rating": 5,
+      "pages": 281,
+      "dateRead": "2021-07-19",
+      "readCount": 1
+    },
+    {
+      "id": "42392759",
+      "title": "Else går til psykolog",
+      "author": "Else Kåss Furuseth",
+      "rating": 5,
+      "pages": 350,
+      "dateRead": "2021-07-09",
+      "readCount": 1
+    },
+    {
+      "id": "22557272",
+      "title": "The Girl on the Train",
+      "author": "Paula Hawkins",
+      "rating": 5,
+      "pages": 336,
+      "dateRead": "2021-07-04",
+      "readCount": 1
+    },
+    {
+      "id": "56318515",
+      "title": "Landet mot nord. 1000 år, 22 personer, én historie",
+      "author": "Mona Ringvej",
+      "rating": 5,
+      "pages": 542,
+      "dateRead": "2021-06-16",
+      "readCount": 1
+    },
+    {
+      "id": "23453949",
+      "title": "The Lost Girls",
+      "author": "John Glatt",
+      "rating": 5,
+      "pages": 352,
+      "dateRead": "2021-06-12",
+      "readCount": 1
+    },
+    {
+      "id": "117586",
+      "title": "Studies in Pessimism: The Essays",
+      "author": "Arthur Schopenhauer",
+      "rating": 3,
+      "pages": 76,
+      "dateRead": "2021-06-04",
+      "readCount": 1
+    },
+    {
+      "id": "32063694",
+      "title": "Sjakk: spillenes konge",
+      "author": "Eivind Riise Hauge",
+      "rating": 4,
+      "pages": 291,
+      "dateRead": "2021-05-19",
+      "readCount": 1
+    },
+    {
+      "id": "53317475",
+      "title": "The Quick Fix: Why Fad Psychology Can't Cure Our Social Ills",
+      "author": "Jesse Singal",
+      "rating": 4,
+      "pages": 352,
+      "dateRead": "2021-05-13",
+      "readCount": 1
+    },
+    {
+      "id": "38490685",
+      "title": "Spis deg fri med Bright line eating",
+      "author": "Susan Peirce Thompson",
+      "rating": 3,
+      "pages": 292,
+      "dateRead": "2021-05-10",
+      "readCount": 1
+    },
+    {
+      "id": "6639688",
+      "title": "Synnøve Solbakken",
+      "author": "Bjørnstjerne Bjørnson",
+      "rating": 3,
+      "pages": 168,
+      "dateRead": "2021-04-02",
+      "readCount": 1
+    },
+    {
+      "id": "44890094",
+      "title": "The End of the Ocean (Climate Quartet, #2)",
+      "author": "Maja Lunde",
+      "rating": 5,
+      "pages": 296,
+      "dateRead": "2021-03-16",
+      "readCount": 1
+    },
+    {
+      "id": "43721091",
+      "title": "Hop, Skip, Go: How the Mobility Revolution Is Transforming Our Lives",
+      "author": "Stephen Baker",
+      "rating": 4,
+      "pages": 277,
+      "dateRead": "2021-03-04",
+      "readCount": 1
+    },
+    {
+      "id": "34202851",
+      "title": "Ungdomskilden: 12 gode valg for livet",
+      "author": "Audun Myskja",
+      "rating": 5,
+      "pages": 230,
+      "dateRead": "2021-02-14",
+      "readCount": 1
+    },
+    {
+      "id": "37803102",
+      "title": "Kongen av gutterommet",
+      "author": "Webjørn S. Espeland",
+      "rating": 3,
+      "pages": 236,
+      "dateRead": "2021-02-06",
+      "readCount": 1
+    },
+    {
+      "id": "36381091",
+      "title": "The Cabin at the End of the World",
+      "author": "Paul Tremblay",
+      "rating": 4,
+      "pages": 288,
+      "dateRead": "2021-02-04",
+      "readCount": 1
+    },
+    {
+      "id": "22924483",
+      "title": "Innsirkling 3",
+      "author": "Carl Frode Tiller",
+      "rating": 5,
+      "pages": 475,
+      "dateRead": "2021-02-01",
+      "readCount": 1
+    },
+    {
+      "id": "49871929",
+      "title": "Vi må snakke sammen! : hvordan du kan gjøre parforholdet ditt bedre",
+      "author": "Peder Kjøs",
+      "rating": 3,
+      "pages": 166,
+      "dateRead": "2021-01-08",
+      "readCount": 1
+    },
+    {
+      "id": "30962054",
+      "title": "The Brain Defense: Murder in Manhattan and the Dawn of Neuroscience in America's Courtrooms",
+      "author": "Kevin   Davis",
+      "rating": 5,
+      "pages": 336,
+      "dateRead": "2021-01-04",
+      "readCount": 1
+    },
+    {
+      "id": "9562097",
+      "title": "Innsirkling 2",
+      "author": "Carl Frode Tiller",
+      "rating": 4,
+      "pages": 400,
+      "dateRead": "2020-12-21",
+      "readCount": 1
+    },
+    {
+      "id": "26516385",
+      "title": "Om høsten (Årstidsencyklopedien, #1)",
+      "author": "Karl Ove Knausgård",
+      "rating": 4,
+      "pages": 236,
+      "dateRead": "2020-12-21",
+      "readCount": 1
+    },
+    {
+      "id": "34928122",
+      "title": "Artemis",
+      "author": "Andy Weir",
+      "rating": 5,
+      "pages": 305,
+      "dateRead": "2020-11-29",
+      "readCount": 1
+    },
+    {
+      "id": "3109327",
+      "title": "Innsirkling",
+      "author": "Carl Frode Tiller",
+      "rating": 4,
+      "pages": 284,
+      "dateRead": "2020-11-25",
+      "readCount": 1
+    },
+    {
+      "id": "49084908",
+      "title": "The Life You Can Save: How to Do Your Part to End World Poverty",
+      "author": "Peter Singer",
+      "rating": 5,
+      "pages": 302,
+      "dateRead": "2020-11-11",
+      "readCount": 1
+    },
+    {
+      "id": "53611",
+      "title": "The No-Cry Sleep Solution: Gentle Ways to Help Your Baby Sleep Through the Night",
+      "author": "Elizabeth Pantley",
+      "rating": 4,
+      "pages": 254,
+      "dateRead": "2020-11-10",
+      "readCount": 1
+    },
+    {
+      "id": "36491999",
+      "title": "Grensen: En reise rundt Russland gjennom Nord-Korea, Kina, Mongolia, Kasakhstan, Aserbajdsjan, Georgia, Ukraina, Hviterussland, Litauen, Polen, Latvia, Estland, Finland og Norge samt Nordøstpassasjen",
+      "author": "Erika Fatland",
+      "rating": 4,
+      "pages": 623,
+      "dateRead": "2020-10-24",
+      "readCount": 1
+    },
+    {
+      "id": "35397007",
+      "title": "The Existentialist's Survival Guide: How to Live Authentically in an Inauthentic Age",
+      "author": "Gordon Marino",
+      "rating": 5,
+      "pages": 272,
+      "dateRead": "2020-09-19",
+      "readCount": 1
+    },
+    {
+      "id": "53414688",
+      "title": "Just a Girl: A shocking true story of child abuse",
+      "author": "Scarlett  Jones",
+      "rating": 5,
+      "pages": 127,
+      "dateRead": "2020-09-12",
+      "readCount": 1
+    },
+    {
+      "id": "25489625",
+      "title": "Between the World and Me",
+      "author": "Ta-Nehisi Coates",
+      "rating": 4,
+      "pages": 152,
+      "dateRead": "2020-09-07",
+      "readCount": 1
+    },
+    {
+      "id": "20257122",
+      "title": "Finding Me: A Decade of Darkness, a Life Reclaimed - A Memoir of the Cleveland Kidnappings",
+      "author": "Michelle Knight",
+      "rating": 5,
+      "pages": 252,
+      "dateRead": "2020-09-07",
+      "readCount": 1
+    },
+    {
+      "id": "6185412",
+      "title": "Secrets in the Cellar: A True Story of the Austrian Incest Case that Shocked the World",
+      "author": "John Glatt",
+      "rating": 5,
+      "pages": 256,
+      "dateRead": "2020-09-06",
+      "readCount": 1
+    },
+    {
+      "id": "11330361",
+      "title": "A Stolen Life",
+      "author": "Jaycee Dugard",
+      "rating": 4,
+      "pages": 273,
+      "dateRead": "2020-09-04",
+      "readCount": 1
+    },
+    {
+      "id": "13079982",
+      "title": "Fahrenheit 451",
+      "author": "Ray Bradbury",
+      "rating": 4,
+      "pages": 249,
+      "dateRead": "2020-08-31",
+      "readCount": 1
+    },
+    {
+      "id": "40618339",
+      "title": "Leksikon om lys og mørke",
+      "author": "Simon Stranger",
+      "rating": 5,
+      "pages": 396,
+      "dateRead": "2020-08-30",
+      "readCount": 1
+    },
+    {
+      "id": "18759738",
+      "title": "Filosofihistorien på 200 minutter",
+      "author": "Trond Berg Eriksen",
+      "rating": 4,
+      "pages": 250,
+      "dateRead": "2020-08-19",
+      "readCount": 1
+    },
+    {
+      "id": "52269471",
+      "title": "Mindf*ck: Cambridge Analytica and the Plot to Break America",
+      "author": "Christopher Wylie",
+      "rating": 5,
+      "pages": 288,
+      "dateRead": "2020-08-15",
+      "readCount": 1
+    },
+    {
+      "id": "39074555",
+      "title": "Blueprint: How DNA Makes Us Who We Are",
+      "author": "Robert Plomin",
+      "rating": 4,
+      "pages": 288,
+      "dateRead": "2020-08-07",
+      "readCount": 1
+    },
+    {
+      "id": "28940193",
+      "title": "Historien om Norge",
+      "author": "Karsten Alnæs",
+      "rating": 3,
+      "pages": 9,
+      "dateRead": "2020-08-05",
+      "readCount": 1
+    },
+    {
+      "id": "6932727",
+      "title": "Imot kunsten",
+      "author": "Tomas Espedal",
+      "rating": 3,
+      "pages": 176,
+      "dateRead": "2020-07-31",
+      "readCount": 1
+    },
+    {
+      "id": "7941074",
+      "title": "Jo fortere jeg går, jo mindre er jeg",
+      "author": "Kjersti Annesdatter Skomsvold",
+      "rating": 4,
+      "pages": 125,
+      "dateRead": "2020-07-31",
+      "readCount": 1
+    },
+    {
+      "id": "42243046",
+      "title": "Kunsten å oppdra en verdensmester",
+      "author": "Gjert Ingebrigtsen",
+      "rating": 2,
+      "pages": 280,
+      "dateRead": "2020-07-31",
+      "readCount": 1
+    },
+    {
+      "id": "36413897",
+      "title": "Drapene i Baneheia: To historier. En sannhet",
+      "author": "Bjørn Olav Jahr",
+      "rating": 3,
+      "pages": 400,
+      "dateRead": "2020-07-30",
+      "readCount": 1
+    },
+    {
+      "id": "13487121",
+      "title": "Jeg elsker deg, og jeg finner deg uansett",
+      "author": "Jon Gangdal",
+      "rating": 5,
+      "pages": 225,
+      "dateRead": "2020-07-29",
+      "readCount": 1
+    },
+    {
+      "id": "12357480",
+      "title": "Jeg tenker nok du skjønner det sjøl",
+      "author": "Jon Gangdal",
+      "rating": 5,
+      "pages": 205,
+      "dateRead": "2020-07-29",
+      "readCount": 1
+    },
+    {
+      "id": "52713006",
+      "title": "Vi er fem",
+      "author": "Matias Faldbakken",
+      "rating": 3,
+      "pages": 205,
+      "dateRead": "2020-07-28",
+      "readCount": 1
+    },
+    {
+      "id": "45832845",
+      "title": "How to Grow a Human: Adventures in Who We Are and How We Are Made",
+      "author": "Philip Ball",
+      "rating": 4,
+      "pages": 272,
+      "dateRead": "2020-07-20",
+      "readCount": 1
+    },
+    {
+      "id": "127455",
+      "title": "The Lies of Locke Lamora (Gentleman Bastard, #1)",
+      "author": "Scott Lynch",
+      "rating": 4,
+      "pages": 499,
+      "dateRead": "2020-07-14",
+      "readCount": 1
+    },
+    {
+      "id": "43708708",
+      "title": "White Fragility: Why It's So Hard for White People to Talk About Racism",
+      "author": "Robin DiAngelo",
+      "rating": 4,
+      "pages": 8,
+      "dateRead": "2020-07-04",
+      "readCount": 1
+    },
+    {
+      "id": "17404457",
+      "title": "Pesten",
+      "author": "Albert Camus",
+      "rating": 4,
+      "pages": 380,
+      "dateRead": "2020-06-02",
+      "readCount": 1
+    },
+    {
+      "id": "357636",
+      "title": "Civilization and Its Discontents",
+      "author": "Sigmund Freud",
+      "rating": 3,
+      "pages": 127,
+      "dateRead": "2020-05-31",
+      "readCount": 1
+    },
+    {
+      "id": "851994",
+      "title": "Twilight of the Idols",
+      "author": "Friedrich Nietzsche",
+      "rating": 3,
+      "pages": 128,
+      "dateRead": "2020-05-23",
+      "readCount": 1
+    },
+    {
+      "id": "19380",
+      "title": "Candide",
+      "author": "Voltaire",
+      "rating": 4,
+      "pages": 129,
+      "dateRead": "2020-05-21",
+      "readCount": 1
+    },
+    {
+      "id": "107291",
+      "title": "Needful Things",
+      "author": "Stephen  King",
+      "rating": 3,
+      "pages": 790,
+      "dateRead": "2020-05-10",
+      "readCount": 1
+    },
+    {
+      "id": "7785194",
+      "title": "The Moral Landscape: How Science Can Determine Human Values",
+      "author": "Sam Harris",
+      "rating": 4,
+      "pages": 291,
+      "dateRead": "2020-05-07",
+      "readCount": 1
+    },
+    {
+      "id": "11527504",
+      "title": "A Little History of Philosophy",
+      "author": "Nigel Warburton",
+      "rating": 5,
+      "pages": 252,
+      "dateRead": "2020-04-25",
+      "readCount": 2
+    },
+    {
+      "id": "37903770",
+      "title": "Norse Mythology",
+      "author": "Neil Gaiman",
+      "rating": 4,
+      "pages": 301,
+      "dateRead": "2020-04-14",
+      "readCount": 1
+    },
+    {
+      "id": "49552",
+      "title": "The Stranger",
+      "author": "Albert Camus",
+      "rating": 5,
+      "pages": 123,
+      "dateRead": "2020-04-07",
+      "readCount": 1
+    },
+    {
+      "id": "1842",
+      "title": "Guns, Germs, and Steel: The Fates of Human Societies",
+      "author": "Jared Diamond",
+      "rating": 4,
+      "pages": 498,
+      "dateRead": "2020-03-17",
+      "readCount": 1
+    },
+    {
+      "id": "46005582",
+      "title": "Helvete",
+      "author": "Erlend Loe",
+      "rating": 5,
+      "pages": 136,
+      "dateRead": "2020-02-16",
+      "readCount": 1
+    },
+    {
+      "id": "25320105",
+      "title": "What We Think About When We Try Not To Think About Global Warming: Toward a New Psychology of Climate Action",
+      "author": "Per Espen Stoknes",
+      "rating": 4,
+      "pages": 409,
+      "dateRead": "2020-02-01",
+      "readCount": 1
+    },
+    {
+      "id": "55030",
+      "title": "Cosmos",
+      "author": "Carl Sagan",
+      "rating": 5,
+      "pages": 384,
+      "dateRead": "2020-01-29",
+      "readCount": 1
+    },
+    {
+      "id": "41571759",
+      "title": "Conscious: A Brief Guide to the Fundamental Mystery of the Mind",
+      "author": "Annaka Harris",
+      "rating": 5,
+      "pages": 144,
+      "dateRead": "2019-12-31",
+      "readCount": 1
+    },
+    {
+      "id": "35128050",
+      "title": "Unbelievable?: Why after ten years of talking with atheists, I'm still a Christian",
+      "author": "Justin Brierley",
+      "rating": 4,
+      "pages": 218,
+      "dateRead": "2019-12-31",
+      "readCount": 1
+    },
+    {
+      "id": "426504",
+      "title": "Ficciones",
+      "author": "Jorge Luis Borges",
+      "rating": 4,
+      "pages": 174,
+      "dateRead": "2019-12-30",
+      "readCount": 1
+    },
+    {
+      "id": "43532557",
+      "title": "Outgrowing God: A Beginner’s Guide to Atheism",
+      "author": "Richard Dawkins",
+      "rating": 5,
+      "pages": 304,
+      "dateRead": "2019-12-30",
+      "readCount": 1
+    },
+    {
+      "id": "193755",
+      "title": "The Diving Bell and the Butterfly: A Memoir of Life in Death",
+      "author": "Jean-Dominique Bauby",
+      "rating": 4,
+      "pages": 132,
+      "dateRead": "2019-12-28",
+      "readCount": 1
+    },
+    {
+      "id": "48928487",
+      "title": "Meningen med livet",
+      "author": "Einar Duenger Bøhn",
+      "rating": 4,
+      "pages": 178,
+      "dateRead": "2019-12-25",
+      "readCount": 1
+    },
+    {
+      "id": "41817484",
+      "title": "The Case Against Reality: Why Evolution Hid the Truth from Our Eyes",
+      "author": "Donald D. Hoffman",
+      "rating": 4,
+      "pages": 272,
+      "dateRead": "2019-12-25",
+      "readCount": 1
+    },
+    {
+      "id": "180995",
+      "title": "Plato and a Platypus Walk Into a Bar: Understanding Philosophy Through Jokes",
+      "author": "Thomas Cathcart",
+      "rating": 5,
+      "pages": 200,
+      "dateRead": "2019-12-17",
+      "readCount": 1
+    },
+    {
+      "id": "30659",
+      "title": "Meditations",
+      "author": "Marcus Aurelius",
+      "rating": 3,
+      "pages": 254,
+      "dateRead": "2019-12-13",
+      "readCount": 1
+    },
+    {
+      "id": "31799",
+      "title": "The Problems of Philosophy",
+      "author": "Bertrand Russell",
+      "rating": 4,
+      "pages": 116,
+      "dateRead": "2019-12-03",
+      "readCount": 1
+    },
+    {
+      "id": "10592",
+      "title": "Carrie",
+      "author": "Stephen  King",
+      "rating": 4,
+      "pages": 272,
+      "dateRead": "2019-11-29",
+      "readCount": 1
+    },
+    {
+      "id": "4069",
+      "title": "Man's Search for Meaning",
+      "author": "Viktor E. Frankl",
+      "rating": 4,
+      "pages": 165,
+      "dateRead": "2019-11-24",
+      "readCount": 1
+    },
+    {
+      "id": "40376072",
+      "title": "Children of Ruin (Children of Time, #2)",
+      "author": "Adrian Tchaikovsky",
+      "rating": 4,
+      "pages": 597,
+      "dateRead": "2019-11-19",
+      "readCount": 1
+    },
+    {
+      "id": "31560460",
+      "title": "Et helt liv",
+      "author": "Robert Seethaler",
+      "rating": 4,
+      "pages": 130,
+      "dateRead": "2019-11-10",
+      "readCount": 1
+    },
+    {
+      "id": "21",
+      "title": "A Short History of Nearly Everything",
+      "author": "Bill  Bryson",
+      "rating": 5,
+      "pages": 544,
+      "dateRead": "2019-10-28",
+      "readCount": 1
+    },
+    {
+      "id": "34398425",
+      "title": "God pappa - En håndbok",
+      "author": "Peder Kjøs",
+      "rating": 5,
+      "pages": 231,
+      "dateRead": "2019-10-28",
+      "readCount": 1
+    },
+    {
+      "id": "41160292",
+      "title": "Exhalation",
+      "author": "Ted Chiang",
+      "rating": 5,
+      "pages": 368,
+      "dateRead": "2019-10-14",
+      "readCount": 1
+    },
+    {
+      "id": "51210419",
+      "title": "The Man Who Knew The Way to the Moon",
+      "author": "Todd Zwillich",
+      "rating": 3,
+      "pages": 5,
+      "dateRead": "2019-09-30",
+      "readCount": 1
+    },
+    {
+      "id": "70401",
+      "title": "On the Road",
+      "author": "Jack Kerouac",
+      "rating": 2,
+      "pages": 307,
+      "dateRead": "2019-09-28",
+      "readCount": 1
+    },
+    {
+      "id": "5129",
+      "title": "Brave New World",
+      "author": "Aldous Huxley",
+      "rating": 5,
+      "pages": 288,
+      "dateRead": "2019-09-26",
+      "readCount": 1
+    },
+    {
+      "id": "40792344",
+      "title": "Mere Christianity",
+      "author": "C.S. Lewis",
+      "rating": 2,
+      "pages": 98,
+      "dateRead": "2019-09-21",
+      "readCount": 1
+    },
+    {
+      "id": "92625",
+      "title": "The Ones Who Walk Away from Omelas",
+      "author": "Ursula K. Le Guin",
+      "rating": 5,
+      "pages": 32,
+      "dateRead": "2019-09-20",
+      "readCount": 1
+    },
+    {
+      "id": "34458715",
+      "title": "Why I Am Catholic (and You Should Be Too)",
+      "author": "Brandon Vogt",
+      "rating": 3,
+      "pages": 192,
+      "dateRead": "2019-09-18",
+      "readCount": 1
+    },
+    {
+      "id": "17346753",
+      "title": "Opptegnelser fra et kjellerdyp",
+      "author": "Fyodor Dostoevsky",
+      "rating": 4,
+      "pages": 116,
+      "dateRead": "2019-09-14",
+      "readCount": 1
+    },
+    {
+      "id": "35356384",
+      "title": "How Democracies Die: What History Reveals About Our Future",
+      "author": "Steven Levitsky",
+      "rating": 4,
+      "pages": 320,
+      "dateRead": "2019-09-10",
+      "readCount": 1
+    },
+    {
+      "id": "51212034",
+      "title": "A Grown-Up Guide to Dinosaurs",
+      "author": "Ben Garrod",
+      "rating": 5,
+      "pages": 3,
+      "dateRead": "2019-08-12",
+      "readCount": 1
+    },
+    {
+      "id": "2195464",
+      "title": "What I Talk About When I Talk About Running",
+      "author": "Haruki Murakami",
+      "rating": 4,
+      "pages": 188,
+      "dateRead": "2019-08-10",
+      "readCount": 1
+    },
+    {
+      "id": "36186800",
+      "title": "Tung tids tale",
+      "author": "Olaug Nilssen",
+      "rating": 5,
+      "pages": 155,
+      "dateRead": "2019-08-01",
+      "readCount": 1
+    },
+    {
+      "id": "38820046",
+      "title": "21 Lessons for the 21st Century",
+      "author": "Yuval Noah Harari",
+      "rating": 5,
+      "pages": 372,
+      "dateRead": "2019-07-31",
+      "readCount": 1
+    },
+    {
+      "id": "25107950",
+      "title": "Trilogien",
+      "author": "Jon Fosse",
+      "rating": 3,
+      "pages": 239,
+      "dateRead": "2019-07-31",
+      "readCount": 1
+    },
+    {
+      "id": "18620954",
+      "title": "Den Danske Borgerkrig 2018-24",
+      "author": "Kaspar Colling Nielsen",
+      "rating": 5,
+      "pages": 224,
+      "dateRead": "2019-07-30",
+      "readCount": 1
+    },
+    {
+      "id": "584637",
+      "title": "Utilitarianism",
+      "author": "John Stuart Mill",
+      "rating": 4,
+      "pages": 71,
+      "dateRead": "2019-07-30",
+      "readCount": 1
+    },
+    {
+      "id": "40668391",
+      "title": "The Four Horsemen: The Conversation That Sparked an Atheist Revolution",
+      "author": "Christopher Hitchens",
+      "rating": 5,
+      "pages": 95,
+      "dateRead": "2019-07-27",
+      "readCount": 1
+    },
+    {
+      "id": "43369",
+      "title": "God Is Not Great: How Religion Poisons Everything",
+      "author": "Christopher Hitchens",
+      "rating": 3,
+      "pages": 307,
+      "dateRead": "2019-07-24",
+      "readCount": 1
+    },
+    {
+      "id": "42936797",
+      "title": "Brev til Noreg",
+      "author": "Mona Ibrahim Ahmed",
+      "rating": 5,
+      "pages": 56,
+      "dateRead": "2019-07-16",
+      "readCount": 1
+    },
+    {
+      "id": "36256364",
+      "title": "Rigels øyne (Ingrid Barrøy, #3)",
+      "author": "Roy Jacobsen",
+      "rating": 4,
+      "pages": 231,
+      "dateRead": "2019-07-16",
+      "readCount": 1
+    },
+    {
+      "id": "1518602",
+      "title": "Halvbroren",
+      "author": "Lars Saabye Christensen",
+      "rating": 5,
+      "pages": 650,
+      "dateRead": "2019-06-23",
+      "readCount": 1
+    },
+    {
+      "id": "9969571",
+      "title": "Ready Player One (Ready Player One, #1)",
+      "author": "Ernest Cline",
+      "rating": 5,
+      "pages": 480,
+      "dateRead": "2019-06-17",
+      "readCount": 1
+    },
+    {
+      "id": "10614",
+      "title": "Misery",
+      "author": "Stephen  King",
+      "rating": 5,
+      "pages": 370,
+      "dateRead": "2019-06-09",
+      "readCount": 1
+    },
+    {
+      "id": "32895535",
+      "title": "Why Buddhism Is True: The Science and Philosophy of Meditation and Enlightenment",
+      "author": "Robert  Wright",
+      "rating": 3,
+      "pages": 368,
+      "dateRead": "2019-05-31",
+      "readCount": 1
+    },
+    {
+      "id": "170448",
+      "title": "Animal Farm",
+      "author": "George Orwell",
+      "rating": 4,
+      "pages": 141,
+      "dateRead": "2019-05-22",
+      "readCount": 1
+    },
+    {
+      "id": "8855321",
+      "title": "Leviathan Wakes (The Expanse, #1)",
+      "author": "James S.A. Corey",
+      "rating": 5,
+      "pages": 561,
+      "dateRead": "2019-05-20",
+      "readCount": 1
+    },
+    {
+      "id": "5091",
+      "title": "The Dark Tower (Dark Tower, #7)",
+      "author": "Stephen  King",
+      "rating": 4,
+      "pages": 1050,
+      "dateRead": "2019-04-24",
+      "readCount": 1
+    },
+    {
+      "id": "7624",
+      "title": "Lord of the Flies",
+      "author": "William Golding",
+      "rating": 4,
+      "pages": 182,
+      "dateRead": "2019-03-30",
+      "readCount": 1
+    },
+    {
+      "id": "5093",
+      "title": "Song of Susannah (Dark Tower, #6)",
+      "author": "Stephen  King",
+      "rating": 2,
+      "pages": 544,
+      "dateRead": "2019-03-23",
+      "readCount": 1
+    },
+    {
+      "id": "4978",
+      "title": "Wolves of the Calla (Dark Tower, #5)",
+      "author": "Stephen  King",
+      "rating": 3,
+      "pages": 960,
+      "dateRead": "2019-03-10",
+      "readCount": 1
+    },
+    {
+      "id": "25658482",
+      "title": "At the Existentialist Café",
+      "author": "Sarah Bakewell",
+      "rating": 3,
+      "pages": 440,
+      "dateRead": "2019-02-03",
+      "readCount": 1
+    },
+    {
+      "id": "64369",
+      "title": "Mindfulness in Plain English",
+      "author": "Henepola Gunaratana",
+      "rating": 4,
+      "pages": 208,
+      "dateRead": "2019-01-31",
+      "readCount": 1
+    },
+    {
+      "id": "10428480",
+      "title": "Is Eating People Wrong?: Great Legal Cases and How they Shaped the World",
+      "author": "Allan C. Hutchinson",
+      "rating": 2,
+      "pages": 257,
+      "dateRead": "2019-01-05",
+      "readCount": 1
+    },
+    {
+      "id": "2115195",
+      "title": "Mengele Zoo (Mino-series, #1)",
+      "author": "Gert Nygårdshaug",
+      "rating": 4,
+      "pages": 454,
+      "dateRead": "2019-01-02",
+      "readCount": 1
+    },
+    {
+      "id": "25499718",
+      "title": "Children of Time (Children of Time, #1)",
+      "author": "Adrian Tchaikovsky",
+      "rating": 5,
+      "pages": 600,
+      "dateRead": "2018-12-18",
+      "readCount": 1
+    },
+    {
+      "id": "2657",
+      "title": "To Kill a Mockingbird",
+      "author": "Harper Lee",
+      "rating": 4,
+      "pages": 323,
+      "dateRead": "2018-12-09",
+      "readCount": 1
+    },
+    {
+      "id": "128029",
+      "title": "A Thousand Splendid Suns",
+      "author": "Khaled Hosseini",
+      "rating": 4,
+      "pages": 372,
+      "dateRead": "2018-11-06",
+      "readCount": 1
+    },
+    {
+      "id": "8994247",
+      "title": "Alt du vil vite om samfunnsøkonomi men aldri har våget å spørre om",
+      "author": "Erling Røed Larsen",
+      "rating": 4,
+      "pages": 277,
+      "dateRead": "2018-10-28",
+      "readCount": 1
+    },
+    {
+      "id": "5096",
+      "title": "Wizard and Glass (The Dark Tower, #4)",
+      "author": "Stephen  King",
+      "rating": 3,
+      "pages": 896,
+      "dateRead": "2018-10-18",
+      "readCount": 1
+    },
+    {
+      "id": "30272030",
+      "title": "Ethics in the Real World: 86 Brief Essays on Things that Matter",
+      "author": "Peter Singer",
+      "rating": 4,
+      "pages": 336,
+      "dateRead": "2018-10-09",
+      "readCount": 1
+    },
+    {
+      "id": "261968",
+      "title": "Gutten Som Ville Være En Av Gutta",
+      "author": "Lars Saabye Christensen",
+      "rating": 4,
+      "pages": 130,
+      "dateRead": "2018-09-30",
+      "readCount": 1
+    },
+    {
+      "id": "3228917",
+      "title": "Outliers: The Story of Success",
+      "author": "Malcolm Gladwell",
+      "rating": 4,
+      "pages": 309,
+      "dateRead": "2018-07-10",
+      "readCount": 1
+    },
+    {
+      "id": "36855408",
+      "title": "Dødevaskeren",
+      "author": "Sara Omar",
+      "rating": 3,
+      "pages": 336,
+      "dateRead": "2018-07-03",
+      "readCount": 1
+    },
+    {
+      "id": "40046816",
+      "title": "Å forstå dyr",
+      "author": "Lars Fredrik Händler Svendsen",
+      "rating": 4,
+      "pages": 191,
+      "dateRead": "2018-06-30",
+      "readCount": 1
+    },
+    {
+      "id": "36126378",
+      "title": "Begynnelser",
+      "author": "Carl Frode Tiller",
+      "rating": 5,
+      "pages": 343,
+      "dateRead": "2018-06-21",
+      "readCount": 1
+    },
+    {
+      "id": "4214",
+      "title": "Life of Pi",
+      "author": "Yann Martel",
+      "rating": 5,
+      "pages": 460,
+      "dateRead": "2018-06-12",
+      "readCount": 1
+    },
+    {
+      "id": "32686835",
+      "title": "Sjakken eller livet",
+      "author": "Atle Grønn",
+      "rating": 3,
+      "pages": 312,
+      "dateRead": "2018-06-10",
+      "readCount": 1
+    },
+    {
+      "id": "36275478",
+      "title": "Tante Ulrikkes vei",
+      "author": "Zeshan Shakar",
+      "rating": 5,
+      "pages": 432,
+      "dateRead": "2018-06-05",
+      "readCount": 1
+    },
+    {
+      "id": "18143977",
+      "title": "All the Light We Cannot See",
+      "author": "Anthony Doerr",
+      "rating": 3,
+      "pages": 531,
+      "dateRead": "2018-05-31",
+      "readCount": 1
+    },
+    {
+      "id": "26038269",
+      "title": "Hvitt hav (Ingrid Barrøy, #2)",
+      "author": "Roy Jacobsen",
+      "rating": 5,
+      "pages": 240,
+      "dateRead": "2018-05-27",
+      "readCount": 1
+    },
+    {
+      "id": "34084",
+      "title": "The Waste Lands (Dark Tower, #3)",
+      "author": "Stephen  King",
+      "rating": 5,
+      "pages": 422,
+      "dateRead": "2018-05-13",
+      "readCount": 1
+    },
+    {
+      "id": "8371779",
+      "title": "Naiv. Super",
+      "author": "Erlend Loe",
+      "rating": 5,
+      "pages": 201,
+      "dateRead": "2018-05-03",
+      "readCount": 1
+    },
+    {
+      "id": "51496",
+      "title": "Dr. Jekyll and Mr. Hyde",
+      "author": "Robert Louis Stevenson",
+      "rating": 3,
+      "pages": 139,
+      "dateRead": "2018-04-01",
+      "readCount": 1
+    },
+    {
+      "id": "18144124",
+      "title": "I Am Pilgrim",
+      "author": "Terry Hayes",
+      "rating": 3,
+      "pages": 612,
+      "dateRead": "2018-04-01",
+      "readCount": 1
+    },
+    {
+      "id": "22822858",
+      "title": "A Little Life",
+      "author": "Hanya Yanagihara",
+      "rating": 5,
+      "pages": 736,
+      "dateRead": "2018-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "36595101",
+      "title": "Fire and Fury: Inside the Trump White House",
+      "author": "Michael  Wolff",
+      "rating": 3,
+      "pages": 322,
+      "dateRead": "2018-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "136251",
+      "title": "Harry Potter and the Deathly Hallows (Harry Potter, #7)",
+      "author": "J.K. Rowling",
+      "rating": 4,
+      "pages": 759,
+      "dateRead": "2018-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "36607291",
+      "title": "Hersketeknikker: Nyttige og nådeløse",
+      "author": "Sigrid Sollund",
+      "rating": 3,
+      "pages": 248,
+      "dateRead": "2018-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "28862",
+      "title": "The Prince",
+      "author": "Niccolò Machiavelli",
+      "rating": 2,
+      "pages": 144,
+      "dateRead": "2018-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "1215032",
+      "title": "The Wise Man's Fear (The Kingkiller Chronicle, #2)",
+      "author": "Patrick Rothfuss",
+      "rating": 4,
+      "pages": 994,
+      "dateRead": "2018-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "34114362",
+      "title": "What Happened",
+      "author": "Hillary Rodham Clinton",
+      "rating": 3,
+      "pages": 512,
+      "dateRead": "2018-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "91950",
+      "title": "The Myth of Sisyphus",
+      "author": "Albert Camus",
+      "rating": 4,
+      "pages": 192,
+      "dateRead": "2017-01-30",
+      "readCount": 2
+    },
+    {
+      "id": "18332844",
+      "title": "De usynlige (Ingrid Barrøy, #1)",
+      "author": "Roy Jacobsen",
+      "rating": 4,
+      "pages": 256,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "279538",
+      "title": "Der Proceß",
+      "author": "Franz Kafka",
+      "rating": 3,
+      "pages": 249,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "7315573",
+      "title": "Fall of Giants (The Century Trilogy, #1)",
+      "author": "Ken Follett",
+      "rating": 2,
+      "pages": 985,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "1",
+      "title": "Harry Potter and the Half-Blood Prince (Harry Potter, #6)",
+      "author": "J.K. Rowling",
+      "rating": 5,
+      "pages": 652,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "2",
+      "title": "Harry Potter and the Order of the Phoenix (Harry Potter, #5)",
+      "author": "J.K. Rowling",
+      "rating": 4,
+      "pages": 576,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "27161156",
+      "title": "Hillbilly Elegy: A Memoir of a Family and Culture in Crisis",
+      "author": "J.D. Vance",
+      "rating": 5,
+      "pages": 264,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "31138556",
+      "title": "Homo Deus: A History of Tomorrow",
+      "author": "Yuval Noah Harari",
+      "rating": 3,
+      "pages": 450,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "36041896",
+      "title": "Lysår",
+      "author": "Didrik Morits Hallstrøm",
+      "rating": 3,
+      "pages": 160,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "27074873",
+      "title": "Ren Poesi",
+      "author": "Ellen Wisløff",
+      "rating": 5,
+      "pages": 128,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "23692271",
+      "title": "Sapiens: A Brief History of Humankind",
+      "author": "Yuval Noah Harari",
+      "rating": 4,
+      "pages": 512,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "5094",
+      "title": "The Drawing of the Three (Dark Tower, #2)",
+      "author": "Stephen  King",
+      "rating": 4,
+      "pages": 463,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "43615",
+      "title": "The Gunslinger (The Dark Tower, #1)",
+      "author": "Stephen  King",
+      "rating": 5,
+      "pages": 231,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "186074",
+      "title": "The Name of the Wind (The Kingkiller Chronicle, #1)",
+      "author": "Patrick Rothfuss",
+      "rating": 4,
+      "pages": 662,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "2165",
+      "title": "The Old Man and the Sea",
+      "author": "Ernest Hemingway",
+      "rating": 4,
+      "pages": 96,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "51893",
+      "title": "Thus Spoke Zarathustra",
+      "author": "Friedrich Nietzsche",
+      "rating": 3,
+      "pages": 327,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "33799328",
+      "title": "Velkommen til Amerika",
+      "author": "Linda Boström Knausgård",
+      "rating": 3,
+      "pages": 96,
+      "dateRead": "2017-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "18588024",
+      "title": "Alex Ferguson: My Autobiography",
+      "author": "Alex Ferguson",
+      "rating": 3,
+      "pages": 416,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "6289283",
+      "title": "Born to Run: A Hidden Tribe, Superathletes, and the Greatest Race the World Has Never Seen",
+      "author": "Christopher McDougall",
+      "rating": 4,
+      "pages": 287,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "28148087",
+      "title": "Critical Feeling: How to Use Feelings Strategically",
+      "author": "Rolf Reber",
+      "rating": 3,
+      "pages": 310,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "15881",
+      "title": "Harry Potter and the Chamber of Secrets (Harry Potter, #2)",
+      "author": "J.K. Rowling",
+      "rating": 4,
+      "pages": 341,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "6",
+      "title": "Harry Potter and the Goblet of Fire (Harry Potter, #4)",
+      "author": "J.K. Rowling",
+      "rating": 4,
+      "pages": 734,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "5",
+      "title": "Harry Potter and the Prisoner of Azkaban (Harry Potter, #3)",
+      "author": "J.K. Rowling",
+      "rating": 4,
+      "pages": 547,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "3",
+      "title": "Harry Potter and the Sorcerer's Stone (Harry Potter, #1)",
+      "author": "J.K. Rowling",
+      "rating": 4,
+      "pages": 309,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "6301944",
+      "title": "Hoggerne",
+      "author": "Roy Jacobsen",
+      "rating": 3,
+      "pages": 171,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "28815",
+      "title": "Influence: The Psychology of Persuasion",
+      "author": "Robert B. Cialdini",
+      "rating": 3,
+      "pages": 320,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "3450744",
+      "title": "Nudge: Improving Decisions About Health, Wealth, and Happiness",
+      "author": "Richard H. Thaler",
+      "rating": 4,
+      "pages": 260,
+      "dateRead": "2016-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "386162",
+      "title": "The Hitchhiker’s Guide to the Galaxy (The Hitchhiker's Guide to the Galaxy, #1)",
+      "author": "Douglas Adams",
+      "rating": 4,
+      "pages": 193,
+      "dateRead": "2012-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "6284163",
+      "title": "23-salen",
+      "author": "Ingvar Ambjørnsen",
+      "rating": 4,
+      "pages": 237,
+      "dateRead": "2010-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "6626516",
+      "title": "I morgen var jeg alltid en løve",
+      "author": "Arnhild Lauveng",
+      "rating": 4,
+      "pages": 199,
+      "dateRead": "2010-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "137254",
+      "title": "Sult",
+      "author": "Knut Hamsun",
+      "rating": 3,
+      "pages": 158,
+      "dateRead": "2010-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "10515443",
+      "title": "Det angår også deg",
+      "author": "Herman Sachnowitz",
+      "rating": 4,
+      "pages": 236,
+      "dateRead": "2007-01-01",
+      "readCount": 1
+    },
+    {
+      "id": "18505796",
+      "title": "10% Happier",
+      "author": "Dan   Harris",
+      "rating": 5,
+      "pages": 256,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "77013",
+      "title": "As I Lay Dying",
+      "author": "William Faulkner",
+      "rating": 3,
+      "pages": 261,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "60901008",
+      "title": "Brødrene Karamasov",
+      "author": "Fyodor Dostoevsky",
+      "rating": 5,
+      "pages": 966,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "15720426",
+      "title": "Den store Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "rating": 2,
+      "pages": 208,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "138482317",
+      "title": "Doppler",
+      "author": "Erlend Loe",
+      "rating": 4,
+      "pages": null,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "56864783",
+      "title": "Et steg foran",
+      "author": "Jann Post",
+      "rating": 4,
+      "pages": 153,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "13259270",
+      "title": "Free Will",
+      "author": "Sam Harris",
+      "rating": 5,
+      "pages": 96,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "1494961",
+      "title": "Genanse og verdighet",
+      "author": "Dag Solstad",
+      "rating": 3,
+      "pages": 143,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "54833193",
+      "title": "Historien om Norge",
+      "author": "Karsten Alnæs",
+      "rating": 3,
+      "pages": 495,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "1830892",
+      "title": "Hvite niggere",
+      "author": "Ingvar Ambjørnsen",
+      "rating": 4,
+      "pages": 349,
+      "dateRead": null,
+      "readCount": 2
+    },
+    {
+      "id": "10840971",
+      "title": "Jotunheimen: Bill. mrk. 2469",
+      "author": "Erlend Loe",
+      "rating": 5,
+      "pages": 164,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "298275",
+      "title": "Nausea",
+      "author": "Jean-Paul Sartre",
+      "rating": 3,
+      "pages": 178,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "16028095",
+      "title": "Skyggelandet",
+      "author": "Tom Egeland",
+      "rating": 3,
+      "pages": 319,
+      "dateRead": null,
+      "readCount": 2
+    },
+    {
+      "id": "59359016",
+      "title": "Stargate - en julefortelling",
+      "author": "Ingvild H. Rishøi",
+      "rating": 5,
+      "pages": 133,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "17377877",
+      "title": "Stolthet og fordom",
+      "author": "Jane Austen",
+      "rating": 3,
+      "pages": 536,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "3805",
+      "title": "The Corrections",
+      "author": "Jonathan Franzen",
+      "rating": 4,
+      "pages": 653,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "485894",
+      "title": "The Metamorphosis",
+      "author": "Franz Kafka",
+      "rating": 5,
+      "pages": 201,
+      "dateRead": null,
+      "readCount": 1
+    },
+    {
+      "id": "1936788",
+      "title": "Thomas F's siste nedtegnelser til almenheten",
+      "author": "Kjell Askildsen",
+      "rating": 3,
+      "pages": 76,
+      "dateRead": null,
+      "readCount": 1
+    }
+  ]
+}
+
